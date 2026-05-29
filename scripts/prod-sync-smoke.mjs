@@ -7,8 +7,10 @@ import { delimiter, join, resolve } from 'node:path'
 const lockPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.lock`
 const auditPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.jsonl`
 const syncScriptPath = resolve(process.cwd(), 'scripts/sync-prod-to-pre.mjs')
+const anonymizeSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-anonymize.sql')
 
 await cleanup()
+await assertPreSyncAnonymizeSql()
 
 const plan = runSyncScript([])
 assert.equal(plan.status, 0)
@@ -234,6 +236,20 @@ exit 0
     binPath: directory,
     logPath
   }
+}
+
+async function assertPreSyncAnonymizeSql() {
+  const sql = await readFile(anonymizeSqlPath, 'utf8')
+
+  assert.match(sql, /platform_id = 'pre_platform_' \|\| substr\(md5\(id \|\| ':platform'\), 1, 16\)/)
+  assert.match(sql, /union_id = ''/)
+  assert.match(sql, /UPDATE items[\s\S]*title = '预上线商品_'/)
+  assert.match(sql, /location = location - 'latitude' - 'longitude' - 'accuracy' - 'capturedAt'/)
+  assert.match(sql, /UPDATE trade_intents[\s\S]*item_title = '预上线交易商品'[\s\S]*location_audit = location_audit - 'latitude' - 'longitude' - 'accuracy' - 'capturedAt'/)
+  assert.match(sql, /UPDATE location_audits[\s\S]*latitude = NULL[\s\S]*longitude = NULL[\s\S]*accuracy = NULL/)
+  assert.match(sql, /original_name = ''/)
+  assert.match(sql, /UPDATE moderation_events[\s\S]*SET title = ''/)
+  assert.match(sql, /UPDATE account_deletions[\s\S]*SET reason = ''/)
 }
 
 async function readLatestAuditRecord() {
