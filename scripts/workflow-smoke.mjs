@@ -10,6 +10,7 @@ const workflows = {
   prodToPreSync: await readWorkflow('prod-to-pre-sync.yml')
 }
 const deployBackendScript = await readFile(resolve(root, 'scripts/deploy-backend.mjs'), 'utf8')
+const migrateDatabaseScript = await readFile(resolve(root, 'scripts/migrate-database.mjs'), 'utf8')
 const releaseGateScript = await readFile(resolve(root, 'scripts/verify-release-gate.mjs'), 'utf8')
 
 assertNoPullRequestTarget()
@@ -18,6 +19,7 @@ assertReleaseGateProfileBoundary()
 assertStrictReleaseGate()
 assertProdToPreSyncWorkflow()
 assertDirectBackendDeployProtection()
+assertDirectDatabaseMigrationProtection()
 
 console.log('Workflow smoke checks passed')
 
@@ -89,6 +91,8 @@ function assertStrictReleaseGate() {
     'GOODS_COMM_SMOKE_LONGITUDE',
     'GOODS_COMM_SMOKE_HEALTH_ATTEMPTS',
     'GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS',
+    'GOODS_COMM_DEPLOY_ALLOW_PROD',
+    'GOODS_COMM_DB_MIGRATE_ALLOW_PROD',
     'TENCENTCLOUD_SECRET_ID',
     'TENCENTCLOUD_SECRET_KEY',
     'GOODS_COMM_PRE_ENV_LOCAL',
@@ -172,7 +176,9 @@ function assertDirectBackendDeployProtection() {
     'GOODS_COMM_ALLOWED_ORIGINS',
     'GOODS_COMM_OPS_SESSION_SECRET',
     'GOODS_COMM_OPS_ACCOUNTS',
-    'GOODS_COMM_TRUSTED_PROXY_IPS'
+    'GOODS_COMM_TRUSTED_PROXY_IPS',
+    'GOODS_COMM_DEPLOY_ALLOW_PROD',
+    'GOODS_COMM_DB_MIGRATE_ALLOW_PROD'
   ])
 
   const buildIndex = deployBackendScript.indexOf("run('npm', ['run', 'build:backend'])")
@@ -183,6 +189,14 @@ function assertDirectBackendDeployProtection() {
     buildIndex >= 0 && artifactSmokeIndex > buildIndex && migrationIndex > artifactSmokeIndex,
     'scripts/deploy-backend.mjs: build, artifact smoke, and migration must run in that order'
   )
+}
+
+function assertDirectDatabaseMigrationProtection() {
+  assertIncludesAll('scripts/migrate-database.mjs', migrateDatabaseScript, [
+    'GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
+    'Refusing to migrate prod without GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
+    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment}${prodOptIn}'
+  ])
 }
 
 function assertIncludesAll(label, content, snippets) {

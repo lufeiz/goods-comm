@@ -20,12 +20,17 @@ if (!execute) {
   console.log(`- Target database: ${maskConnectionString(databaseUrl)}`)
   console.log(`- Schema file: ${schemaPath}`)
   console.log('- Command: psql "$GOODS_COMM_DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/db/schema.sql')
-  console.log(`Run with --execute and GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment} after credentials and psql are available.`)
+  const prodOptIn = environment === 'prod' ? ' and GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true' : ''
+  console.log(`Run with --execute and GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment}${prodOptIn} after credentials and psql are available.`)
   process.exit(0)
 }
 
 if (process.env.GOODS_COMM_DB_MIGRATE_CONFIRM !== `migrate-${environment}`) {
   throw new Error(`Refusing to migrate without GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment}`)
+}
+
+if (environment === 'prod' && process.env.GOODS_COMM_DB_MIGRATE_ALLOW_PROD !== 'true') {
+  throw new Error('Refusing to migrate prod without GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true')
 }
 
 assertCommandAvailable('psql')

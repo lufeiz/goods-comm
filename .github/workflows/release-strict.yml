@@ -71,6 +71,8 @@ jobs:
       GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION: ${{ inputs.allow_prod_mutation }}
       GOODS_COMM_SMOKE_HEALTH_ATTEMPTS: ${{ inputs.health_attempts }}
       GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS: ${{ inputs.health_interval_ms }}
+      GOODS_COMM_DEPLOY_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
+      GOODS_COMM_DB_MIGRATE_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
       TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
       TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
       TENCENTCLOUD_SESSION_TOKEN: ${{ secrets.TENCENTCLOUD_SESSION_TOKEN }}

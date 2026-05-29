@@ -59,6 +59,10 @@ if (process.env.GOODS_COMM_DEPLOY_CONFIRM !== `deploy-${environment}`) {
   throw new Error(`Refusing to deploy without GOODS_COMM_DEPLOY_CONFIRM=deploy-${environment}`)
 }
 
+if (environment === 'prod' && process.env.GOODS_COMM_DEPLOY_ALLOW_PROD !== 'true') {
+  throw new Error('Refusing to deploy prod without GOODS_COMM_DEPLOY_ALLOW_PROD=true')
+}
+
 if (missing.length) {
   throw new Error(`Cannot deploy ${environment}: ${missing.join('; ')}`)
 }
@@ -125,13 +129,14 @@ if (runDeployedMainSmoke) {
 console.log(`Backend deploy command completed for ${environment} via ${provider}`)
 
 function createPlan(targetProvider) {
+  const migrationOptIn = environment === 'prod' ? ' GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true' : ''
   const lines = [
     `1. Validate .env.${environment} with npm run env:check:${environment}.`,
     '2. Build dist/backend with npm run build:backend.',
     '3. Verify dist/backend with npm run smoke:backend:artifact.',
     skipDatabaseMigration
       ? '4. Skip database migration because --skip-db-migrate or GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true was provided.'
-      : `4. Apply database schema with GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment} node scripts/migrate-database.mjs --env ${environment} --execute.`,
+      : `4. Apply database schema with GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment}${migrationOptIn} node scripts/migrate-database.mjs --env ${environment} --execute.`,
     `5. Deploy provider: ${targetProvider}.`
   ]
 
@@ -171,9 +176,12 @@ function printPlan() {
       console.log(`- ${item}`)
     }
   } else {
-    const migrationConfirm = skipDatabaseMigration ? '' : `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment} `
+    const migrationConfirm = skipDatabaseMigration
+      ? ''
+      : `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment} ${environment === 'prod' ? 'GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true ' : ''}`
+    const prodDeployOptIn = environment === 'prod' ? 'GOODS_COMM_DEPLOY_ALLOW_PROD=true ' : ''
     const mainSmokeFlag = runDeployedMainSmoke ? ' with deployed main-flow smoke' : ''
-    console.log(`Ready to execute${mainSmokeFlag} with ${migrationConfirm}GOODS_COMM_DEPLOY_CONFIRM=deploy-${environment} and --execute.`)
+    console.log(`Ready to execute${mainSmokeFlag} with ${migrationConfirm}${prodDeployOptIn}GOODS_COMM_DEPLOY_CONFIRM=deploy-${environment} and --execute.`)
   }
 }
 
@@ -215,9 +223,17 @@ function findMissingPreconditions(targetProvider) {
       missingItems.push(`GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment} is required because backend deploy applies database migration before starting the new backend`)
     }
 
+    if (environment === 'prod' && process.env.GOODS_COMM_DB_MIGRATE_ALLOW_PROD !== 'true') {
+      missingItems.push('GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true is required because backend deploy applies production database migration')
+    }
+
     if (!commandAvailable('psql')) {
       missingItems.push('psql is required because backend deploy applies database migration before starting the new backend')
     }
+  }
+
+  if (environment === 'prod' && process.env.GOODS_COMM_DEPLOY_ALLOW_PROD !== 'true') {
+    missingItems.push('GOODS_COMM_DEPLOY_ALLOW_PROD=true is required for production backend deploy')
   }
 
   if (runDeployedMainSmoke) {

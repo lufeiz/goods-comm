@@ -86,7 +86,7 @@ npm run verify:release
 GitHub Actions 已分成两类：
 
 - `.github/workflows/ci.yml`：用于 PR / 主干质量门禁，运行 `npm run verify:release`，适合在占位 pre/prod 配置仍存在时保持开发节奏。
-- `.github/workflows/release-strict.yml`：用于真实上线前手动触发，先在 runner 安装 `postgresql-client`、CloudBase CLI 和 Tencent `tccli`，再运行 `npm run verify:release:strict`。工作流会从 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 写入 `.env.pre.local` / `.env.prod.local`，并从 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 读取非交互部署凭据；可选 `run_backend_deploy=true` 在 strict gate 通过后先迁移数据库并部署 pre/prod 后端，再按输入选择运行部署后 health smoke 和主链路 smoke；独立 health smoke 默认等待 12 次、每次 10 秒，可通过 `health_attempts` / `health_interval_ms` 调整；生产后端部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`；无论成功失败都会上传普通审计和 strict 审计 Markdown / JSON。
+- `.github/workflows/release-strict.yml`：用于真实上线前手动触发，先在 runner 安装 `postgresql-client`、CloudBase CLI 和 Tencent `tccli`，再运行 `npm run verify:release:strict`。工作流会从 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 写入 `.env.pre.local` / `.env.prod.local`，并从 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 读取非交互部署凭据；可选 `run_backend_deploy=true` 在 strict gate 通过后先迁移数据库并部署 pre/prod 后端，再按输入选择运行部署后 health smoke 和主链路 smoke；独立 health smoke 默认等待 12 次、每次 10 秒，可通过 `health_attempts` / `health_interval_ms` 调整；生产后端部署必须显式开启 `allow_prod_deploy=true`，该输入会传入脚本级 `GOODS_COMM_DEPLOY_ALLOW_PROD=true` 和 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`；生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`；无论成功失败都会上传普通审计和 strict 审计 Markdown / JSON。
 
 后端运行时也会做保护：`pre/prod` 默认选择 PostgreSQL store，如果显式配置 `GOODS_COMM_STATE_STORE=file` 会直接启动失败，避免预上线或生产误连本地文件状态；`pre/prod` 还要求 `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`，后端只校验 schema 是否已通过迁移脚本初始化，不会在正式流量路径里静默建表；`pre/prod` 同时禁止 `GOODS_COMM_PLATFORM_AUTH_MODE=demo`、`GOODS_COMM_OBJECT_STORE=local`、`GOODS_COMM_CONTENT_SECURITY_PROVIDER=mock`、`GOODS_COMM_MAP_PROVIDER=mock` 和 `GOODS_COMM_PLATFORM_NOTIFY_PROVIDER=mock`，避免正式环境使用演示登录、本地图片、mock 审核、样例区域数据或 mock 模板消息。
 
@@ -131,7 +131,7 @@ npm run db:migrate:plan -- --env pre
 npm run deploy:backend:pre:plan
 ```
 
-执行真实迁移或部署时必须额外提供确认变量，例如 `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre` 和 `GOODS_COMM_DEPLOY_CONFIRM=deploy-pre`，并替换 `.env.pre/.env.prod` 中的占位云资源、密钥和数据库连接串。pre/prod 后端启动前必须先执行对应环境的数据库迁移；真实后端部署脚本默认会先构建并验证 `dist/backend`，再跑迁移、部署新版本，并立即执行部署后 health smoke，默认等待 12 次、每次间隔 10 秒，只有确认同版本 schema 已迁移时才允许用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过。如果缺表，`/health/ready` 会返回依赖未就绪，而不是自动创建表。需要把主链路 smoke 合并到直接部署命令时，可额外传 `--run-main-smoke` 或设置 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`；需要调整 health 等待窗口时，可传 `--health-attempts` / `--health-interval-ms`。
+执行真实迁移或部署时必须额外提供确认变量，例如 `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre` 和 `GOODS_COMM_DEPLOY_CONFIRM=deploy-pre`，并替换 `.env.pre/.env.prod` 中的占位云资源、密钥和数据库连接串。生产数据库迁移还必须显式设置 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`，生产后端部署还必须显式设置 `GOODS_COMM_DEPLOY_ALLOW_PROD=true`，避免绕过 GitHub release workflow 直接误操作生产。pre/prod 后端启动前必须先执行对应环境的数据库迁移；真实后端部署脚本默认会先构建并验证 `dist/backend`，再跑迁移、部署新版本，并立即执行部署后 health smoke，默认等待 12 次、每次间隔 10 秒，只有确认同版本 schema 已迁移时才允许用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过。如果缺表，`/health/ready` 会返回依赖未就绪，而不是自动创建表。需要把主链路 smoke 合并到直接部署命令时，可额外传 `--run-main-smoke` 或设置 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`；需要调整 health 等待窗口时，可传 `--health-attempts` / `--health-interval-ms`。
 
 部署完成后运行：
 
