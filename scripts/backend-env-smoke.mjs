@@ -100,6 +100,44 @@ assert.throws(() => createGoodsCommServer({
 }), /pre 环境不能使用文件状态存储/)
 
 assert.throws(() => createGoodsCommServer({
+  environment: 'pre',
+  store: {
+    productionSafe: true,
+    transact: async (callback) => callback({})
+  },
+  objectStore: {
+    type: 'custom-object',
+    productionSafe: true,
+    saveItemImage: async (file) => file,
+    readAsset: async () => ({
+      bytes: Buffer.from(''),
+      mimeType: 'application/octet-stream'
+    })
+  },
+  platformAuth: {
+    mode: 'platform',
+    resolveLoginData: async (payload) => payload
+  },
+  contentSafety: {
+    provider: 'wechat',
+    reviewItemPayload: async (payload) => payload,
+    reviewUploadedImage: async (file) => file
+  },
+  regionResolver: {
+    provider: 'tencent',
+    resolveRegion: async () => ({
+      communityId: 'server-community',
+      streetId: 'server-street',
+      precision: 'community'
+    })
+  },
+  platformNotifier: {
+    provider: 'wechat',
+    dispatchNotifications: async () => []
+  }
+}), /pre 环境不能使用 CORS wildcard/)
+
+assert.throws(() => createGoodsCommServer({
   environment: 'prod',
   storeType: 'file',
   statePath: '/private/tmp/goods-comm-unsafe-prod.json'
@@ -117,6 +155,7 @@ assert.throws(() => createGoodsCommServer({
     productionSafe: true,
     transact: async (callback) => callback({})
   },
+  allowedOrigins: ['https://goods-comm.example.com'],
   authMode: 'demo'
 }), /prod 环境不能使用演示登录/)
 
@@ -163,6 +202,7 @@ const safeRegionResolver = {
 assert.throws(() => createGoodsCommServer({
   environment: 'pre',
   store: safeCustomStore,
+  allowedOrigins: ['https://pre.goods-comm.example.com'],
   platformAuth: safePlatformAuth,
   contentSafety: safeContentSafety,
   objectStore: {
@@ -173,6 +213,7 @@ assert.throws(() => createGoodsCommServer({
 assert.throws(() => createGoodsCommServer({
   environment: 'prod',
   store: safeCustomStore,
+  allowedOrigins: ['https://goods-comm.example.com'],
   platformAuth: safePlatformAuth,
   objectStore: safeObjectStore,
   contentSafetyProvider: 'mock'
@@ -181,6 +222,7 @@ assert.throws(() => createGoodsCommServer({
 assert.throws(() => createGoodsCommServer({
   environment: 'pre',
   store: safeCustomStore,
+  allowedOrigins: ['https://pre.goods-comm.example.com'],
   platformAuth: safePlatformAuth,
   objectStore: safeObjectStore,
   contentSafety: safeContentSafety,
@@ -190,6 +232,7 @@ assert.throws(() => createGoodsCommServer({
 assert.throws(() => createGoodsCommServer({
   environment: 'prod',
   store: safeCustomStore,
+  allowedOrigins: ['https://goods-comm.example.com'],
   platformAuth: safePlatformAuth,
   objectStore: safeObjectStore,
   contentSafety: safeContentSafety,
@@ -201,6 +244,7 @@ const server = createGoodsCommServer({
   environment: 'prod',
   store: safeCustomStore,
   storeType: 'custom',
+  allowedOrigins: ['https://goods-comm.example.com'],
   objectStore: safeObjectStore,
   platformAuth: safePlatformAuth,
   contentSafety: safeContentSafety,

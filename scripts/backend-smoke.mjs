@@ -1147,6 +1147,7 @@ async function assertProtectedSecurityHeaders() {
   const protectedRuntime = await startGoodsCommServer({
     port: 0,
     environment: 'pre',
+    allowedOrigins: ['https://pre.goods-comm.example.com'],
     storeType: 'file',
     statePath: protectedStatePath,
     allowUnsafeFileStore: true,

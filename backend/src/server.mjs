@@ -40,7 +40,11 @@ export function createGoodsCommServer(options = {}) {
     trustedProxyIps: options.trustedProxyIps ?? process.env.GOODS_COMM_TRUSTED_PROXY_IPS,
     now: options.now
   })
-  const corsPolicy = createCorsPolicy(options.allowedOrigins ?? process.env.GOODS_COMM_ALLOWED_ORIGINS)
+  const corsPolicy = createCorsPolicy(options.allowedOrigins ?? process.env.GOODS_COMM_ALLOWED_ORIGINS, {
+    environment: deploymentEnv,
+    allowUnsafeWildcard: options.allowUnsafeCorsWildcard ||
+      process.env.GOODS_COMM_ALLOW_WILDCARD_CORS_IN_PROTECTED_ENV === 'true'
+  })
   const platformAuth = options.platformAuth || createPlatformAuthResolver({
     ...options,
     environment: deploymentEnv
@@ -1355,16 +1359,22 @@ function getTraceId(request) {
   return `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-function createCorsPolicy(allowedOrigins = '') {
+function createCorsPolicy(allowedOrigins = '', options = {}) {
   const origins = Array.isArray(allowedOrigins)
     ? allowedOrigins
     : String(allowedOrigins || '').split(',')
   const normalizedOrigins = origins
     .map((origin) => normalizeOrigin(origin))
     .filter(Boolean)
+  const wildcard = normalizedOrigins.length === 0 || normalizedOrigins.includes('*')
+  const environment = normalizeDeploymentEnv(options.environment || process.env.GOODS_COMM_ENV || 'dev')
+
+  if (PROTECTED_ENVIRONMENTS.includes(environment) && wildcard && !options.allowUnsafeWildcard) {
+    throw new Error(`${environment} 环境不能使用 CORS wildcard，请配置 GOODS_COMM_ALLOWED_ORIGINS`)
+  }
 
   return {
-    wildcard: normalizedOrigins.length === 0 || normalizedOrigins.includes('*'),
+    wildcard,
     allowedOrigins: new Set(normalizedOrigins.filter((origin) => origin !== '*'))
   }
 }

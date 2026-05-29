@@ -85,7 +85,7 @@ Useful environment variables:
 - `GOODS_COMM_MAP_PROVIDER`: `mock` or `tencent`. Defaults to `mock` in `dev/test` and `tencent` in `pre/prod`.
 - `GOODS_COMM_MAP_REGION_DATASET`: JSON region-grid dataset used to map Tencent administrative/street results to internal community and street IDs; `pre/prod` deploy preflight requires a non-empty JSON array.
 - `GOODS_COMM_TENCENT_MAP_KEY`, `GOODS_COMM_TENCENT_MAP_GEOCODER_URL`: Tencent Maps WebService key and reverse-geocoder endpoint.
-- `GOODS_COMM_ALLOWED_ORIGINS`: comma-separated browser origins allowed by CORS, for example `https://mini.example.com,https://h5.example.com`. Unset means `*` for local development.
+- `GOODS_COMM_ALLOWED_ORIGINS`: comma-separated browser origins allowed by CORS, for example `https://mini.example.com,https://h5.example.com`. Unset means `*` for local development, but `pre/prod` reject empty or wildcard origins unless the unsafe emergency override is explicitly enabled.
 
 The backend adds baseline HTTP hardening headers to JSON, preflight, error, and asset responses: `x-content-type-options: nosniff`, `x-frame-options: DENY`, `referrer-policy: no-referrer`, and `permissions-policy: geolocation=(), camera=(), microphone=()`. `pre/prod` responses also include HSTS. Keep cloud gateway, CDN, or WAF configuration from stripping these headers. When the service is behind CloudBase, CDN, WAF, or a load balancer, set `GOODS_COMM_TRUSTED_PROXY_IPS` to that trusted hop only; never trust arbitrary `x-forwarded-for` from the public internet.
 
@@ -95,7 +95,7 @@ The preferred production target is WeChat CloudBase / cloud run when mini-progra
 
 The mini-program should set `VITE_API_BASE_URL` to the deployed HTTPS gateway.
 
-Set `GOODS_COMM_ALLOWED_ORIGINS` to the deployed legal request domains when exposing the service to browser or H5 clients. Requests without an `Origin` header, such as mini-program native requests or server-to-server checks, are still accepted.
+Set `GOODS_COMM_ALLOWED_ORIGINS` to the deployed legal request domains when exposing the service to browser or H5 clients. `pre/prod` startup rejects empty or `*` CORS origins by default; requests without an `Origin` header, such as mini-program native requests or server-to-server checks, are still accepted.
 
 All deployments must use one of the four environment files as the source of required values:
 
