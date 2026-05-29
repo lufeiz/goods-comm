@@ -33,7 +33,11 @@ export default {
   emits: ['open'],
   computed: {
     coverImage() {
-      return this.item.images?.[0]?.url || this.item.images?.[0] || ''
+      const image = this.item.images?.find((candidate) =>
+        typeof candidate === 'string' ? candidate : candidate?.url
+      )
+
+      return typeof image === 'string' ? image : image?.url || ''
     },
     coverClass() {
       return `tone-${this.item.coverTone || 'sage'}`

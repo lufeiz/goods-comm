@@ -36,6 +36,9 @@ for (const tabPath of requiredTabBarPages) {
 }
 
 const pageSources = new Map()
+const componentSources = new Map([
+  ['components/GoodCard.vue', await readFile(join(root, 'src/components/GoodCard.vue'), 'utf8')]
+])
 
 for (const pagePath of pagePaths) {
   const source = await readFile(pageFile(pagePath), 'utf8')
@@ -172,6 +175,20 @@ function verifyPageContracts() {
     !opsSource.includes('Array.isArray(queue.notificationDeliveries)'),
     'pages/ops/ops notification fallback must not reference queue outside its block scope'
   )
+
+  for (const [path, source] of [
+    ['src/components/GoodCard.vue', componentSources.get('components/GoodCard.vue')],
+    ['src/pages/detail/detail.vue', pageSources.get('pages/detail/detail')]
+  ]) {
+    assert.ok(
+      source.includes('typeof candidate === \'string\' ? candidate : candidate?.url'),
+      `${path} must ignore anonymized image objects with empty URLs and fall back to the tone cover`
+    )
+    assert.ok(
+      !source.includes('images?.[0]?.url || this.item') && !source.includes('images?.[0]?.url || this.item?.images?.[0]'),
+      `${path} must not use the first image object itself as an image src`
+    )
+  }
 }
 
 function verifyTemplateHandlers(pagePath, source) {

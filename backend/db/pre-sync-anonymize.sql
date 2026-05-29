@@ -83,11 +83,13 @@ SET
 
 UPDATE item_images
 SET
-  url = CASE
-    WHEN storage_key <> '' THEN '/assets/' || storage_key
-    ELSE '/assets/pre-image-placeholder.jpg'
-  END,
-  original_name = '';
+  url = '',
+  storage_key = '',
+  original_name = '',
+  mime_type = '',
+  size_bytes = 0,
+  checksum = '',
+  moderation_trace_id = '';
 
 UPDATE moderation_events
 SET title = '';
