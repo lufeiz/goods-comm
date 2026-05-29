@@ -1,0 +1,193 @@
+name: goods-comm strict release gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Environment smoke target after strict gate passes
+        required: true
+        default: pre
+        type: choice
+        options:
+          - pre
+          - prod
+          - both
+      run_deployed_smoke:
+        description: Run deployed health and main-flow smoke after strict gate; required when deploying backend
+        required: true
+        default: true
+        type: boolean
+      run_backend_deploy:
+        description: Deploy backend after strict gate and before deployed smoke
+        required: true
+        default: false
+        type: boolean
+      backend_provider:
+        description: Backend deploy provider
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - cloudbase
+          - tencent
+      skip_db_migrate:
+        description: Skip database migration during backend deploy
+        required: true
+        default: false
+        type: boolean
+      allow_prod_deploy:
+        description: Allow backend deployment to prod
+        required: true
+        default: false
+        type: boolean
+      allow_prod_mutation:
+        description: Allow prod main-flow smoke to write production test data
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  strict-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      GOODS_COMM_SMOKE_SELLER_CODE: ${{ secrets.GOODS_COMM_SMOKE_SELLER_CODE }}
+      GOODS_COMM_SMOKE_BUYER_CODE: ${{ secrets.GOODS_COMM_SMOKE_BUYER_CODE }}
+      GOODS_COMM_SMOKE_LATITUDE: ${{ secrets.GOODS_COMM_SMOKE_LATITUDE }}
+      GOODS_COMM_SMOKE_LONGITUDE: ${{ secrets.GOODS_COMM_SMOKE_LONGITUDE }}
+      GOODS_COMM_SMOKE_APPROVED_IMAGE_URL: ${{ secrets.GOODS_COMM_SMOKE_APPROVED_IMAGE_URL }}
+      GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION: ${{ inputs.allow_prod_mutation }}
+      TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
+      TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
+      TENCENTCLOUD_SESSION_TOKEN: ${{ secrets.TENCENTCLOUD_SESSION_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Python for Tencent CLI
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install release toolchain
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          npm install -g @cloudbase/cli
+          python -m pip install --upgrade pip
+          python -m pip install --user tccli
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Materialize protected env overrides
+        shell: bash
+        env:
+          GOODS_COMM_PRE_ENV_LOCAL: ${{ secrets.GOODS_COMM_PRE_ENV_LOCAL }}
+          GOODS_COMM_PROD_ENV_LOCAL: ${{ secrets.GOODS_COMM_PROD_ENV_LOCAL }}
+        run: |
+          if [ -n "${GOODS_COMM_PRE_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PRE_ENV_LOCAL}" > .env.pre.local
+          fi
+          if [ -n "${GOODS_COMM_PROD_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PROD_ENV_LOCAL}" > .env.prod.local
+          fi
+
+      - name: Run strict release gate
+        id: strict
+        continue-on-error: true
+        run: npm run verify:release:strict
+
+      - name: Refresh strict readiness artifacts
+        if: always()
+        run: npm run audit:production-readiness:strict
+
+      - name: Require deployed smoke after backend deploy
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && !inputs.run_deployed_smoke }}
+        run: |
+          echo "Backend deployment requires run_deployed_smoke=true so health and main-flow smoke run after deploy."
+          exit 1
+
+      - name: Require prod deploy opt-in
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && !inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        run: |
+          echo "Backend deployment to prod requires allow_prod_deploy=true."
+          exit 1
+
+      - name: Deploy pre backend
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
+        shell: bash
+        run: |
+          args=(scripts/deploy-backend.mjs --env pre --provider "${{ inputs.backend_provider }}" --execute)
+          if [ "${{ inputs.skip_db_migrate }}" = "true" ]; then
+            args+=(--skip-db-migrate)
+          else
+            export GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre
+          fi
+          export GOODS_COMM_DEPLOY_CONFIRM=deploy-pre
+          node "${args[@]}"
+
+      - name: Deploy prod backend
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        shell: bash
+        run: |
+          args=(scripts/deploy-backend.mjs --env prod --provider "${{ inputs.backend_provider }}" --execute)
+          if [ "${{ inputs.skip_db_migrate }}" = "true" ]; then
+            args+=(--skip-db-migrate)
+          else
+            export GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod
+          fi
+          export GOODS_COMM_DEPLOY_CONFIRM=deploy-prod
+          node "${args[@]}"
+
+      - name: Run pre deployed health smoke
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_deployed_smoke && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
+        run: npm run smoke:deployed:pre
+
+      - name: Run pre deployed main-flow smoke
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_deployed_smoke && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
+        run: npm run smoke:deployed:pre:main
+
+      - name: Run prod deployed health smoke
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_deployed_smoke && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        run: npm run smoke:deployed:prod
+
+      - name: Require prod mutation opt-in for prod main-flow smoke
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_deployed_smoke && !inputs.allow_prod_mutation && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        run: |
+          echo "Prod deployed main-flow smoke requires allow_prod_mutation=true because it writes production test data."
+          exit 1
+
+      - name: Run prod deployed main-flow smoke
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_deployed_smoke && inputs.allow_prod_mutation && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        run: npm run smoke:deployed:prod:main
+
+      - name: Refresh readiness artifacts
+        if: always()
+        run: npm run audit:production-readiness
+
+      - name: Upload readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-readiness-audit
+          path: |
+            docs/deployment-readiness-audit.md
+            docs/deployment-readiness-audit.json
+            docs/deployment-readiness-audit-strict.md
+            docs/deployment-readiness-audit-strict.json
+
+      - name: Fail when strict gate failed
+        if: ${{ steps.strict.outcome != 'success' }}
+        run: exit 1

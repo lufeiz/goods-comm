@@ -1,0 +1,112 @@
+name: goods-comm prod-to-pre sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Run mode
+        required: true
+        default: plan
+        type: choice
+        options:
+          - plan
+          - execute
+      confirm_sync:
+        description: Type sync-prod-to-pre to execute manual sync
+        required: false
+        default: ''
+        type: string
+      run_pre_smoke:
+        description: Run deployed pre health smoke after successful sync
+        required: true
+        default: true
+        type: boolean
+      run_pre_main_smoke:
+        description: Run deployed pre main-flow smoke after successful sync; requires smoke login codes and coordinates
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    - cron: '0 18 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: goods-comm-prod-to-pre-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      GOODS_COMM_SYNC_DUMP_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.dump
+      GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
+      GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
+      GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event_name == 'schedule' && 'true' || inputs.run_pre_smoke }}
+      GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE == 'true' && 'true' || inputs.run_pre_main_smoke }}
+      GOODS_COMM_SYNC_CONFIRM: ${{ inputs.confirm_sync }}
+      GOODS_COMM_SYNC_AUTO_ENABLED: ${{ vars.GOODS_COMM_SYNC_AUTO_ENABLED }}
+      GOODS_COMM_SMOKE_SELLER_CODE: ${{ secrets.GOODS_COMM_SMOKE_SELLER_CODE }}
+      GOODS_COMM_SMOKE_BUYER_CODE: ${{ secrets.GOODS_COMM_SMOKE_BUYER_CODE }}
+      GOODS_COMM_SMOKE_LATITUDE: ${{ secrets.GOODS_COMM_SMOKE_LATITUDE }}
+      GOODS_COMM_SMOKE_LONGITUDE: ${{ secrets.GOODS_COMM_SMOKE_LONGITUDE }}
+      GOODS_COMM_SMOKE_APPROVED_IMAGE_URL: ${{ secrets.GOODS_COMM_SMOKE_APPROVED_IMAGE_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install PostgreSQL client tools
+        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation == 'execute') || (github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_AUTO_ENABLED == 'true') }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Materialize protected env overrides
+        shell: bash
+        env:
+          GOODS_COMM_PRE_ENV_LOCAL: ${{ secrets.GOODS_COMM_PRE_ENV_LOCAL }}
+          GOODS_COMM_PROD_ENV_LOCAL: ${{ secrets.GOODS_COMM_PROD_ENV_LOCAL }}
+        run: |
+          if [ -n "${GOODS_COMM_PRE_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PRE_ENV_LOCAL}" > .env.pre.local
+          fi
+          if [ -n "${GOODS_COMM_PROD_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PROD_ENV_LOCAL}" > .env.prod.local
+          fi
+
+      - name: Print sync plan
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'plan' }}
+        run: npm run sync:prod-to-pre:plan
+
+      - name: Execute manual sync
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'execute' }}
+        run: npm run sync:prod-to-pre
+
+      - name: Execute scheduled auto sync
+        if: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_AUTO_ENABLED == 'true' }}
+        run: npm run sync:prod-to-pre:auto
+
+      - name: Skip disabled scheduled sync
+        if: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_AUTO_ENABLED != 'true' }}
+        run: echo "Scheduled prod-to-pre sync skipped because repository variable GOODS_COMM_SYNC_AUTO_ENABLED is not true."
+
+      - name: Upload sync audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-to-pre-sync-audit
+          path: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
+          if-no-files-found: ignore

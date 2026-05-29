@@ -1,0 +1,32 @@
+{
+  "name": "邻里旧货",
+  "appid": "__UNI__GOODS_COMM",
+  "description": "同社区、同街道二手物品自由买卖小程序",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": true,
+      "es6": true
+    },
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于判断你是否在同社区或同街道交易范围内"
+      }
+    },
+    "requiredPrivateInfos": [
+      "getLocation",
+      "chooseLocation"
+    ]
+  },
+  "mp-alipay": {
+    "appid": "",
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于判断你是否在同社区或同街道交易范围内"
+      }
+    }
+  }
+}

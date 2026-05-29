@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "envId": "REPLACE_WITH_WECHAT_CLOUDBASE_ENV_ID",
+  "framework": {
+    "name": "goods-comm-backend",
+    "plugins": {
+      "server": {
+        "use": "@cloudbase/framework-plugin-node",
+        "inputs": {
+          "entry": "backend/src/server.mjs",
+          "name": "goods-comm-backend",
+          "path": "/",
+          "platform": "container"
+        }
+      }
+    }
+  }
+}

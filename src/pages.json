@@ -1,0 +1,76 @@
+{
+  "pages": [
+    {
+      "path": "pages/home/home",
+      "style": {
+        "navigationBarTitleText": "邻里旧货"
+      }
+    },
+    {
+      "path": "pages/publish/publish",
+      "style": {
+        "navigationBarTitleText": "发布物品"
+      }
+    },
+    {
+      "path": "pages/orders/orders",
+      "style": {
+        "navigationBarTitleText": "交易"
+      }
+    },
+    {
+      "path": "pages/mine/mine",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/detail/detail",
+      "style": {
+        "navigationBarTitleText": "物品详情"
+      }
+    },
+    {
+      "path": "pages/ops/ops",
+      "style": {
+        "navigationBarTitleText": "运营控制台"
+      }
+    },
+    {
+      "path": "pages/legal/legal",
+      "style": {
+        "navigationBarTitleText": "协议与隐私"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "邻里旧货",
+    "navigationBarBackgroundColor": "#f5f7f2",
+    "backgroundColor": "#f5f7f2"
+  },
+  "tabBar": {
+    "color": "#6e7c73",
+    "selectedColor": "#1f7a4d",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "集市"
+      },
+      {
+        "pagePath": "pages/publish/publish",
+        "text": "发布"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "交易"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
+    ]
+  }
+}

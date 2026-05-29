@@ -1,0 +1,257 @@
+# goods-comm 项目客观判断报告
+
+生成日期：2026-05-29  
+项目路径：`/Users/lufeiz/Downloads/项目/codexProject/goods-comm`  
+评估方法：基于当前工作目录代码、文档、脚本、已有生产审计产物、本轮本地轻量验证，以及 4 个只读 agent 从产品、前端、后端、测试发布四个视角交叉评分。本轮已初始化 Git 仓库并提交首个项目快照；由于历史从本次快照开始，本文仍主要基于当前文件状态判断。
+
+## 1. 一句话结论
+
+`goods-comm` 是一个方向清楚、主链路较完整、工程化程度明显高于普通页面 Demo 的社区 LBS 二手交易 MVP。它已经具备端侧页面、LBS 领域规则、BFF 契约、Node HTTP 后端、PostgreSQL schema、四环境配置、风控/运营雏形、发布门禁和较多 smoke 验证。
+
+但从第一性原理看，它还不能被判断为“可生产上线”的真实交易产品。交易产品成立的关键不是页面能点通，而是可信身份、可信位置、可信数据、可信审核、可信通知、可信部署和可验证履约都在真实环境里闭环。当前普通生产审计仍为 `BLOCKED (46 blockers, 9 warnings)`，严格审计仍为 `BLOCKED (48 blockers, 7 warnings)`。
+
+最终判断：
+
+```text
+可演示，可继续迭代，可做封闭试点；不可直接生产上线承载真实交易。
+```
+
+综合评分：`61/100`。这个分数不是简单平均，而是把“生产可信度”作为交易产品的硬门槛加权后的结果。
+
+## 2. 第一性原理拆解
+
+一个“同社区 / 同街道二手交易”产品至少要满足 8 个底层条件：
+
+1. 有真实供给：卖家能发布真实商品，商品有图片、审核、状态和可见性控制。
+2. 有真实需求：买家能浏览、搜索、筛选、查看详情并发起交易。
+3. 有空间匹配：系统能判断买卖双方是否在允许范围内，且不能信任客户端伪造位置。
+4. 有可信身份：用户身份能跨设备、跨会话稳定识别，能注销、封禁、审计。
+5. 有可信交易记录：商品、交易、评价、举报、通知和位置审计不能只存在本机。
+6. 有安全与合规边界：联系方式、精确位置、违规内容、协议确认和运营操作都要可控。
+7. 有履约与争议处理：线下交易要有状态机、证据、举报、争议、通知和客服处理路径。
+8. 有可交付运维能力：四环境隔离、部署、数据库迁移、数据同步、监控、发布门禁和回归验证能跑通。
+
+当前项目在第 1、2、4、5、6、7 点上已经有较完整代码雏形；第 3 点有正确的服务端裁决方向，但缺真实腾讯地图 Key、社区/街道网格和生产验证；第 8 点有脚本和审计框架，但真实云资源、工具链和部署后 smoke 仍未闭环。
+
+## 3. 评分总览
+
+| 视角 | 分数 | 判断 |
+| --- | ---: | --- |
+| 产品与用户价值 | 58/100 | 近场二手交易场景真实，主链路较完整；商业模式、冷启动、线下履约、用户增长和运营成本没有验证。 |
+| 前端 / 小程序工程 | 76/100 | 页面、service、domain、平台封装和多端构建较完整；状态分散、页面逻辑重复、真机矩阵不足；本轮发现的运营台通知 fallback 异常路径已修复并加了页面契约防回归。 |
+| 后端 / 数据 / 安全 | 62/100 | 后端边界、schema、幂等、适配器、请求体上限、基础安全响应头、客户端基础限流、可信代理白名单、运营登录锁定和 fail-closed 意识较好；真实 DB、凭据、边缘 WAF、分布式限流和增量仓储不足。 |
+| 测试 / 发布 / 运维 | 55/100 | release gate、artifact smoke、部署 plan 和 strict workflow 较完整；真实部署后 smoke、E2E、工具链和真实云资源仍 blocked，普通门禁容易被误读为上线门禁。 |
+| 加权综合 | 61/100 | 适合作为作品集、内部 MVP、pre 环境闭环和小范围试点，不适合作为已上线产品对外承诺。 |
+
+按使用场景拆开看更准确：
+
+| 使用场景 | 判断 | 成熟度 |
+| --- | --- | ---: |
+| 作品集 / 技术展示 | 有亮点，能展示产品完整度和工程推进能力 | 82/100 |
+| 内部 MVP 验证 | 可以继续投入，适合做封闭试点 | 72/100 |
+| 商业化产品验证 | 需要真实社区资源、冷启动和收入假设 | 56/100 |
+| 真实生产上线 | 当前不建议上线 | 50/100 |
+
+## 4. 关键证据
+
+| 证据 | 说明 |
+| --- | --- |
+| `README.md:1-18` | 项目定位为微信、支付宝通用社区二手交易小程序，已列出浏览、发布、LBS、交易、运营、协议和 BFF 契约。 |
+| `src/pages.json:2-75` | 页面包含集市、发布、交易、我的、详情、运营控制台、协议与隐私页，产品骨架不是空壳。 |
+| `src/config/app.js:21-32` | 默认同社区 1200m、同街道 4000m，交易范围有集中配置。 |
+| `src/domain/eligibility.js:16-96` | 同社区 / 同街道 + 距离的 LBS 资格判断被抽成纯领域逻辑，是项目的核心业务资产。 |
+| `src/bff/handler.js:120-252` | BFF 契约覆盖登录、上传、商品、交易、评价、通知、举报、运营、审核和争议处理。 |
+| `src/bff/handler.js:260-334` | 主要写请求有 `Idempotency-Key` 机制，弱网重试和重复点击风险有处理意识。 |
+| `src/services/goods.js:51-55` / `src/bff/handler.js:672-690` | 端侧无有效坐标时不请求远端列表；本地和远端公开商品列表复用 LBS 交易资格规则，只返回当前位置可交易范围内的在线商品。 |
+| `backend/src/server.mjs:19-48` | Node HTTP 后端装配 state store、平台登录、对象存储、内容安全、区域解析、平台通知和运营鉴权。 |
+| `backend/src/server.mjs:84-125` | `/health` 和 `/health/ready` 能暴露运行环境与依赖状态，适合部署后验收。 |
+| `backend/src/server.mjs:84-94` | 后端在进入业务 handler 前执行客户端基础限流，超频请求返回 `429 TOO_MANY_REQUESTS`。 |
+| `backend/src/server.mjs:1188-1254` / `scripts/backend-smoke.mjs:934-1024` | 后端只在直连来源命中 `GOODS_COMM_TRUSTED_PROXY_IPS` 时信任 `x-forwarded-for`，并用 smoke 覆盖不信任伪造头和可信代理转发两种限流路径。 |
+| `backend/src/server.mjs:1320-1354` / `scripts/backend-smoke.mjs` | JSON、OPTIONS 和资产响应已统一带 `x-content-type-options`、`x-frame-options`、`referrer-policy`、`permissions-policy`，pre/prod 还会加 HSTS；后端 smoke 已断言这些响应头。 |
+| `backend/src/server.mjs:1008-1041` | 后端在 JSON / multipart 解析前执行请求体大小上限，超限请求返回 `413 PAYLOAD_TOO_LARGE`。 |
+| `backend/db/schema.sql:5-260` | PostgreSQL schema 覆盖用户、会话、幂等、商品、图片、交易、争议、评价、位置审计、举报、通知。 |
+| `package.json:7-74` | 三端构建、四环境构建、后端构建、smoke、部署 plan、生产审计和 release gate 已脚本化。 |
+| `scripts/verify-release-gate.mjs:23-31` | 只有 `release` profile 执行 strict check；quick/full profile 只生成生产审计报告，不能等同于上线放行。 |
+| `.github/workflows/ci.yml:28-29` / `.github/workflows/release-strict.yml:107-193` | 默认 CI 跑 `verify:release`，真实上线前 strict gate、部署后 smoke、prod opt-in 在手动 workflow 中。 |
+| `docs/environment-matrix.md:7-87` | dev/test/pre/prod 四环境原则、关键变量和 pre/prod 保护规则写得较完整。 |
+| `docs/deployment-readiness-audit.md:5` | 普通生产审计仍为 `BLOCKED (46 blockers, 9 warnings)`。 |
+| `docs/deployment-readiness-audit-strict.md:5` | 严格生产审计仍为 `BLOCKED (48 blockers, 7 warnings)`。 |
+| `src/pages/ops/ops.vue:452-479` / `scripts/page-contract-smoke.mjs:134-173` | 运营台通知投递 fallback 已改为使用外层 `moderationQueue`，页面契约 smoke 也禁止再出现作用域外 `queue.notificationDeliveries` 引用。 |
+
+## 5. 项目优势
+
+### 5.1 产品主链路完整
+
+项目已经覆盖浏览、搜索、发布、详情、LBS 校验、交易意向、卖家确认、完成 / 取消 / 争议、评价、举报、通知、账号注销、用户封禁和运营处理。对 MVP 来说，这不是单页 Demo，而是有完整交易流程意识的产品原型。
+
+### 5.2 LBS 差异化清楚
+
+它不是泛二手平台，而是把交易限定在同社区 / 同街道，用近场位置降低信任成本和履约成本。`src/domain/eligibility.js` 的纯函数化设计也让这部分规则能同时用于交易准入和本地 / 远端列表展示，降低“看得到但不能交易”的产品割裂。
+
+### 5.3 后端与数据边界已经成型
+
+项目不再只依赖端侧 localStorage。它已经有 BFF handler、Fetch adapter、Node HTTP 后端、文件 store、PostgreSQL schema、PostgreSQL store、请求体大小上限、基础安全响应头、客户端基础限流、可信代理白名单、运营登录失败锁定和后端构建产物。生产依赖虽然未落地，但系统边界已经从“页面能跑”推进到“后端契约可验证”。
+
+### 5.4 风控和运营意识较强
+
+登录、协议确认、内容安全、举报、封禁、争议、运营审计、通知 outbox、通知重试和端侧遥测都有实现或脚本支撑。对交易类产品，这是正确方向。
+
+### 5.5 发布门禁比普通 MVP 更完整
+
+`verify:release` / `verify:release:quick` / `verify:release:strict` 把语法检查、smoke、构建、页面契约、产物检查、部署 plan、同步 plan 和生产审计串成同一入口。构建产物审计显示后端 artifact 和 pre/prod 三端前端 artifact 已通过完整性检查。
+
+需要注意：`verify:release` 是发布候选门禁，当前会生成生产审计报告但不会因为占位 pre/prod 资源直接失败；真正上线应以 `verify:release:strict`、`audit:production-readiness:strict-check`、部署后 health smoke 和主链路 smoke 为准。
+
+### 5.6 四环境和数据同步意识明确
+
+文档明确 dev/test/pre/prod 的职责，pre/prod 要保持同拓扑但不同数据库和对象存储；prod 到 pre 同步有计划、锁、审计和脱敏 SQL。这是生产化项目才会考虑的问题。
+
+## 6. 项目短板
+
+### 6.1 生产环境事实没有落地
+
+这是最大短板。pre/prod 仍缺真实 API 域名、数据库连接串、COS/CDN、腾讯地图 Key、平台 AppID/AppSecret/支付宝私钥、订阅消息模板、session/ops secret、运营账号、CloudBase/Tencent 部署配置、非交互云凭据，以及 `cloudbase/tcb`、`docker`、`tccli`、`psql`、`pg_dump`、`pg_restore` 等工具链。
+
+所以当前只能证明“生产化方向和门禁设计正确”，不能证明“生产环境可用”。
+
+### 6.2 商业模式和冷启动没有验证
+
+社区二手交易最大难点不是写交易状态机，而是本地供给密度、用户信任、持续活跃和运营成本。当前代码没有明确佣金、广告、会员、物业合作、校园服务或本地服务撮合等收入假设，也没有真实社区冷启动策略。
+
+### 6.3 真实身份和真实位置未生产验证
+
+代码已有微信/支付宝平台身份边界和腾讯地图解析适配器，但没有真实 AppID/AppSecret、支付宝私钥、腾讯地图 Key 和正式社区/街道网格数据。LBS 是本项目核心卖点，这部分没有真实验证前，产品价值不能按上线标准打高分。
+
+### 6.4 PostgreSQL store 仍是桥接模式
+
+`backend/src/postgres-state-store.mjs` 已接规范化表，但当前仍偏 snapshot rewrite：读取整体状态，再按表重写，有 `GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS=20000` 保护。对迁移和 smoke 够用，对真实高并发交易、部分失败恢复、增量审计和规模增长不够理想。
+
+### 6.5 核心模块过大，后续维护风险偏高
+
+当前关键文件行数偏大：
+
+```text
+src/bff/handler.js                    2834
+backend/src/postgres-state-store.mjs  2201
+src/services/goods.js                 1702
+backend/src/server.mjs                1424
+src/pages/ops/ops.vue                  947
+```
+
+业务规则、状态机、序列化、鉴权、审核、通知和运营逻辑集中在大文件里，短期推进快，长期多人协作和回归风险会升高。
+
+### 6.6 测试覆盖仍偏 smoke
+
+当前 smoke 覆盖面很广，这是优点；但还缺正式测试分层、覆盖率、页面渲染级 E2E、微信 / 支付宝开发者工具自动化、真机定位权限矩阵、真实平台登录 code、真实图片审核回调、真实订阅消息送达和真实 PostgreSQL 连接主链路。
+
+本轮实际执行 `npm run smoke:pages` 通过，证明页面注册、tabBar 和关键页面 service 接入的静态契约仍成立；同时刷新 `npm run audit:production-readiness`，当前仍是 `BLOCKED (46 blockers, 9 warnings)`。
+
+### 6.7 发布门禁口径容易被误读
+
+`verify:release` 适合日常 CI 和发布候选检查，但它在非 release profile 下只生成生产就绪报告；如果团队只看 CI 绿色，就可能误以为已经可上线。真实上线必须跑 strict gate，并且 strict gate 还要求真实 API、真实部署后 smoke 输入、真实云工具链和密钥。
+
+### 6.8 公网安全硬化还不完整
+
+后端已有 CORS、请求体上限、基础安全响应头、单进程基础限流、可信代理 `x-forwarded-for` 白名单、运营登录失败锁定和会话 token hash，这是正确基础；但公网生产还缺真实代理 IP / 网段配置、分布式限流、用户级 / 接口级配额、WAF/网关策略和云侧攻击防护。当前基础限流不能替代网关级防护。
+
+### 6.9 合规和履约仍不完整
+
+平台目前记录交易意向、状态、评价和争议，但支付、验货、线下安全、纠纷证据和担保履约仍主要在线下完成。用户协议 / 隐私政策也需要法务审核和平台后台配置后才能算正式闭环。
+
+### 6.10 用户体验还偏工程化
+
+登录、协议确认、实时 GPS、LBS 校验、卖家确认、一次性联系码等设计是安全上合理的，但对用户来说步骤较重。运营控制台和部分复杂页面信息密度较高，还不是成熟设计系统。
+
+### 6.11 页面异常路径已修复，但仍需 E2E
+
+本轮已修复 `src/pages/ops/ops.vue:452-479` 的通知投递 fallback 作用域问题：运营队列结果提升为外层 `moderationQueue`，通知投递接口失败时可回退到队列里的 `notificationDeliveries`，或安全返回空数组。`scripts/page-contract-smoke.mjs:134-173` 增加了静态契约，防止再次引用作用域外 `queue.notificationDeliveries`。
+
+这个修复降低了运营台异常路径风险，但页面层仍需要更完整的渲染级 E2E 和接口失败模拟，而不能只依赖主路径 smoke。
+
+## 7. 多 agent 交叉评分
+
+本轮使用 4 个只读 agent 分别从产品、前端、后端、测试发布视角评估。四个分数不一致是正常的，因为它们评估的是不同目标函数。
+
+| Agent 视角 | 本轮评分 | 核心结论 |
+| --- | ---: | --- |
+| 产品与用户价值 | 58/100 | LBS 差异化和用户闭环成立；冷启动、商业模式、真实社区运营、履约成本和收入假设未验证。 |
+| 前端 / 小程序工程 | 76/100 | 页面/service/domain/BFF 边界清楚，三端构建和平台封装较完整；状态分散、页面逻辑重复、真机验证不足；本轮发现并修复运营台通知 fallback 异常路径 bug。 |
+| 后端 / 数据 / 安全 | 62/100 | HTTP 后端、BFF、schema、幂等、会话 hash、请求体上限、基础安全响应头、基础限流、可信代理白名单和 fail-closed 方向较好；真实 DB、凭据、分布式限流、WAF、增量仓储不足。 |
+| 测试 / 发布 / 生产就绪 | 55/100 | npm scripts、smoke、release gate 和 strict workflow 完整度较好；真实部署、部署后 smoke、工具链、E2E 和真机矩阵仍 blocked，且普通 CI 绿色不能代表可上线。 |
+
+交叉后的客观判断：
+
+1. 如果目标是作品集或内部技术展示，这个项目有明确亮点。
+2. 如果目标是 MVP 继续迭代，应该继续做，但先做单社区 / 单园区封闭试点。
+3. 如果目标是真实生产上线，当前不应上线。
+4. 如果目标是商业化产品，需要先验证冷启动、供给密度、留存、交易完成率和收入假设。
+5. 如果目标是团队协作长期维护，应该继续拆分大模块，并补页面 E2E 和真机矩阵。
+
+## 8. 是否值得继续投入
+
+值得继续投入，但目标要从“直接上线”降到“真实 pre 环境闭环 + 单社区试点”。
+
+原因：
+
+1. 差异化成立：近场二手交易有明确用户问题，LBS 规则不是装饰功能。
+2. 工程底座可延续：domain、BFF、backend、schema、smoke、release gate 都有可复用资产。
+3. 最大风险不是方向错，而是生产事实未补齐和商业验证未开始。
+4. 继续投入的下一步可以很具体，不需要推倒重来。
+
+不建议继续投入的情况：
+
+1. 如果预期是短期直接上线收费，当前风险过高。
+2. 如果没有真实社区、校园、园区或物业资源，冷启动很难靠代码解决。
+3. 如果不准备补真实后端、数据库、地图、对象存储、内容安全和平台登录，这个项目只能停留在 Demo。
+
+## 9. 推荐路线图
+
+### 阶段一：真实 pre 环境闭环
+
+1. 替换 `.env.pre.local` 中所有占位配置：真实 HTTPS API、PostgreSQL/TencentDB、COS/CDN、腾讯地图 Key、平台 AppID/AppSecret、session/ops secret、订阅消息模板、运营账号。
+2. 执行 `backend/db/schema.sql` 到真实 pre 数据库。
+3. 部署 `dist/backend` 到 CloudBase 或腾讯云。
+4. 跑通 `/health`、`/health/ready`、`npm run smoke:deployed:pre`。
+5. 用真实 seller/buyer 平台 code 跑通 `npm run smoke:deployed:pre:main`。
+
+### 阶段二：单社区 / 单园区试点
+
+1. 选择 1-2 个真实社区、园区或校园。
+2. 准备真实社区/街道网格数据。
+3. 记录核心指标：有效商品数、发布转化率、交易意向率、卖家确认率、完成率、举报率、7 日留存。
+4. 观察用户是否愿意承担“登录 + 定位 + 卖家确认”的交易摩擦。
+
+### 阶段三：工程结构收敛
+
+1. 给运营台补渲染级异常路径 E2E，覆盖通知投递接口失败、队列 fallback 和用户风控失败分支。
+2. 拆分 `src/bff/handler.js`：商品、交易、举报、通知、运营分模块。
+3. 拆分 `src/services/goods.js`：商品 service、交易 service、通知 service、评价/争议 service。
+4. 把 PostgreSQL store 从 snapshot rewrite 改为按聚合根增量 SQL 写入。
+5. 增加领域单测、BFF 契约测试、PostgreSQL 集成测试、页面 E2E、真机权限矩阵。
+
+### 阶段四：生产上线准入
+
+只有满足以下条件后，才建议进入真实上线：
+
+1. `npm run audit:production-readiness -- --check-only` 通过，blocker 归零。
+2. `npm run audit:production-readiness:strict-check` 通过，strict blocker 归零。
+3. `.env.pre.local` / `.env.prod.local` 或云环境变量替换所有占位值和 example 域名。
+4. pre/prod 使用真实独立数据库和对象存储，而不是不同占位字符串。
+5. `/health/ready` 在 pre/prod 均通过，且实际使用 `postgres`、`cos`、`tencent` 地图、`wechat` 内容安全和通知。
+6. `smoke:deployed:pre` 和 `smoke:deployed:pre:main` 在真实 HTTPS API 上通过。
+7. 微信 / 支付宝真实登录 code、COS 上传/CDN 访问、微信内容安全回调、微信订阅消息送达和通知重试链路通过。
+8. 网关/WAF、分布式限流、实际可信代理 IP / 网段、生产日志/告警策略配置完成，并在云侧验证安全响应头未被代理覆盖。
+9. 用户协议 / 隐私政策、平台隐私配置、合法域名、备案或平台要求材料完成。
+10. 至少一轮微信 / 支付宝开发者工具导入验证、真机定位权限矩阵和页面 E2E 通过。
+
+## 10. 最终判断
+
+`goods-comm` 的优点是真实的：方向清楚，MVP 主链路完整，LBS 领域建模有价值，后端和数据库边界已成型，发布门禁也比普通个人项目更严谨。
+
+它的问题也是真实的：没有真实生产环境、没有真实平台身份和地图验证、没有真实数据库 / 对象存储 / 内容安全 / 通知闭环，也没有商业冷启动和收入假设验证；模块体量、页面 E2E 缺口、网关安全和 strict gate 误读风险也需要正视。
+
+所以最客观的判断是：
+
+```text
+这是一个值得继续推进的生产化 MVP，不是一个已经可以上线承载真实交易的产品。
+```

@@ -1,0 +1,1164 @@
+{
+  "generatedAt": "2026-05-29T09:28:21.071Z",
+  "scope": [
+    "pre",
+    "prod"
+  ],
+  "status": "BLOCKED",
+  "blockerCount": 46,
+  "warningCount": 9,
+  "toolchain": [
+    {
+      "tool": "cloudbase/tcb",
+      "requiredFor": "WeChat CloudBase deploy",
+      "status": "missing"
+    },
+    {
+      "tool": "docker",
+      "requiredFor": "Tencent fallback image build/push",
+      "status": "missing"
+    },
+    {
+      "tool": "tccli",
+      "requiredFor": "Tencent fallback deploy",
+      "status": "missing"
+    },
+    {
+      "tool": "TENCENTCLOUD_SECRET_ID/KEY",
+      "requiredFor": "non-interactive CloudBase/Tencent deploy",
+      "status": "missing"
+    },
+    {
+      "tool": "psql",
+      "requiredFor": "database migration and sync",
+      "status": "missing"
+    },
+    {
+      "tool": "pg_dump",
+      "requiredFor": "prod-to-pre export",
+      "status": "missing"
+    },
+    {
+      "tool": "pg_restore",
+      "requiredFor": "prod-to-pre restore",
+      "status": "missing"
+    }
+  ],
+  "areas": {
+    "tools": {
+      "status": "BLOCKED",
+      "blockers": [
+        {
+          "id": "tools.blocker.1.psql-is-required-to-execute-database-migration-locally",
+          "area": "tools",
+          "severity": "blocker",
+          "message": "psql is required to execute database migration locally"
+        },
+        {
+          "id": "tools.blocker.2.pg-dump-pg-restore-and-psql-are-required-to-execute-prod-to-pre-sync-locally",
+          "area": "tools",
+          "severity": "blocker",
+          "message": "pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally"
+        },
+        {
+          "id": "tools.blocker.3.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
+          "area": "tools",
+          "severity": "blocker",
+          "message": "No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli"
+        },
+        {
+          "id": "tools.blocker.4.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
+          "area": "tools",
+          "severity": "blocker",
+          "message": "TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI"
+        }
+      ],
+      "warnings": [
+        {
+          "id": "tools.warning.1.cloudbase-deploy-cli-is-missing-install-cloudbase-or-tcb-if-using-wechat-cloudba",
+          "area": "tools",
+          "severity": "warning",
+          "message": "CloudBase deploy CLI is missing: install cloudbase or tcb if using WeChat CloudBase"
+        },
+        {
+          "id": "tools.warning.2.tencent-fallback-deploy-tools-are-incomplete-docker-and-tccli-are-both-required",
+          "area": "tools",
+          "severity": "warning",
+          "message": "Tencent fallback deploy tools are incomplete: docker and tccli are both required"
+        }
+      ],
+      "passes": []
+    },
+    "environments": {
+      "pre": {
+        "status": "BLOCKED",
+        "localOverrideLoaded": false,
+        "blockers": [
+          {
+            "id": "environment.pre.blocker.1.vite-api-base-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "VITE_API_BASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.2.goods-comm-allowed-origins-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALLOWED_ORIGINS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.3.goods-comm-database-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_DATABASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.4.goods-comm-cos-bucket-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_BUCKET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.5.goods-comm-cos-secret-id-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_SECRET_ID must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.6.goods-comm-cos-secret-key-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_SECRET_KEY must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.7.goods-comm-cos-base-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_BASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.8.goods-comm-cdn-base-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_CDN_BASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.9.goods-comm-tencent-map-key-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_TENCENT_MAP_KEY must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.10.goods-comm-moderation-webhook-secret-must-be-replaced-with-a-real-production-val",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_MODERATION_WEBHOOK_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.11.goods-comm-session-secret-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_SESSION_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.12.goods-comm-ops-session-secret-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_OPS_SESSION_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.13.goods-comm-ops-accounts-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_OPS_ACCOUNTS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.14.goods-comm-trusted-proxy-ips-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
+          }
+        ],
+        "warnings": [
+          {
+            "id": "environment.pre.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
+            "area": "environment.pre",
+            "severity": "warning",
+            "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+          }
+        ],
+        "passes": [
+          {
+            "id": "environment.pre.pass.1.goods-comm-postgres-max-snapshot-rows-limits-postgresql-snapshot-rewrites-to-200",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
+          },
+          {
+            "id": "environment.pre.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
+          },
+          {
+            "id": "environment.pre.pass.3.goods-comm-ops-login-max-failures-is-5",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
+          },
+          {
+            "id": "environment.pre.pass.4.goods-comm-ops-login-window-ms-is-900000",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
+          },
+          {
+            "id": "environment.pre.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
+          },
+          {
+            "id": "environment.pre.pass.6.goods-comm-rate-limit-max-requests-is-300",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
+          },
+          {
+            "id": "environment.pre.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
+          },
+          {
+            "id": "environment.pre.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
+          }
+        ]
+      },
+      "prod": {
+        "status": "BLOCKED",
+        "localOverrideLoaded": false,
+        "blockers": [
+          {
+            "id": "environment.prod.blocker.1.vite-api-base-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "VITE_API_BASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.2.goods-comm-allowed-origins-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALLOWED_ORIGINS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.3.goods-comm-database-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_DATABASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.4.goods-comm-cos-bucket-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_BUCKET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.5.goods-comm-cos-secret-id-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_SECRET_ID must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.6.goods-comm-cos-secret-key-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_SECRET_KEY must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.7.goods-comm-cos-base-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_COS_BASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.8.goods-comm-cdn-base-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_CDN_BASE_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.9.goods-comm-tencent-map-key-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_TENCENT_MAP_KEY must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.10.goods-comm-moderation-webhook-secret-must-be-replaced-with-a-real-production-val",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_MODERATION_WEBHOOK_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.11.goods-comm-session-secret-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_SESSION_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.12.goods-comm-ops-session-secret-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_OPS_SESSION_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.13.goods-comm-ops-accounts-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_OPS_ACCOUNTS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.14.goods-comm-trusted-proxy-ips-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
+          }
+        ],
+        "warnings": [
+          {
+            "id": "environment.prod.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
+            "area": "environment.prod",
+            "severity": "warning",
+            "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+          }
+        ],
+        "passes": [
+          {
+            "id": "environment.prod.pass.1.goods-comm-postgres-max-snapshot-rows-limits-postgresql-snapshot-rewrites-to-200",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
+          },
+          {
+            "id": "environment.prod.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
+          },
+          {
+            "id": "environment.prod.pass.3.goods-comm-ops-login-max-failures-is-5",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
+          },
+          {
+            "id": "environment.prod.pass.4.goods-comm-ops-login-window-ms-is-900000",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
+          },
+          {
+            "id": "environment.prod.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
+          },
+          {
+            "id": "environment.prod.pass.6.goods-comm-rate-limit-max-requests-is-300",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
+          },
+          {
+            "id": "environment.prod.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
+          },
+          {
+            "id": "environment.prod.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
+          }
+        ]
+      }
+    },
+    "crossEnvironment": {
+      "status": "WARN",
+      "blockers": [],
+      "warnings": [
+        {
+          "id": "cross_environment.warning.1.pre-prod-database-urls-are-configured-as-different-placeholders-isolation-is-not",
+          "area": "cross_environment",
+          "severity": "warning",
+          "message": "pre/prod database URLs are configured as different placeholders; isolation is not proven until both values are real"
+        },
+        {
+          "id": "cross_environment.warning.2.pre-prod-cos-buckets-are-configured-as-different-placeholders-isolation-is-not-p",
+          "area": "cross_environment",
+          "severity": "warning",
+          "message": "pre/prod COS buckets are configured as different placeholders; isolation is not proven until both values are real"
+        }
+      ],
+      "passes": [
+        {
+          "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
+          "area": "cross_environment",
+          "severity": "pass",
+          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+        },
+        {
+          "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",
+          "area": "cross_environment",
+          "severity": "pass",
+          "message": "pre accepts controlled prod-to-pre sync"
+        },
+        {
+          "id": "cross_environment.pass.3.prod-export-flag-is-enabled-for-controlled-prod-to-pre-sync",
+          "area": "cross_environment",
+          "severity": "pass",
+          "message": "prod export flag is enabled for controlled prod-to-pre sync"
+        }
+      ]
+    },
+    "buildArtifacts": {
+      "status": "PASS",
+      "blockers": [],
+      "warnings": [],
+      "passes": [
+        {
+          "id": "build_artifacts.pass.1.dist-backend-package-json-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/backend/package.json exists"
+        },
+        {
+          "id": "build_artifacts.pass.2.dist-backend-artifact-includes-server-bff-postgresql-store-schema-dockerfile-sta",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/backend artifact includes server, BFF, PostgreSQL store, schema, Dockerfile, start script, package-lock, and npm ci production dependency install check"
+        },
+        {
+          "id": "build_artifacts.pass.3.dist-build-pre-mp-weixin-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/build/pre/mp-weixin exists"
+        },
+        {
+          "id": "build_artifacts.pass.4.dist-build-pre-mp-alipay-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/build/pre/mp-alipay exists"
+        },
+        {
+          "id": "build_artifacts.pass.5.dist-build-pre-h5-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/build/pre/h5 exists"
+        },
+        {
+          "id": "build_artifacts.pass.6.dist-build-prod-mp-weixin-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/build/prod/mp-weixin exists"
+        },
+        {
+          "id": "build_artifacts.pass.7.dist-build-prod-mp-alipay-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/build/prod/mp-alipay exists"
+        },
+        {
+          "id": "build_artifacts.pass.8.dist-build-prod-h5-exists",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "dist/build/prod/h5 exists"
+        },
+        {
+          "id": "build_artifacts.pass.9.pre-h5-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks-and-ru",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "pre h5 artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+        },
+        {
+          "id": "build_artifacts.pass.10.pre-mp-weixin-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "pre mp-weixin artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+        },
+        {
+          "id": "build_artifacts.pass.11.pre-mp-alipay-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "pre mp-alipay artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+        },
+        {
+          "id": "build_artifacts.pass.12.prod-h5-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks-and-r",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "prod h5 artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+        },
+        {
+          "id": "build_artifacts.pass.13.prod-mp-weixin-artifact-includes-core-pages-tabbar-key-components-h5-route-chunk",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "prod mp-weixin artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+        },
+        {
+          "id": "build_artifacts.pass.14.prod-mp-alipay-artifact-includes-core-pages-tabbar-key-components-h5-route-chunk",
+          "area": "build_artifacts",
+          "severity": "pass",
+          "message": "prod mp-alipay artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+        }
+      ]
+    },
+    "deployedSmoke": {
+      "status": "BLOCKED",
+      "blockers": [
+        {
+          "id": "deployed_smoke.blocker.1.pre-deployed-smoke-cannot-run-until-vite-api-base-url-points-to-a-real-api",
+          "area": "deployed_smoke",
+          "severity": "blocker",
+          "message": "[pre] deployed smoke cannot run until VITE_API_BASE_URL points to a real API"
+        },
+        {
+          "id": "deployed_smoke.blocker.2.prod-deployed-smoke-cannot-run-until-vite-api-base-url-points-to-a-real-api",
+          "area": "deployed_smoke",
+          "severity": "blocker",
+          "message": "[prod] deployed smoke cannot run until VITE_API_BASE_URL points to a real API"
+        }
+      ],
+      "warnings": [
+        {
+          "id": "deployed_smoke.warning.1.pre-main-flow-deployed-smoke-still-needs-shell-inputs-goods-comm-smoke-seller-co",
+          "area": "deployed_smoke",
+          "severity": "warning",
+          "message": "[pre] main-flow deployed smoke still needs shell inputs: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE"
+        },
+        {
+          "id": "deployed_smoke.warning.2.prod-main-flow-deployed-smoke-still-needs-shell-inputs-goods-comm-smoke-seller-c",
+          "area": "deployed_smoke",
+          "severity": "warning",
+          "message": "[prod] main-flow deployed smoke still needs shell inputs: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE"
+        },
+        {
+          "id": "deployed_smoke.warning.3.prod-production-main-flow-smoke-is-protected-by-goods-comm-smoke-allow-prod-muta",
+          "area": "deployed_smoke",
+          "severity": "warning",
+          "message": "[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true"
+        }
+      ],
+      "passes": []
+    }
+  },
+  "blockers": [
+    {
+      "id": "tools.blocker.1.psql-is-required-to-execute-database-migration-locally",
+      "area": "tools",
+      "severity": "blocker",
+      "message": "psql is required to execute database migration locally"
+    },
+    {
+      "id": "tools.blocker.2.pg-dump-pg-restore-and-psql-are-required-to-execute-prod-to-pre-sync-locally",
+      "area": "tools",
+      "severity": "blocker",
+      "message": "pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally"
+    },
+    {
+      "id": "tools.blocker.3.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
+      "area": "tools",
+      "severity": "blocker",
+      "message": "No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli"
+    },
+    {
+      "id": "tools.blocker.4.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
+      "area": "tools",
+      "severity": "blocker",
+      "message": "TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI"
+    },
+    {
+      "id": "environment.pre.blocker.1.vite-api-base-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "VITE_API_BASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.2.goods-comm-allowed-origins-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALLOWED_ORIGINS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.3.goods-comm-database-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_DATABASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.4.goods-comm-cos-bucket-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_BUCKET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.5.goods-comm-cos-secret-id-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_SECRET_ID must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.6.goods-comm-cos-secret-key-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_SECRET_KEY must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.7.goods-comm-cos-base-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_BASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.8.goods-comm-cdn-base-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_CDN_BASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.9.goods-comm-tencent-map-key-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_TENCENT_MAP_KEY must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.10.goods-comm-moderation-webhook-secret-must-be-replaced-with-a-real-production-val",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_MODERATION_WEBHOOK_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.11.goods-comm-session-secret-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_SESSION_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.12.goods-comm-ops-session-secret-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_OPS_SESSION_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.13.goods-comm-ops-accounts-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_OPS_ACCOUNTS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.14.goods-comm-trusted-proxy-ips-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
+    },
+    {
+      "id": "environment.prod.blocker.1.vite-api-base-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "VITE_API_BASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.2.goods-comm-allowed-origins-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALLOWED_ORIGINS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.3.goods-comm-database-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_DATABASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.4.goods-comm-cos-bucket-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_BUCKET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.5.goods-comm-cos-secret-id-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_SECRET_ID must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.6.goods-comm-cos-secret-key-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_SECRET_KEY must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.7.goods-comm-cos-base-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_COS_BASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.8.goods-comm-cdn-base-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_CDN_BASE_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.9.goods-comm-tencent-map-key-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_TENCENT_MAP_KEY must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.10.goods-comm-moderation-webhook-secret-must-be-replaced-with-a-real-production-val",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_MODERATION_WEBHOOK_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.11.goods-comm-session-secret-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_SESSION_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.12.goods-comm-ops-session-secret-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_OPS_SESSION_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.13.goods-comm-ops-accounts-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_OPS_ACCOUNTS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.14.goods-comm-trusted-proxy-ips-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
+    },
+    {
+      "id": "deployed_smoke.blocker.1.pre-deployed-smoke-cannot-run-until-vite-api-base-url-points-to-a-real-api",
+      "area": "deployed_smoke",
+      "severity": "blocker",
+      "message": "[pre] deployed smoke cannot run until VITE_API_BASE_URL points to a real API"
+    },
+    {
+      "id": "deployed_smoke.blocker.2.prod-deployed-smoke-cannot-run-until-vite-api-base-url-points-to-a-real-api",
+      "area": "deployed_smoke",
+      "severity": "blocker",
+      "message": "[prod] deployed smoke cannot run until VITE_API_BASE_URL points to a real API"
+    }
+  ],
+  "warnings": [
+    {
+      "id": "tools.warning.1.cloudbase-deploy-cli-is-missing-install-cloudbase-or-tcb-if-using-wechat-cloudba",
+      "area": "tools",
+      "severity": "warning",
+      "message": "CloudBase deploy CLI is missing: install cloudbase or tcb if using WeChat CloudBase"
+    },
+    {
+      "id": "tools.warning.2.tencent-fallback-deploy-tools-are-incomplete-docker-and-tccli-are-both-required",
+      "area": "tools",
+      "severity": "warning",
+      "message": "Tencent fallback deploy tools are incomplete: docker and tccli are both required"
+    },
+    {
+      "id": "environment.pre.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
+      "area": "environment.pre",
+      "severity": "warning",
+      "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+    },
+    {
+      "id": "environment.prod.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
+      "area": "environment.prod",
+      "severity": "warning",
+      "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+    },
+    {
+      "id": "cross_environment.warning.1.pre-prod-database-urls-are-configured-as-different-placeholders-isolation-is-not",
+      "area": "cross_environment",
+      "severity": "warning",
+      "message": "pre/prod database URLs are configured as different placeholders; isolation is not proven until both values are real"
+    },
+    {
+      "id": "cross_environment.warning.2.pre-prod-cos-buckets-are-configured-as-different-placeholders-isolation-is-not-p",
+      "area": "cross_environment",
+      "severity": "warning",
+      "message": "pre/prod COS buckets are configured as different placeholders; isolation is not proven until both values are real"
+    },
+    {
+      "id": "deployed_smoke.warning.1.pre-main-flow-deployed-smoke-still-needs-shell-inputs-goods-comm-smoke-seller-co",
+      "area": "deployed_smoke",
+      "severity": "warning",
+      "message": "[pre] main-flow deployed smoke still needs shell inputs: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE"
+    },
+    {
+      "id": "deployed_smoke.warning.2.prod-main-flow-deployed-smoke-still-needs-shell-inputs-goods-comm-smoke-seller-c",
+      "area": "deployed_smoke",
+      "severity": "warning",
+      "message": "[prod] main-flow deployed smoke still needs shell inputs: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE"
+    },
+    {
+      "id": "deployed_smoke.warning.3.prod-production-main-flow-smoke-is-protected-by-goods-comm-smoke-allow-prod-muta",
+      "area": "deployed_smoke",
+      "severity": "warning",
+      "message": "[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true"
+    }
+  ],
+  "passes": [
+    {
+      "id": "environment.pre.pass.1.goods-comm-postgres-max-snapshot-rows-limits-postgresql-snapshot-rewrites-to-200",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
+    },
+    {
+      "id": "environment.pre.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
+    },
+    {
+      "id": "environment.pre.pass.3.goods-comm-ops-login-max-failures-is-5",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
+    },
+    {
+      "id": "environment.pre.pass.4.goods-comm-ops-login-window-ms-is-900000",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
+    },
+    {
+      "id": "environment.pre.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
+    },
+    {
+      "id": "environment.pre.pass.6.goods-comm-rate-limit-max-requests-is-300",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
+    },
+    {
+      "id": "environment.pre.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
+    },
+    {
+      "id": "environment.pre.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
+    },
+    {
+      "id": "environment.prod.pass.1.goods-comm-postgres-max-snapshot-rows-limits-postgresql-snapshot-rewrites-to-200",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
+    },
+    {
+      "id": "environment.prod.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
+    },
+    {
+      "id": "environment.prod.pass.3.goods-comm-ops-login-max-failures-is-5",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
+    },
+    {
+      "id": "environment.prod.pass.4.goods-comm-ops-login-window-ms-is-900000",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
+    },
+    {
+      "id": "environment.prod.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
+    },
+    {
+      "id": "environment.prod.pass.6.goods-comm-rate-limit-max-requests-is-300",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
+    },
+    {
+      "id": "environment.prod.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
+    },
+    {
+      "id": "environment.prod.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
+    },
+    {
+      "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
+      "area": "cross_environment",
+      "severity": "pass",
+      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+    },
+    {
+      "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",
+      "area": "cross_environment",
+      "severity": "pass",
+      "message": "pre accepts controlled prod-to-pre sync"
+    },
+    {
+      "id": "cross_environment.pass.3.prod-export-flag-is-enabled-for-controlled-prod-to-pre-sync",
+      "area": "cross_environment",
+      "severity": "pass",
+      "message": "prod export flag is enabled for controlled prod-to-pre sync"
+    },
+    {
+      "id": "build_artifacts.pass.1.dist-backend-package-json-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/backend/package.json exists"
+    },
+    {
+      "id": "build_artifacts.pass.2.dist-backend-artifact-includes-server-bff-postgresql-store-schema-dockerfile-sta",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/backend artifact includes server, BFF, PostgreSQL store, schema, Dockerfile, start script, package-lock, and npm ci production dependency install check"
+    },
+    {
+      "id": "build_artifacts.pass.3.dist-build-pre-mp-weixin-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/build/pre/mp-weixin exists"
+    },
+    {
+      "id": "build_artifacts.pass.4.dist-build-pre-mp-alipay-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/build/pre/mp-alipay exists"
+    },
+    {
+      "id": "build_artifacts.pass.5.dist-build-pre-h5-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/build/pre/h5 exists"
+    },
+    {
+      "id": "build_artifacts.pass.6.dist-build-prod-mp-weixin-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/build/prod/mp-weixin exists"
+    },
+    {
+      "id": "build_artifacts.pass.7.dist-build-prod-mp-alipay-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/build/prod/mp-alipay exists"
+    },
+    {
+      "id": "build_artifacts.pass.8.dist-build-prod-h5-exists",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "dist/build/prod/h5 exists"
+    },
+    {
+      "id": "build_artifacts.pass.9.pre-h5-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks-and-ru",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "pre h5 artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+    },
+    {
+      "id": "build_artifacts.pass.10.pre-mp-weixin-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "pre mp-weixin artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+    },
+    {
+      "id": "build_artifacts.pass.11.pre-mp-alipay-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "pre mp-alipay artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+    },
+    {
+      "id": "build_artifacts.pass.12.prod-h5-artifact-includes-core-pages-tabbar-key-components-h5-route-chunks-and-r",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "prod h5 artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+    },
+    {
+      "id": "build_artifacts.pass.13.prod-mp-weixin-artifact-includes-core-pages-tabbar-key-components-h5-route-chunk",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "prod mp-weixin artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+    },
+    {
+      "id": "build_artifacts.pass.14.prod-mp-alipay-artifact-includes-core-pages-tabbar-key-components-h5-route-chunk",
+      "area": "build_artifacts",
+      "severity": "pass",
+      "message": "prod mp-alipay artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config"
+    }
+  ]
+}
