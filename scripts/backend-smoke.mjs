@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { request as httpRequest } from 'node:http'
-import { readFile, rm } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { startGoodsCommServer } from '../backend/src/server.mjs'
 import { ITEM_STATUS, TRADE_STATUS } from '../src/services/goods.js'
@@ -713,6 +713,16 @@ try {
   assert.match(confirmed.contactCode, /^GC-[A-F0-9]{6}-[A-Z0-9]{4}$/)
   assert.notEqual(confirmed.contactCode, seller.user.contactCode)
   assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
+  await expireTradeContactCodeInStateFile(statePath, trade.id)
+  const replayedConfirmedAfterContactExpiry = await patch(`${baseUrl}/trades/${trade.id}/status`, {
+    status: TRADE_STATUS.PENDING_MEETUP
+  }, seller.token, {
+    header: {
+      'Idempotency-Key': 'backend_trade_confirm_key_001'
+    }
+  })
+  assert.equal(replayedConfirmedAfterContactExpiry.contactCode, '')
+  assert.equal(replayedConfirmedAfterContactExpiry.contactCodeExpiresAt, null)
   const buyerNotifications = await get(`${baseUrl}/notifications`, buyer.token)
   assert.equal(buyerNotifications.notifications[0].type, 'trade_confirmed')
   assert.equal(buyerNotifications.notifications[0].targetId, trade.id)
@@ -1263,6 +1273,16 @@ async function request(url, options = {}) {
   }
 
   throw new Error(envelope.payload.message || `HTTP ${envelope.status}`)
+}
+
+async function expireTradeContactCodeInStateFile(path, tradeId) {
+  const state = JSON.parse(await readFile(path, 'utf8'))
+  const trade = state.trades.find((candidate) => candidate.id === tradeId)
+
+  assert.ok(trade, `missing trade ${tradeId} in file state`)
+  trade.contactCodeExpiresAt = Date.now() - 1
+
+  await writeFile(path, JSON.stringify(state, null, 2))
 }
 
 async function requestExpectError(url, options = {}) {

@@ -287,8 +287,11 @@ async function withIdempotency(path, method, options = {}, state, execute) {
       throw new Error('幂等请求仍在处理，请稍后重试')
     }
 
+    clearExpiredTradeContactCodes(state, now)
+    const response = sanitizeIdempotencyReplayResponse(existing.response, state, now)
+    existing.response = cloneJson(response)
     state.idempotencyRecords = records
-    return cloneJson(existing.response)
+    return response
   }
 
   let result
@@ -348,6 +351,23 @@ function buildIdempotencyRecord(record = {}) {
     updatedAt: record.updatedAt,
     expiresAt: record.expiresAt
   }
+}
+
+function sanitizeIdempotencyReplayResponse(response = {}, state = {}, now = Date.now()) {
+  const replay = cloneJson(response)
+  const canonicalTrade = Array.isArray(state.trades)
+    ? state.trades.find((trade) => trade.id === replay.id)
+    : null
+
+  if (
+    shouldClearExpiredTradeContactCode(replay, now) ||
+    canonicalTrade && hasTradeContactMetadata(replay) && !isTradeContactCodeActive(canonicalTrade, now)
+  ) {
+    replay.contactCode = ''
+    replay.contactCodeExpiresAt = null
+  }
+
+  return replay
 }
 
 function isIdempotentRequest(path, method) {

@@ -42,7 +42,7 @@ Operational endpoints:
 
 Local smoke tests use a file-backed state store so the HTTP boundary is real and repeatable without external credentials. `pre/prod` use the PostgreSQL state store by default; it reads and writes the normalized tables in `backend/db/schema.sql` inside a transaction. In `pre/prod`, schema auto-creation is disabled by default, so the database migration must run before backend startup.
 
-Mutating business requests support `Idempotency-Key` / `X-Idempotency-Key`. The BFF stores the first successful response in `idempotency_records` for 24 hours, replays it for exact duplicate requests in the same scope, and rejects key reuse for different requests with `409 CONFLICT`. The mini-program service layer already sends stable keys for publish, trade, review, report and status update paths.
+Mutating business requests support `Idempotency-Key` / `X-Idempotency-Key`. The BFF stores the first successful response in `idempotency_records` for 24 hours, replays it for exact duplicate requests in the same scope, and rejects key reuse for different requests with `409 CONFLICT`. Replayed trade-confirm responses are sanitized through the same one-time contact-code expiry rules so an old idempotency record cannot leak an expired code. The mini-program service layer already sends stable keys for publish, trade, review, report and status update paths.
 
 ## Local Run
 

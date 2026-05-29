@@ -587,6 +587,16 @@ assert.notEqual(confirmed.contactCode, sellerSession.user.contactCode)
 assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
 const storedConfirmedTrade = state.trades.find((candidate) => candidate.id === trade.id)
 storedConfirmedTrade.contactCodeExpiresAt = Date.now() - 1
+const replayedConfirmedAfterContactExpiry = await handleBffRequest(`/trades/${trade.id}/status`, {
+  method: 'PATCH',
+  token: sellerSession.token,
+  idempotencyKey: 'bff_trade_confirm_key_001',
+  data: {
+    status: TRADE_STATUS.PENDING_MEETUP
+  }
+}, state)
+assert.equal(replayedConfirmedAfterContactExpiry.contactCode, '')
+assert.equal(replayedConfirmedAfterContactExpiry.contactCodeExpiresAt, null)
 const buyerTradesAfterContactExpiry = await handleBffRequest('/trades', {
   method: 'GET',
   token: buyerSession.token

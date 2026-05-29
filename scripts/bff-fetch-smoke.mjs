@@ -248,14 +248,35 @@ assert.equal(Boolean(readNotification.readAt), true)
 
 const confirmed = await patch(`/trades/${trade.id}/status`, {
   status: TRADE_STATUS.PENDING_MEETUP
-}, sellerSession.token)
+}, sellerSession.token, {
+  header: {
+    'Idempotency-Key': 'fetch_trade_confirm_key_001'
+  }
+})
+const replayedConfirmed = await patch(`/trades/${trade.id}/status`, {
+  status: TRADE_STATUS.PENDING_MEETUP
+}, sellerSession.token, {
+  header: {
+    'Idempotency-Key': 'fetch_trade_confirm_key_001'
+  }
+})
 
 assert.equal(confirmed.status, TRADE_STATUS.PENDING_MEETUP)
+assert.equal(replayedConfirmed.contactCode, confirmed.contactCode)
 assert.match(confirmed.contactCode, /^GC-[A-F0-9]{6}-[A-Z0-9]{4}$/)
 assert.notEqual(confirmed.contactCode, sellerSession.user.contactCode)
 assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
 const storedConfirmedTrade = state.trades.find((candidate) => candidate.id === trade.id)
 storedConfirmedTrade.contactCodeExpiresAt = Date.now() - 1
+const replayedConfirmedAfterContactExpiry = await patch(`/trades/${trade.id}/status`, {
+  status: TRADE_STATUS.PENDING_MEETUP
+}, sellerSession.token, {
+  header: {
+    'Idempotency-Key': 'fetch_trade_confirm_key_001'
+  }
+})
+assert.equal(replayedConfirmedAfterContactExpiry.contactCode, '')
+assert.equal(replayedConfirmedAfterContactExpiry.contactCodeExpiresAt, null)
 const buyerTradesAfterContactExpiry = await get('/trades', buyerSession.token)
 const expiredContactTrade = buyerTradesAfterContactExpiry.trades.find((candidate) => candidate.id === trade.id)
 assert.equal(expiredContactTrade.contactCode, '')
