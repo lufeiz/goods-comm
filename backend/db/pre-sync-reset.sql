@@ -15,7 +15,8 @@ TRUNCATE TABLE
   item_images,
   items,
   auth_sessions,
-  users
+  users,
+  bff_state_snapshots
 RESTART IDENTITY CASCADE;
 
 COMMIT;

@@ -8,9 +8,11 @@ const lockPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.lock`
 const auditPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.jsonl`
 const syncScriptPath = resolve(process.cwd(), 'scripts/sync-prod-to-pre.mjs')
 const anonymizeSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-anonymize.sql')
+const resetSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-reset.sql')
 
 await cleanup()
 await assertPreSyncAnonymizeSql()
+await assertPreSyncResetSql()
 
 const plan = runSyncScript([])
 assert.equal(plan.status, 0)
@@ -241,6 +243,7 @@ exit 0
 async function assertPreSyncAnonymizeSql() {
   const sql = await readFile(anonymizeSqlPath, 'utf8')
 
+  assert.match(sql, /DELETE FROM bff_state_snapshots/)
   assert.match(sql, /platform_id = 'pre_platform_' \|\| substr\(md5\(id \|\| ':platform'\), 1, 16\)/)
   assert.match(sql, /union_id = ''/)
   assert.match(sql, /UPDATE items[\s\S]*title = '预上线商品_'/)
@@ -250,6 +253,12 @@ async function assertPreSyncAnonymizeSql() {
   assert.match(sql, /original_name = ''/)
   assert.match(sql, /UPDATE moderation_events[\s\S]*SET title = ''/)
   assert.match(sql, /UPDATE account_deletions[\s\S]*SET reason = ''/)
+}
+
+async function assertPreSyncResetSql() {
+  const sql = await readFile(resetSqlPath, 'utf8')
+
+  assert.match(sql, /TRUNCATE TABLE[\s\S]*bff_state_snapshots[\s\S]*RESTART IDENTITY CASCADE/)
 }
 
 async function readLatestAuditRecord() {

@@ -15,6 +15,8 @@ SET
 
 DELETE FROM idempotency_records;
 
+DELETE FROM bff_state_snapshots;
+
 UPDATE items
 SET
   title = '预上线商品_' || substr(md5(id), 1, 8),

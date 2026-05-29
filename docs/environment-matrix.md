@@ -177,7 +177,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 - 需要本机或云任务环境存在 `pg_dump`、`pg_restore`、`psql`。
 - 真实执行时会写同步锁，默认路径为 `/private/tmp/goods-comm-prod-to-pre.lock`，避免定时任务重入。
 - 执行结果会追加到审计日志，默认路径为 `/private/tmp/goods-comm-prod-to-pre-audit.jsonl`；审计记录包含 `acquire_lock`、`verify_toolchain`、`dump_prod`、`reset_pre`、`restore_pre`、`anonymize_pre` 和可选 smoke 阶段的状态、时间戳、耗时与失败原因，便于定时任务排障。
-- 同步后执行 `backend/db/pre-sync-anonymize.sql`：吊销 session、清空交易联系码、脱敏平台 openid/unionid、用户昵称/头像/联系码、商品标题/描述/精确坐标、交易标题、位置审计坐标、图片原始文件名、举报/争议/评价/运营日志内容。
+- 同步后执行 `backend/db/pre-sync-anonymize.sql`：吊销 session、清空交易联系码、删除旧版 `bff_state_snapshots` JSON 快照、脱敏平台 openid/unionid、用户昵称/头像/联系码、商品标题/描述/精确坐标、交易标题、位置审计坐标、图片原始文件名、举报/争议/评价/运营日志内容。
 
 推荐自动同步方式：
 
