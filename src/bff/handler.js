@@ -804,6 +804,7 @@ function updateItemStatus(itemId, options = {}, state) {
 
 function listTrades(options = {}, state) {
   const user = requireUser(options, state)
+  clearExpiredTradeContactCodes(state)
 
   return {
     trades: state.trades
@@ -2157,7 +2158,7 @@ function sanitizeItemForResponse(item) {
 }
 
 function sanitizeTradeForResponse(trade = {}, user = {}, state = {}) {
-  const canViewContact = trade.status === TRADE_STATUS.PENDING_MEETUP &&
+  const canViewContact = isTradeContactCodeActive(trade) &&
     (trade.buyer?.id === user.id || trade.seller?.id === user.id)
 
   return {
@@ -2167,6 +2168,42 @@ function sanitizeTradeForResponse(trade = {}, user = {}, state = {}) {
     reviewedByMe: hasReviewForTrade(state, trade.id, user.id),
     disputeCase: sanitizeDisputeCaseForResponse(findDisputeCaseForTrade(state, trade.id))
   }
+}
+
+function clearExpiredTradeContactCodes(state = {}, now = Date.now()) {
+  if (!Array.isArray(state.trades)) {
+    return
+  }
+
+  for (const trade of state.trades) {
+    if (!shouldClearExpiredTradeContactCode(trade, now)) {
+      continue
+    }
+
+    trade.contactCode = ''
+    trade.contactCodeExpiresAt = null
+    trade.updatedAt = now
+  }
+}
+
+function shouldClearExpiredTradeContactCode(trade = {}, now = Date.now()) {
+  return trade.status === TRADE_STATUS.PENDING_MEETUP &&
+    hasTradeContactMetadata(trade) &&
+    !isTradeContactCodeActive(trade, now)
+}
+
+function isTradeContactCodeActive(trade = {}, now = Date.now()) {
+  const expiresAt = Number(trade.contactCodeExpiresAt)
+
+  return trade.status === TRADE_STATUS.PENDING_MEETUP &&
+    Boolean(trade.contactCode) &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > now
+}
+
+function hasTradeContactMetadata(trade = {}) {
+  return Boolean(trade.contactCode) ||
+    (trade.contactCodeExpiresAt !== null && trade.contactCodeExpiresAt !== undefined)
 }
 
 function normalizeNotifications(notifications = []) {

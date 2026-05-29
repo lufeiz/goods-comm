@@ -564,7 +564,7 @@ usage: item_image
 - 买家不能购买自己发布的物品。
 - 交易创建后商品进入锁定状态；同一买家重复提交返回原交易，其他买家不能再发起新交易。
 - 弱网或平台重试导致同一次交易创建重复到达时，`Idempotency-Key` 应返回首次交易响应，不能重复生成站内通知或平台通知 outbox。
-- 新建交易处于 `pending_seller_confirm` 时不得返回 `contactCode`；卖家确认进入 `pending_meetup` 后才返回本次交易的一次性 `contactCode` 和 `contactCodeExpiresAt`，交易完成、取消或争议后必须清空。
+- 新建交易处于 `pending_seller_confirm` 时不得返回 `contactCode`；卖家确认进入 `pending_meetup` 后才返回本次交易的一次性 `contactCode` 和 `contactCodeExpiresAt`。`contactCodeExpiresAt` 过期后列表响应必须隐藏并清理联系码；交易完成、取消或争议后也必须清空。
 
 ### `PATCH /trades/:id/status`
 

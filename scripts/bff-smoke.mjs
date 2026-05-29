@@ -585,6 +585,17 @@ assert.equal(state.trades.find((candidate) => candidate.id === trade.id).timelin
 assert.match(confirmed.contactCode, /^GC-[A-F0-9]{6}-[A-Z0-9]{4}$/)
 assert.notEqual(confirmed.contactCode, sellerSession.user.contactCode)
 assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
+const storedConfirmedTrade = state.trades.find((candidate) => candidate.id === trade.id)
+storedConfirmedTrade.contactCodeExpiresAt = Date.now() - 1
+const buyerTradesAfterContactExpiry = await handleBffRequest('/trades', {
+  method: 'GET',
+  token: buyerSession.token
+}, state)
+const expiredContactTrade = buyerTradesAfterContactExpiry.trades.find((candidate) => candidate.id === trade.id)
+assert.equal(expiredContactTrade.contactCode, '')
+assert.equal(expiredContactTrade.contactCodeExpiresAt, null)
+assert.equal(state.trades.find((candidate) => candidate.id === trade.id).contactCode, '')
+assert.equal(state.trades.find((candidate) => candidate.id === trade.id).contactCodeExpiresAt, null)
 const buyerNotifications = await handleBffRequest('/notifications', {
   method: 'GET',
   token: buyerSession.token

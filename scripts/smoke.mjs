@@ -499,6 +499,24 @@ assert.match(confirmed.contactCode, /^GC-[A-Z0-9]{4}-[A-Z0-9]{4}$/)
 assert.notEqual(confirmed.contactCode, seller.contactCode)
 assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
 assert.equal(getTradeContactText(confirmed), `一次性联系码：${confirmed.contactCode}`)
+assert.equal(getTradeContactText({
+  ...confirmed,
+  contactCodeExpiresAt: Date.now() - 1
+}), '一次性联系码已过期，请取消后重新发起交易')
+storage.set('goods.trades', storage.get('goods.trades').map((candidate) =>
+  candidate.id === confirmed.id
+    ? {
+        ...candidate,
+        contactCodeExpiresAt: Date.now() - 1
+      }
+    : candidate
+))
+const expiredContactTrade = listTradeIntents({
+  user: buyer
+}).find((candidate) => candidate.id === confirmed.id)
+assert.equal(expiredContactTrade.contactCode, '')
+assert.equal(expiredContactTrade.contactCodeExpiresAt, null)
+assert.equal(getTradeContactText(expiredContactTrade), '一次性联系码已过期，请取消后重新发起交易')
 const buyerNotifications = await fetchNotifications({
   user: buyer
 })

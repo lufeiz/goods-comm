@@ -659,7 +659,7 @@ export function deleteUserOwnedData(user) {
 export function listTradeIntents(options = {}) {
   const userId = options.user?.id || options.userId || ''
 
-  return getStorageArray(TRADES_KEY)
+  return clearExpiredTradeContactCodes(getStorageArray(TRADES_KEY))
     .filter((trade) => {
       if (!userId) {
         return true
@@ -830,8 +830,12 @@ export function getTradeContactText(trade = {}) {
     return '卖家确认后生成一次性联系码'
   }
 
-  if (trade.status !== TRADE_STATUS.PENDING_MEETUP || !trade.contactCode) {
+  if (trade.status !== TRADE_STATUS.PENDING_MEETUP) {
     return ''
+  }
+
+  if (!isTradeContactCodeActive(trade)) {
+    return '一次性联系码已过期，请取消后重新发起交易'
   }
 
   return `一次性联系码：${trade.contactCode}`
@@ -1525,6 +1529,49 @@ function saveReviews(reviews) {
 
 function saveDisputes(disputes) {
   uni.setStorageSync(DISPUTES_KEY, disputes)
+}
+
+function clearExpiredTradeContactCodes(trades = [], now = Date.now()) {
+  let changed = false
+  const nextTrades = trades.map((trade) => {
+    if (!shouldClearExpiredTradeContactCode(trade, now)) {
+      return trade
+    }
+
+    changed = true
+    return {
+      ...trade,
+      contactCode: '',
+      contactCodeExpiresAt: null,
+      updatedAt: now
+    }
+  })
+
+  if (changed) {
+    saveTrades(nextTrades)
+  }
+
+  return nextTrades
+}
+
+function shouldClearExpiredTradeContactCode(trade = {}, now = Date.now()) {
+  return trade.status === TRADE_STATUS.PENDING_MEETUP &&
+    hasTradeContactMetadata(trade) &&
+    !isTradeContactCodeActive(trade, now)
+}
+
+function isTradeContactCodeActive(trade = {}, now = Date.now()) {
+  const expiresAt = Number(trade.contactCodeExpiresAt)
+
+  return trade.status === TRADE_STATUS.PENDING_MEETUP &&
+    Boolean(trade.contactCode) &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > now
+}
+
+function hasTradeContactMetadata(trade = {}) {
+  return Boolean(trade.contactCode) ||
+    (trade.contactCodeExpiresAt !== null && trade.contactCodeExpiresAt !== undefined)
 }
 
 function getStorageArray(key) {
