@@ -81,7 +81,7 @@ npm run verify:release
 
 `npm run verify:release` 是 CI / 发布候选门禁，会串行执行语法检查、核心 smoke、workflow smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；quick/full profile 结束时会明确提示它们不是生产放行口径。`npm run verify:release:strict` 只适合真实上线前使用，会把生产就绪审计作为强制 gate；当前占位配置下会因真实云资源和工具链缺失失败。
 
-部署后主链路 smoke 会对商品发布、交易创建、卖家确认、完成售出、售出后详情状态、售出后拒绝再次交易、交易评价、退出登录和退出后 token 拒绝访问带稳定 `Idempotency-Key` 或明确错误码断言。默认每次运行生成新的 `GOODS_COMM_SMOKE_RUN_ID`；如果 CI 需要跨进程复跑同一次写入链路，应同时固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`，且时间戳仍需在定位有效期内。
+部署后主链路 smoke 会对商品发布、交易创建、卖家确认、交易列表联系码、交易通知、通知已读、完成售出、售出后详情状态、售出后拒绝再次交易、交易评价、退出登录和退出后 token 拒绝访问带稳定 `Idempotency-Key` 或明确错误码断言。默认每次运行生成新的 `GOODS_COMM_SMOKE_RUN_ID`；如果 CI 需要跨进程复跑同一次写入链路，应同时固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`，且时间戳仍需在定位有效期内。
 
 GitHub Actions 已分成两类：
 
@@ -143,7 +143,7 @@ npm run smoke:deployed:prod
 
 `smoke:deployed:*` 会检查 `/health` 和 `/health/ready`，并确认 pre/prod 实际使用 `postgres`、`cos`、内容安全 `wechat`、地图 `tencent` 和平台通知 `wechat`。
 
-`smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、图片上传、商品发布、发起交易、卖家确认、买家完成、售出后拒绝二次交易、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度：
+`smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、买家完成、售出后拒绝二次交易、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度：
 
 ```bash
 GOODS_COMM_SMOKE_SELLER_CODE=...

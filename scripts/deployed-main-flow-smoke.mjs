@@ -109,6 +109,14 @@ const replayedTrade = await post('/trades', tradePayload, buyer.token, idempoten
 
 assertEqual(trade.status, 'pending_seller_confirm', 'created trade status')
 assertEqual(replayedTrade.id, trade.id, 'replayed trade id')
+const sellerTradesAfterCreate = await get('/trades', seller.token)
+const sellerCreatedTrade = findTrade(sellerTradesAfterCreate, trade.id, 'pending_seller_confirm', 'seller created trade list')
+assertEqual(sellerCreatedTrade.contactCode, '', 'seller pending trade contact code')
+const sellerNotificationsAfterCreate = await get('/notifications', seller.token)
+const sellerTradeCreatedNotification = findNotification(sellerNotificationsAfterCreate, 'trade_created', trade.id, 'seller trade created notification')
+const readSellerTradeCreatedNotification = await patch(`/notifications/${sellerTradeCreatedNotification.id}/read`, {}, seller.token)
+assertEqual(readSellerTradeCreatedNotification.id, sellerTradeCreatedNotification.id, 'read seller trade-created notification id')
+assert(Boolean(readSellerTradeCreatedNotification.readAt), 'seller trade-created notification readAt')
 
 const confirmPayload = {
   status: 'pending_meetup'
@@ -119,6 +127,14 @@ const replayedConfirmed = await patch(`/trades/${trade.id}/status`, confirmPaylo
 assertEqual(confirmed.status, 'pending_meetup', 'confirmed trade status')
 assertEqual(replayedConfirmed.id, confirmed.id, 'replayed confirmed trade id')
 assert(Boolean(confirmed.contactCode), 'confirmed trade did not expose contactCode')
+const sellerTradesAfterConfirm = await get('/trades', seller.token)
+const sellerConfirmedTrade = findTrade(sellerTradesAfterConfirm, trade.id, 'pending_meetup', 'seller confirmed trade list')
+assertEqual(sellerConfirmedTrade.contactCode, confirmed.contactCode, 'seller confirmed trade contact code')
+const buyerTradesAfterConfirm = await get('/trades', buyer.token)
+const buyerConfirmedTrade = findTrade(buyerTradesAfterConfirm, trade.id, 'pending_meetup', 'buyer confirmed trade list')
+assertEqual(buyerConfirmedTrade.contactCode, confirmed.contactCode, 'buyer confirmed trade contact code')
+const buyerNotificationsAfterConfirm = await get('/notifications', buyer.token)
+findNotification(buyerNotificationsAfterConfirm, 'trade_confirmed', trade.id, 'buyer trade confirmed notification')
 
 const completePayload = {
   status: 'completed'
@@ -128,6 +144,14 @@ const replayedCompleted = await patch(`/trades/${trade.id}/status`, completePayl
 
 assertEqual(completed.status, 'completed', 'completed trade status')
 assertEqual(replayedCompleted.id, completed.id, 'replayed completed trade id')
+const sellerTradesAfterComplete = await get('/trades', seller.token)
+const sellerCompletedTrade = findTrade(sellerTradesAfterComplete, trade.id, 'completed', 'seller completed trade list')
+assertEqual(sellerCompletedTrade.contactCode, '', 'seller completed trade contact code')
+const buyerTradesAfterComplete = await get('/trades', buyer.token)
+const buyerCompletedTrade = findTrade(buyerTradesAfterComplete, trade.id, 'completed', 'buyer completed trade list')
+assertEqual(buyerCompletedTrade.contactCode, '', 'buyer completed trade contact code')
+const sellerNotificationsAfterComplete = await get('/notifications', seller.token)
+findNotification(sellerNotificationsAfterComplete, 'trade_completed', trade.id, 'seller trade completed notification')
 const soldItem = await get(`/items/${encodeURIComponent(item.id)}`)
 assertEqual(soldItem.status, 'sold', 'completed trade item status')
 const postSoldTradeError = await postExpectError('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreateAfterSold))
@@ -146,6 +170,8 @@ assertEqual(replayedReview.id, review.id, 'replayed review id')
 assertEqual(review.reviewee.id, seller.user.id, 'created review reviewee')
 const reviews = await get(`/reviews?itemId=${encodeURIComponent(item.id)}`)
 assert(toArray(reviews.reviews).some((candidate) => candidate.id === review.id), 'created review did not appear in item review list')
+const sellerNotificationsAfterReview = await get('/notifications', seller.token)
+findNotification(sellerNotificationsAfterReview, 'trade_reviewed', trade.id, 'seller trade reviewed notification')
 
 const soldList = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}`)
 assert(!toArray(soldList.items).some((candidate) => candidate.id === item.id), 'sold item still appears in public list')
@@ -436,4 +462,25 @@ function createAgreement(source) {
 
 function toArray(value) {
   return Array.isArray(value) ? value : []
+}
+
+function findTrade(payload, tradeId, expectedStatus, label) {
+  const trade = toArray(payload.trades).find((candidate) => candidate.id === tradeId)
+  assert(trade, `${label} missing trade ${tradeId}`)
+  assertEqual(trade.status, expectedStatus, `${label} status`)
+  return trade
+}
+
+function findNotification(payload, expectedType, targetId, label) {
+  const notification = toArray(payload.notifications).find((candidate) =>
+    candidate.type === expectedType &&
+    candidate.targetId === targetId
+  )
+
+  assert(notification, `${label} missing ${expectedType} notification for ${targetId}`)
+  assertEqual(notification.targetType, 'trade', `${label} target type`)
+  assert(notification.title, `${label} title`)
+  assert(notification.body, `${label} body`)
+
+  return notification
 }
