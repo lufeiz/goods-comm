@@ -132,7 +132,7 @@ Prod-to-pre data refresh:
 
 - Manual refresh: `GOODS_COMM_SYNC_CONFIRM=sync-prod-to-pre npm run sync:prod-to-pre`.
 - Scheduled refresh: `GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto` from a trusted CloudBase / Tencent Cloud scheduled job or internal runner.
-- The sync task writes a lock file and an audit jsonl record. Set `GOODS_COMM_SYNC_LOCK_PATH`, `GOODS_COMM_SYNC_AUDIT_PATH` and `GOODS_COMM_SYNC_DUMP_PATH` to persistent task-local paths in the scheduler environment.
+- The sync task writes a lock file and an audit jsonl record with per-stage timing and failure details. Set `GOODS_COMM_SYNC_LOCK_PATH`, `GOODS_COMM_SYNC_AUDIT_PATH` and `GOODS_COMM_SYNC_DUMP_PATH` to persistent task-local paths in the scheduler environment.
 - Set `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true` if the scheduler should run `node scripts/deployed-health-smoke.mjs --env pre` after restoring and anonymizing data.
 - Set `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` if the scheduler should also run `node scripts/deployed-main-flow-smoke.mjs --env pre` after the sync. This requires the same short-lived smoke login codes and covered coordinates used by the deployed pre main-flow smoke.
 - `pre` and `prod` must run with `GOODS_COMM_MAP_PROVIDER=tencent`; sample region data is blocked by the backend at startup.

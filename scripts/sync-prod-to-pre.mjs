@@ -19,6 +19,7 @@ const preHealthSmokeAttempts = parsePositiveInteger(process.env.GOODS_COMM_SYNC_
 const preHealthSmokeIntervalMs = parsePositiveInteger(process.env.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || '10000', 'GOODS_COMM_SYNC_HEALTH_INTERVAL_MS')
 const resetSql = resolve('backend/db/pre-sync-reset.sql')
 const anonymizeSql = resolve('backend/db/pre-sync-anonymize.sql')
+const syncStages = []
 const PRE_PROD_TOPOLOGY_MATCH_KEYS = [
   'GOODS_COMM_TENCENT_REGION',
   'HOST',
@@ -54,7 +55,7 @@ const plan = [
   '2. Truncate pre database business tables.',
   '3. Restore prod data into pre.',
   '4. Run pre anonymization SQL to revoke sessions and remove direct contact data.',
-  '5. Write a sync audit record for operational traceability.',
+  '5. Write a sync audit record with per-stage timing and failure details for operational traceability.',
   '6. Run deployed pre health smoke when GOODS_COMM_SYNC_RUN_PRE_SMOKE=true.',
   '7. Run deployed pre main-flow smoke when GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true.'
 ]
@@ -95,20 +96,22 @@ const startedAt = new Date().toISOString()
 let lockAcquired = false
 
 try {
-  await acquireSyncLock()
+  await runStage('acquire_lock', () => acquireSyncLock())
   lockAcquired = true
 
-  for (const command of ['pg_dump', 'psql', 'pg_restore']) {
-    assertCommandAvailable(command)
-  }
+  await runStage('verify_toolchain', () => {
+    for (const command of ['pg_dump', 'psql', 'pg_restore']) {
+      assertCommandAvailable(command)
+    }
+  })
 
-  run('pg_dump', ['--format=custom', '--no-owner', '--no-privileges', '--file', dumpPath, prodUrl])
-  run('psql', [preUrl, '-f', resetSql])
-  run('pg_restore', ['--data-only', '--no-owner', '--no-privileges', '--dbname', preUrl, dumpPath])
-  run('psql', [preUrl, '-f', anonymizeSql])
+  await runStage('dump_prod', () => run('pg_dump', ['--format=custom', '--no-owner', '--no-privileges', '--file', dumpPath, prodUrl]))
+  await runStage('reset_pre', () => run('psql', [preUrl, '-f', resetSql]))
+  await runStage('restore_pre', () => run('pg_restore', ['--data-only', '--no-owner', '--no-privileges', '--dbname', preUrl, dumpPath]))
+  await runStage('anonymize_pre', () => run('psql', [preUrl, '-f', anonymizeSql]))
 
   if (runPreSmoke) {
-    run('node', [
+    await runStage('smoke_pre_health', () => run('node', [
       'scripts/deployed-health-smoke.mjs',
       '--env',
       'pre',
@@ -116,11 +119,11 @@ try {
       String(preHealthSmokeAttempts),
       '--interval-ms',
       String(preHealthSmokeIntervalMs)
-    ])
+    ]))
   }
 
   if (runPreMainSmoke) {
-    run('node', ['scripts/deployed-main-flow-smoke.mjs', '--env', 'pre'])
+    await runStage('smoke_pre_main_flow', () => run('node', ['scripts/deployed-main-flow-smoke.mjs', '--env', 'pre']))
   }
 
   await appendSyncAudit({
@@ -236,10 +239,46 @@ async function appendSyncAudit(record) {
     runPreSmoke,
     preHealthSmokeAttempts,
     preHealthSmokeIntervalMs,
-    runPreMainSmoke
+    runPreMainSmoke,
+    stages: syncStages
   }
 
   await appendFile(auditPath, `${JSON.stringify(payload)}\n`)
+}
+
+async function runStage(name, callback) {
+  const startedAtMs = Date.now()
+  const stage = {
+    name,
+    status: 'running',
+    startedAt: new Date(startedAtMs).toISOString()
+  }
+
+  try {
+    const result = await callback()
+    const completedAtMs = Date.now()
+
+    syncStages.push({
+      ...stage,
+      status: 'completed',
+      completedAt: new Date(completedAtMs).toISOString(),
+      durationMs: completedAtMs - startedAtMs
+    })
+
+    return result
+  } catch (error) {
+    const completedAtMs = Date.now()
+
+    syncStages.push({
+      ...stage,
+      status: 'failed',
+      completedAt: new Date(completedAtMs).toISOString(),
+      durationMs: completedAtMs - startedAtMs,
+      error: error?.message || String(error)
+    })
+
+    throw error
+  }
 }
 
 function assertCommandAvailable(command) {

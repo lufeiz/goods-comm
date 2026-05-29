@@ -176,7 +176,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 - 有 `REPLACE_WITH` 或 placeholder 数据库连接串时拒绝执行真实同步。
 - 需要本机或云任务环境存在 `pg_dump`、`pg_restore`、`psql`。
 - 真实执行时会写同步锁，默认路径为 `/private/tmp/goods-comm-prod-to-pre.lock`，避免定时任务重入。
-- 执行结果会追加到审计日志，默认路径为 `/private/tmp/goods-comm-prod-to-pre-audit.jsonl`。
+- 执行结果会追加到审计日志，默认路径为 `/private/tmp/goods-comm-prod-to-pre-audit.jsonl`；审计记录包含 `acquire_lock`、`verify_toolchain`、`dump_prod`、`reset_pre`、`restore_pre`、`anonymize_pre` 和可选 smoke 阶段的状态、时间戳、耗时与失败原因，便于定时任务排障。
 - 同步后执行 `backend/db/pre-sync-anonymize.sql`：吊销 session、清空交易联系码、脱敏用户昵称/头像/联系码、清空举报描述。
 
 推荐自动同步方式：

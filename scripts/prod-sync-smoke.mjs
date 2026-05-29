@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { delimiter, join, resolve } from 'node:path'
 
 const lockPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.lock`
 const auditPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.jsonl`
@@ -73,6 +73,71 @@ const manualWithPlaceholders = runSyncScript(['--execute'], {
 assert.notEqual(manualWithPlaceholders.status, 0)
 assert.match(manualWithPlaceholders.stderr, /placeholders/)
 
+const fakeTools = await createFakePostgresTools()
+
+try {
+  await cleanup()
+
+  const successfulManual = await runSyncScriptWithTemporaryEnv(['--execute'], {
+    pre: {
+      GOODS_COMM_DATABASE_URL: 'postgres://goods_comm_pre_app:secret@pre-db.internal:5432/goods_comm_pre'
+    },
+    prod: {
+      GOODS_COMM_DATABASE_URL: 'postgres://goods_comm_prod_app:secret@prod-db.internal:5432/goods_comm_prod'
+    }
+  }, {
+    GOODS_COMM_SYNC_CONFIRM: 'sync-prod-to-pre',
+    GOODS_COMM_SYNC_FAKE_TOOL_LOG: fakeTools.logPath,
+    PATH: `${fakeTools.binPath}${delimiter}${process.env.PATH || ''}`
+  })
+  assert.equal(successfulManual.status, 0)
+
+  const audit = await readLatestAuditRecord()
+  assert.equal(audit.status, 'completed')
+  assert.deepEqual(audit.stages.map((stage) => stage.name), [
+    'acquire_lock',
+    'verify_toolchain',
+    'dump_prod',
+    'reset_pre',
+    'restore_pre',
+    'anonymize_pre'
+  ])
+  assert.ok(audit.stages.every((stage) => stage.status === 'completed'))
+  assert.ok(audit.stages.every((stage) => Number.isSafeInteger(stage.durationMs) && stage.durationMs >= 0))
+
+  const toolLog = await readFile(fakeTools.logPath, 'utf8')
+  assert.match(toolLog, /pg_dump --format=custom --no-owner --no-privileges --file/)
+  assert.match(toolLog, /pg_restore --data-only --no-owner --no-privileges --dbname/)
+
+  await cleanup()
+
+  const failedManual = await runSyncScriptWithTemporaryEnv(['--execute'], {
+    pre: {
+      GOODS_COMM_DATABASE_URL: 'postgres://goods_comm_pre_app:secret@pre-db.internal:5432/goods_comm_pre'
+    },
+    prod: {
+      GOODS_COMM_DATABASE_URL: 'postgres://goods_comm_prod_app:secret@prod-db.internal:5432/goods_comm_prod'
+    }
+  }, {
+    GOODS_COMM_SYNC_CONFIRM: 'sync-prod-to-pre',
+    GOODS_COMM_SYNC_FAKE_TOOL_LOG: fakeTools.logPath,
+    GOODS_COMM_SYNC_FAKE_FAIL_COMMAND: 'pg_restore',
+    PATH: `${fakeTools.binPath}${delimiter}${process.env.PATH || ''}`
+  })
+  assert.notEqual(failedManual.status, 0)
+
+  const failedAudit = await readLatestAuditRecord()
+  assert.equal(failedAudit.status, 'failed')
+  assert.equal(failedAudit.stages.at(-1).name, 'restore_pre')
+  assert.equal(failedAudit.stages.at(-1).status, 'failed')
+  assert.match(failedAudit.stages.at(-1).error, /pg_restore failed/)
+} finally {
+  await rm(fakeTools.directory, {
+    recursive: true,
+    force: true
+  })
+}
+
 await cleanup()
 
 console.log('Prod to pre sync smoke checks passed')
@@ -93,7 +158,7 @@ function runSyncScript(args, env = {}) {
   })
 }
 
-async function runSyncScriptWithTemporaryEnv(args, overrides = {}) {
+async function runSyncScriptWithTemporaryEnv(args, overrides = {}, env = {}) {
   const directory = await mkdtemp(join(tmpdir(), `goods-comm-sync-smoke-${process.pid}-`))
 
   try {
@@ -109,7 +174,8 @@ async function runSyncScriptWithTemporaryEnv(args, overrides = {}) {
       env: {
         ...process.env,
         GOODS_COMM_SYNC_LOCK_PATH: lockPath,
-        GOODS_COMM_SYNC_AUDIT_PATH: auditPath
+        GOODS_COMM_SYNC_AUDIT_PATH: auditPath,
+        ...env
       }
     })
   } finally {
@@ -137,6 +203,43 @@ function applyEnvOverrides(raw, overrides = {}) {
 
 function escapeRegExp(value = '') {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+async function createFakePostgresTools() {
+  const directory = await mkdtemp(join(tmpdir(), `goods-comm-sync-tools-${process.pid}-`))
+  const logPath = join(directory, 'commands.log')
+  const script = `#!/bin/sh
+name=$(basename "$0")
+if [ "$1" = "--version" ]; then
+  echo "$name fake"
+  exit 0
+fi
+printf "%s %s\\n" "$name" "$*" >> "$GOODS_COMM_SYNC_FAKE_TOOL_LOG"
+if [ "$GOODS_COMM_SYNC_FAKE_FAIL_COMMAND" = "$name" ]; then
+  exit 23
+fi
+exit 0
+`
+
+  await writeFile(logPath, '')
+
+  await Promise.all(['pg_dump', 'psql', 'pg_restore'].map(async (command) => {
+    const path = join(directory, command)
+    await writeFile(path, script)
+    await chmod(path, 0o755)
+  }))
+
+  return {
+    directory,
+    binPath: directory,
+    logPath
+  }
+}
+
+async function readLatestAuditRecord() {
+  const raw = await readFile(auditPath, 'utf8')
+  const lines = raw.trim().split(/\r?\n/)
+  return JSON.parse(lines.at(-1))
 }
 
 async function cleanup() {
