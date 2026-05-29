@@ -3,7 +3,7 @@ import { request as httpRequest } from 'node:http'
 import { readFile, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { startGoodsCommServer } from '../backend/src/server.mjs'
-import { TRADE_STATUS } from '../src/services/goods.js'
+import { ITEM_STATUS, TRADE_STATUS } from '../src/services/goods.js'
 
 const statePath = resolve('/private/tmp/goods-comm-backend-smoke.json')
 const objectRootDir = resolve('/private/tmp/goods-comm-object-store-smoke')
@@ -883,6 +883,94 @@ try {
   ))
   const publicAfterSold = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556`)
   assert.equal(publicAfterSold.items.some((candidate) => candidate.id === item.id), false)
+
+  const deleteSeller = await post(`${baseUrl}/auth/login`, {
+    provider: 'weixin',
+    code: 'backend-delete-seller-code',
+    userInfo: {
+      nickname: '后端待注销卖家',
+      avatarUrl: ''
+    }
+  })
+  const deleteUpload = await uploadFile(`${baseUrl}/uploads/items`, uploadBytes, deleteSeller.token)
+  const deleteItem = await post(`${baseUrl}/items`, {
+    title: '后端注销卖家商品',
+    price: 51,
+    category: 'home',
+    condition: 'good',
+    description: '卖家注销后应下架商品并吊销登录态',
+    images: [deleteUpload],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: sellerLocation
+  }, deleteSeller.token)
+  assert.equal(deleteItem.status, ITEM_STATUS.ONLINE)
+  const deletedSellerAccount = await post(`${baseUrl}/auth/delete-account`, {
+    reason: 'backend_smoke_seller_requested'
+  }, deleteSeller.token)
+  assert.equal(deletedSellerAccount.ok, true)
+  assert.equal(Boolean(deletedSellerAccount.deletedAt), true)
+  const rejectedDeletedSellerToken = await getExpectError(`${baseUrl}/items/mine`, deleteSeller.token)
+  assert.equal(rejectedDeletedSellerToken.status, 401)
+  assert.equal(rejectedDeletedSellerToken.code, 'UNAUTHENTICATED')
+  const hiddenDeletedSellerItem = await getExpectError(`${baseUrl}/items/${deleteItem.id}`)
+  assert.equal(hiddenDeletedSellerItem.status, 404)
+  assert.equal(hiddenDeletedSellerItem.code, 'NOT_FOUND')
+
+  const deleteBuyer = await post(`${baseUrl}/auth/login`, {
+    provider: 'weixin',
+    code: 'backend-delete-buyer-code',
+    userInfo: {
+      nickname: '后端待注销买家',
+      avatarUrl: ''
+    }
+  })
+  const buyerDeletionItem = await post(`${baseUrl}/items`, {
+    title: '后端买家注销释放商品',
+    price: 52,
+    category: 'home',
+    condition: 'good',
+    description: '买家注销后应取消交易并释放锁定商品',
+    images: [upload],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: sellerLocation
+  }, seller.token)
+  assert.equal(buyerDeletionItem.status, ITEM_STATUS.ONLINE)
+  const buyerDeletionTrade = await post(`${baseUrl}/trades`, {
+    itemId: buyerDeletionItem.id,
+    buyerLocation: {
+      latitude: 31.2301,
+      longitude: 121.4556,
+      accuracy: 60,
+      capturedAt: Date.now()
+    }
+  }, deleteBuyer.token)
+  assert.equal(buyerDeletionTrade.status, TRADE_STATUS.PENDING_SELLER_CONFIRM)
+  const deletedBuyerAccount = await post(`${baseUrl}/auth/delete-account`, {
+    reason: 'backend_smoke_buyer_requested'
+  }, deleteBuyer.token)
+  assert.equal(deletedBuyerAccount.ok, true)
+  const rejectedDeletedBuyerToken = await getExpectError(`${baseUrl}/trades`, deleteBuyer.token)
+  assert.equal(rejectedDeletedBuyerToken.status, 401)
+  assert.equal(rejectedDeletedBuyerToken.code, 'UNAUTHENTICATED')
+  const sellerTradesAfterBuyerDeletion = await get(`${baseUrl}/trades`, seller.token)
+  const cancelledBuyerDeletionTrade = sellerTradesAfterBuyerDeletion.trades.find((candidate) => candidate.id === buyerDeletionTrade.id)
+  assert.equal(cancelledBuyerDeletionTrade.status, TRADE_STATUS.CANCELLED)
+  assert.equal(cancelledBuyerDeletionTrade.contactCode, '')
+  const releasedBuyerDeletionItem = await get(`${baseUrl}/items/${buyerDeletionItem.id}`)
+  assert.equal(releasedBuyerDeletionItem.status, ITEM_STATUS.ONLINE)
+  const sellerNotificationsAfterBuyerDeletion = await get(`${baseUrl}/notifications`, seller.token)
+  assert.equal(sellerNotificationsAfterBuyerDeletion.notifications.some((notification) =>
+    notification.type === 'trade_cancelled' &&
+    notification.targetId === buyerDeletionTrade.id
+  ), true)
 
   const logout = await post(`${baseUrl}/auth/logout`, {}, buyer.token)
   assert.equal(logout.ok, true)
