@@ -190,6 +190,13 @@ for (const environment of environments) {
 const pre = loaded.get('pre')
 const prod = loaded.get('prod')
 
+assertUniqueEnvironmentValues('GOODS_COMM_DATABASE_URL', {
+  mask: maskConnectionString
+})
+assertUniqueEnvironmentValues('GOODS_COMM_STATE_PATH')
+assertUniqueEnvironmentValues('GOODS_COMM_OBJECT_DIR')
+assertUniqueEnvironmentValues('GOODS_COMM_COS_BUCKET')
+
 if (pre && prod) {
   if (pre.GOODS_COMM_DATABASE_URL === prod.GOODS_COMM_DATABASE_URL) {
     errors.push('[pre/prod] GOODS_COMM_DATABASE_URL must point to two different databases')
@@ -223,6 +230,27 @@ function maskValue(key, value) {
   }
 
   return value
+}
+
+function assertUniqueEnvironmentValues(key, options = {}) {
+  const seen = new Map()
+  const mask = options.mask || ((value) => value)
+
+  for (const [environment, values] of loaded.entries()) {
+    const value = values[key]
+
+    if (!value) {
+      continue
+    }
+
+    const firstEnvironment = seen.get(value)
+    if (firstEnvironment) {
+      errors.push(`[${firstEnvironment}/${environment}] ${key} must be isolated per environment; both use ${mask(value)}`)
+      continue
+    }
+
+    seen.set(value, environment)
+  }
 }
 
 function isBooleanString(value = '') {

@@ -77,6 +77,7 @@
 
 - 前端使用 `.env.dev/test/pre/prod` 里的 `VITE_API_BASE_URL` 构建不同环境产物。
 - 后端通过 `GOODS_COMM_ENV`、`GOODS_COMM_ALLOWED_ORIGINS`、`GOODS_COMM_DATABASE_URL` 区分运行环境。
+- `npm run env:check` 会阻断 dev/test/pre/prod 复用同一个 `GOODS_COMM_DATABASE_URL`、`GOODS_COMM_STATE_PATH`、`GOODS_COMM_OBJECT_DIR` 或 `GOODS_COMM_COS_BUCKET`；即使还在占位阶段，也必须保持四套环境的持久化边界互相独立。
 - pre/prod 后端通过 `GOODS_COMM_STATE_STORE=postgres` 连接 PostgreSQL；文件状态存储会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_PLATFORM_AUTH_MODE=platform` 调用真实微信 / 支付宝登录换身份接口；演示登录会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_OBJECT_STORE=cos` 上传商品图片到 COS/CDN；本地对象存储会被运行时拒绝。
