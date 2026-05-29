@@ -123,6 +123,60 @@ export async function handleBffRequest(path, options = {}, state = createBffStat
   return withIdempotency(path, method, options, state, () => routeBffRequest(path, method, options, state))
 }
 
+export function resolveIdempotencyReplay(path, options = {}, state = createBffState()) {
+  const method = options.method || 'GET'
+  const idempotencyKey = normalizeIdempotencyKey(resolveIdempotencyKey(options))
+
+  if (!idempotencyKey || !isIdempotentRequest(path, method)) {
+    return {
+      handled: false
+    }
+  }
+
+  const now = Date.now()
+  const scope = resolveIdempotencyScope(options, state)
+  const requestHash = hashRequestForIdempotency(method, path, options.data)
+  const records = normalizeIdempotencyRecords(state.idempotencyRecords, now)
+  const existing = records.find((record) =>
+    record.scope === scope &&
+    record.key === idempotencyKey
+  )
+
+  state.idempotencyRecords = records
+
+  if (!existing) {
+    return {
+      handled: false,
+      scope,
+      key: idempotencyKey,
+      requestHash,
+      records,
+      now
+    }
+  }
+
+  if (existing.method !== method || existing.path !== path || existing.requestHash !== requestHash) {
+    throw new Error('幂等键已被不同请求使用')
+  }
+
+  if (existing.status !== 'completed') {
+    if (existing.status === 'committed_error') {
+      throw new CommittableBffError(existing.response?.message || '请求处理失败')
+    }
+
+    throw new Error('幂等请求仍在处理，请稍后重试')
+  }
+
+  clearExpiredTradeContactCodes(state, now)
+  const response = sanitizeIdempotencyReplayResponse(existing.response, state, now)
+  existing.response = cloneJson(response)
+
+  return {
+    handled: true,
+    response
+  }
+}
+
 async function routeBffRequest(path, method, options = {}, state = createBffState()) {
   if (path === '/auth/login' && method === 'POST') {
     return login(options.data, state)
@@ -258,40 +312,17 @@ async function routeBffRequest(path, method, options = {}, state = createBffStat
 }
 
 async function withIdempotency(path, method, options = {}, state, execute) {
-  const idempotencyKey = normalizeIdempotencyKey(resolveIdempotencyKey(options))
+  const replay = resolveIdempotencyReplay(path, {
+    ...options,
+    method
+  }, state)
 
-  if (!idempotencyKey || !isIdempotentRequest(path, method)) {
-    return execute()
+  if (replay.handled) {
+    return replay.response
   }
 
-  const now = Date.now()
-  const scope = resolveIdempotencyScope(options, state)
-  const requestHash = hashRequestForIdempotency(method, path, options.data)
-  const records = normalizeIdempotencyRecords(state.idempotencyRecords, now)
-  const existing = records.find((record) =>
-    record.scope === scope &&
-    record.key === idempotencyKey
-  )
-
-  if (existing) {
-    if (existing.method !== method || existing.path !== path || existing.requestHash !== requestHash) {
-      throw new Error('幂等键已被不同请求使用')
-    }
-
-    if (existing.status !== 'completed') {
-      if (existing.status === 'committed_error') {
-        state.idempotencyRecords = records
-        throw new CommittableBffError(existing.response?.message || '请求处理失败')
-      }
-
-      throw new Error('幂等请求仍在处理，请稍后重试')
-    }
-
-    clearExpiredTradeContactCodes(state, now)
-    const response = sanitizeIdempotencyReplayResponse(existing.response, state, now)
-    existing.response = cloneJson(response)
-    state.idempotencyRecords = records
-    return response
+  if (!replay.key) {
+    return execute()
   }
 
   let result
@@ -309,25 +340,25 @@ async function withIdempotency(path, method, options = {}, state, execute) {
 
   const completedAt = Date.now()
   const record = buildIdempotencyRecord({
-    scope,
-    key: idempotencyKey,
+    scope: replay.scope,
+    key: replay.key,
     method,
     path,
-    requestHash,
+    requestHash: replay.requestHash,
     status: committedError ? 'committed_error' : 'completed',
     response: committedError
       ? {
           message: committedError.message || '请求处理失败'
         }
       : cloneJson(result),
-    createdAt: now,
+    createdAt: replay.now,
     updatedAt: completedAt,
     expiresAt: completedAt + IDEMPOTENCY_RECORD_TTL_MS
   })
 
   state.idempotencyRecords = [
     record,
-    ...records
+    ...replay.records
   ].slice(0, IDEMPOTENCY_RECORD_LIMIT)
 
   if (committedError) {
@@ -447,7 +478,12 @@ function stripIdempotencyFields(value) {
   }
 
   return Object.fromEntries(Object.entries(value)
-    .filter(([key]) => !['idempotencyKey', 'clientRequestId'].includes(key))
+    .filter(([key]) => ![
+      'idempotencyKey',
+      'clientRequestId',
+      'moderation',
+      'serverRegion'
+    ].includes(key))
     .map(([key, entry]) => [key, stripIdempotencyFields(entry)]))
 }
 

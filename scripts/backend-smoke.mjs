@@ -3,6 +3,7 @@ import { request as httpRequest } from 'node:http'
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { startGoodsCommServer } from '../backend/src/server.mjs'
+import { createContentSafetyClient } from '../backend/src/content-safety.mjs'
 import { ITEM_STATUS, TRADE_STATUS } from '../src/services/goods.js'
 
 const statePath = resolve('/private/tmp/goods-comm-backend-smoke.json')
@@ -10,6 +11,11 @@ const objectRootDir = resolve('/private/tmp/goods-comm-object-store-smoke')
 const allowedOrigin = 'https://mini.example.com'
 const deliveredPlatformNotifications = []
 const failedPlatformNotificationTypes = new Set(['trade_reviewed'])
+const reviewedItemPayloads = []
+const mockContentSafety = createContentSafetyClient({
+  environment: 'test',
+  contentSafetyProvider: 'mock'
+})
 
 await assertHttpRateLimit()
 await assertTrustedProxyForwardedRateLimit()
@@ -36,6 +42,14 @@ const runtime = await startGoodsCommServer({
   opsLoginWindowMs: 60_000,
   opsLoginLockMs: 60_000,
   maxRequestBytes: 16 * 1024,
+  contentSafety: {
+    provider: mockContentSafety.provider,
+    reviewItemPayload: async (payload = {}) => {
+      reviewedItemPayloads.push(payload)
+      return mockContentSafety.reviewItemPayload(payload)
+    },
+    reviewUploadedImage: async (file = {}) => mockContentSafety.reviewUploadedImage(file)
+  },
   platformNotifier: {
     provider: 'mock',
     dispatchNotifications: async (notifications = [], users = [], context = {}) => {
@@ -343,6 +357,7 @@ try {
     },
     location: sellerLocation
   }
+  const itemReviewCallsBeforeIdempotentCreate = reviewedItemPayloads.length
   const idempotentItem = await post(`${baseUrl}/items`, idempotentItemPayload, seller.token, {
     header: {
       'Idempotency-Key': 'backend_item_create_key_001'
@@ -354,6 +369,7 @@ try {
     }
   })
   assert.equal(replayedItem.id, idempotentItem.id)
+  assert.equal(reviewedItemPayloads.length - itemReviewCallsBeforeIdempotentCreate, 1)
   const reusedIdempotencyKey = await requestExpectError(`${baseUrl}/items`, {
     method: 'POST',
     token: seller.token,
@@ -368,6 +384,7 @@ try {
   assert.equal(reusedIdempotencyKey.status, 409)
   assert.equal(reusedIdempotencyKey.code, 'CONFLICT')
   assert.match(reusedIdempotencyKey.message, /幂等键已被不同请求使用/)
+  assert.equal(reviewedItemPayloads.length - itemReviewCallsBeforeIdempotentCreate, 1)
 
   const rejectedContentItemPayload = {
     title: '后端违禁烟测商品',
@@ -383,6 +400,7 @@ try {
     },
     location: sellerLocation
   }
+  const itemReviewCallsBeforeRejectedContent = reviewedItemPayloads.length
   const rejectedContentItem = await requestExpectError(`${baseUrl}/items`, {
     method: 'POST',
     token: seller.token,
@@ -405,6 +423,7 @@ try {
   assert.equal(replayedRejectedContentItem.status, 422)
   assert.equal(replayedRejectedContentItem.code, 'VALIDATION_ERROR')
   assert.match(replayedRejectedContentItem.message, /商品未通过审核/)
+  assert.equal(reviewedItemPayloads.length - itemReviewCallsBeforeRejectedContent, 1)
 
   const stateAfterRejectedContent = JSON.parse(await readFile(statePath, 'utf8'))
   assert.equal(stateAfterRejectedContent.moderationEvents.filter((event) =>

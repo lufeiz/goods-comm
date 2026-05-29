@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import { isIP } from 'node:net'
-import { handleBffRequest, isIdempotentRequest } from '../../src/bff/handler.js'
+import { handleBffRequest, isIdempotentRequest, resolveIdempotencyReplay } from '../../src/bff/handler.js'
 import { normalizeBffHttpError } from '../../src/bff/http-error.js'
 import { createRuntimeStateStore } from './state-store.mjs'
 import { createPlatformAuthResolver } from './platform-auth.mjs'
@@ -470,13 +470,37 @@ export function createGoodsCommServer(options = {}) {
       }
 
       if (url.pathname === '/items' && method === 'POST') {
-        data = await contentSafety.reviewItemPayload({
+        const regionResolvedData = {
           ...data,
           location: {
             ...data.location,
             serverRegion: await regionResolver.resolveRegion(data.location)
           }
-        })
+        }
+
+        if (hasRequestIdempotencyKey(request, regionResolvedData)) {
+          const replay = await replayBffIdempotencyBeforeExternalReview(store, url.pathname, {
+            method,
+            data: regionResolvedData,
+            header: {
+              Authorization: request.headers.authorization || '',
+              'Idempotency-Key': request.headers['idempotency-key'] || request.headers['x-idempotency-key'] || ''
+            }
+          })
+
+          if (replay.handled) {
+            sendResponse(response, 200, {
+              data: replay.response,
+              trace: {
+                traceId,
+                durationMs: Date.now() - startedAt
+              }
+            }, traceId, corsContext)
+            return
+          }
+        }
+
+        data = await contentSafety.reviewItemPayload(regionResolvedData)
       }
 
       if (url.pathname === '/trades' && method === 'POST') {
@@ -547,6 +571,10 @@ async function runBffTransactionWithNotifications(store, platformNotifier, path,
   dispatchPlatformNotifications(platformNotifier, store, pendingDeliveryRecords, pendingNotifications, usersSnapshot, context)
 
   return result
+}
+
+async function replayBffIdempotencyBeforeExternalReview(store, path, requestOptions = {}) {
+  return store.transact(async (state) => resolveIdempotencyReplay(path, requestOptions, state))
 }
 
 function dispatchPlatformNotifications(platformNotifier, store, deliveryRecords = [], pendingNotifications = [], users = [], context = {}) {
@@ -923,6 +951,14 @@ function opsAuditTargetForModerationPath(path = '') {
 
 function getIdempotencyKeyFromRequest(request = {}) {
   return String(request.headers?.['idempotency-key'] || request.headers?.['x-idempotency-key'] || '').trim()
+}
+
+function hasRequestIdempotencyKey(request = {}, data = {}) {
+  return Boolean(
+    getIdempotencyKeyFromRequest(request) ||
+    data?.idempotencyKey ||
+    data?.clientRequestId
+  )
 }
 
 function assertProtectedWriteIdempotency(path, method, request = {}, environment = 'dev') {

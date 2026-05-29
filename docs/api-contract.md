@@ -1,6 +1,6 @@
 # goods-comm BFF / 云函数接口契约
 
-更新日期：2026-05-28
+更新日期：2026-05-29
 
 端侧已经通过 `src/services/api.js`、`src/services/goods.js`、`src/services/auth.js`、`src/services/reports.js` 对齐以下接口。`src/bff/handler.js` 提供无依赖纯函数处理器，`src/bff/fetch-adapter.js` 提供 Fetch Runtime / 边缘函数适配器，`backend/src/server.mjs` 已将同一套契约挂载为可运行的 Node HTTP 后端；`backend/db/schema.sql` 提供 PostgreSQL / TencentDB 建表脚本。
 
@@ -16,6 +16,7 @@
 - 同一用户复用同一幂等键提交不同请求时返回 `409 CONFLICT`，避免错误复用键导致状态串写。
 - 幂等记录当前保留 24 小时，并持久化到 `idempotency_records`；prod 同步到 pre 时会清空该表，避免预上线环境继承生产请求重放缓存。
 - 幂等默认只覆盖成功结果；业务校验失败仍按原错误码返回。例外是带 `commitStateOnError` 的业务拒绝，这类请求已经写入审核 / 风控留痕，因此会记录为 `committed_error` 并回放首次错误，避免弱网重试重复追加审核事件。
+- 请求体哈希会忽略 `idempotencyKey`、`clientRequestId`、服务端区域解析注入的 `serverRegion` 和内容安全注入的 `moderation`，这些字段不属于端侧业务意图；Node HTTP 后端会在发布商品的外部内容安全调用前先尝试幂等重放，避免弱网重试重复调用微信文本审核或重复追加审核事件。
 - 这层保护用于抵御弱网重试、端侧重复点击和平台网关重放，不能替代数据库唯一索引和交易状态机。
 
 ## 1. 认证
@@ -290,11 +291,11 @@ usage: item_image
 - `location` 的经纬度可用于服务端解析；`communityId`、`streetId` 等行政区字段只能作为展示初值，最终归属必须由服务端重算并覆盖。
 - 商品创建成功后的公开响应也必须复用商品脱敏规则：卖家联系码和精确发布坐标不返回，服务端保留坐标用于交易校验和距离计算。
 - 同一卖家存在同名 `pending_review` / `online` / `reserved` 商品时，服务端必须拒绝重复发布，避免刷屏和重复审核。
-- 端侧重复提交同一次发布请求时应使用相同幂等键，服务端必须返回首次创建的商品，不能重复写入商品和审核队列。
+- 端侧重复提交同一次发布请求时应使用相同幂等键，服务端必须返回首次创建的商品或首次审核拒绝错误，不能重复写入商品、重复写入审核队列，也不能重复调用外部文本审核。
 - 无法解析到社区 / 街道时必须拒绝发布，避免生成不可交易商品。
 - 文本命中违禁词时直接拒绝，记录审核事件，不写入普通商品表。
 - 本地演示路径也执行同样的违禁词拒绝语义，避免无远端 API 时绕过内容审核。
-- Node HTTP 后端会在 `/items` 发布前执行内容安全适配器：`dev/test` 使用 mock，`pre/prod` 使用微信内容安全；审核拒绝时返回 `422 VALIDATION_ERROR`，待复核时返回 `pending_review`。
+- Node HTTP 后端会在 `/items` 发布前先补齐服务端区域解析并执行幂等重放预检，只有非重放请求才进入内容安全适配器：`dev/test` 使用 mock，`pre/prod` 使用微信内容安全；审核拒绝时返回 `422 VALIDATION_ERROR`，待复核时返回 `pending_review`。
 - 审核拒绝虽然对客户端返回错误，但必须保留 `moderation_events` 审计记录；BFF 使用显式 `commitStateOnError` 标记让 file/PostgreSQL store 提交审核拒绝事件后继续返回 `422`，不能依赖本地文件 store 的异常落盘副作用。
 - 图片未完成服务端上传 / 审核时，商品进入 `pending_review`，不进入公开列表或公开详情。
 - 图片和文本通过自动审核时，当前 BFF 示例返回 `online` + `reviewStatus: approved_auto`；生产环境可按策略改为人工或异步审核后再上架。

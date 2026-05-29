@@ -428,7 +428,7 @@
 8. 交易评价：校验交易已完成、评价人属于该交易、同一交易同一评价人未评价，写 `trade_reviews`，并给对方写 `notifications` 和 `notification_deliveries`。
 9. 账号注销：用户置为 `deleted`、吊销 `auth_sessions`、下架用户活跃商品、取消用户活跃交易、匿名化该用户历史评价快照、写 `account_deletions`。
 10. 退出登录：只吊销当前 `auth_sessions` 记录，不影响同一用户的其他有效 session。
-11. 幂等写请求：执行业务写入和 `idempotency_records` 响应快照必须处于同一事务；成功请求记录 `completed`，已提交审计的业务拒绝记录 `committed_error`；重复请求不能再次追加商品、交易时间线、站内通知、审核事件或平台通知 outbox。
+11. 幂等写请求：执行业务写入和 `idempotency_records` 响应快照必须处于同一事务；成功请求记录 `completed`，已提交审计的业务拒绝记录 `committed_error`；重复请求不能再次追加商品、交易时间线、站内通知、审核事件或平台通知 outbox。请求身份不包含服务端注入的 `serverRegion` 和 `moderation` 字段，发布重试应在外部内容安全调用前先命中幂等重放。
 12. 举报处理：运营通过 `uphold_report` 或 `dismiss_report` 处理 `pending_review` 举报；确认违规时下架商品并把活跃交易转争议，驳回误报时只在没有活跃 / 争议交易阻塞时恢复 `reported_removed` 商品为 `online`，同时写 `reports` 处理字段、`moderation_events` 和 `ops_audit_events`。
 13. 客户端遥测：端侧登录、定位、发布、交易、举报等失败事件写入 `client_events`；该记录不参与交易事务裁决，但必须脱敏并可供运营排障查询。
 
