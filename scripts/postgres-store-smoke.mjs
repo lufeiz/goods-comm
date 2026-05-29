@@ -67,6 +67,8 @@ const item = await handleBffRequest('/items', {
     location: {
       latitude: region.latitude,
       longitude: region.longitude,
+      accuracy: 25,
+      capturedAt: Date.now(),
       serverRegion: region,
       scopeType: 'community',
       radiusMeters: region.radiusMeters
@@ -142,6 +144,8 @@ const reviewItem = await handleBffRequest('/items', {
     location: {
       latitude: region.latitude,
       longitude: region.longitude,
+      accuracy: 25,
+      capturedAt: Date.now(),
       serverRegion: region,
       scopeType: 'community',
       radiusMeters: region.radiusMeters

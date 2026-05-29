@@ -171,6 +171,63 @@ const upload = await handleBffRequest('/uploads/items', {
 
 assert.equal(upload.status, 'uploaded')
 
+const createSellerLocation = (overrides = {}) => ({
+  latitude: 31.22945,
+  longitude: 121.45494,
+  accuracy: 60,
+  capturedAt: Date.now(),
+  communityId: region.communityId,
+  streetId: region.streetId,
+  ...overrides
+})
+
+await assert.rejects(
+  () => handleBffRequest('/items', {
+    method: 'POST',
+    token: sellerSession.token,
+    data: {
+      title: 'BFF 过期定位商品',
+      price: 128,
+      category: 'home',
+      condition: 'good',
+      description: '发布位置必须是新鲜实时定位',
+      images: [upload],
+      tradeScope: {
+        type: 'community',
+        label: '同社区',
+        radiusMeters: 1200
+      },
+      location: createSellerLocation({
+        capturedAt: Date.now() - 6 * 60 * 1000
+      })
+    }
+  }, state),
+  /当前位置已过期/
+)
+await assert.rejects(
+  () => handleBffRequest('/items', {
+    method: 'POST',
+    token: sellerSession.token,
+    data: {
+      title: 'BFF 低精度定位商品',
+      price: 128,
+      category: 'home',
+      condition: 'good',
+      description: '发布位置必须有足够精度',
+      images: [upload],
+      tradeScope: {
+        type: 'community',
+        label: '同社区',
+        radiusMeters: 1200
+      },
+      location: createSellerLocation({
+        accuracy: 260
+      })
+    }
+  }, state),
+  /定位精度约 260m/
+)
+
 const item = await handleBffRequest('/items', {
   method: 'POST',
   token: sellerSession.token,
@@ -186,14 +243,12 @@ const item = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
+    location: createSellerLocation({
       communityId: 'client-spoofed-community',
       communityName: region.communityName,
       streetId: 'client-spoofed-street',
       streetName: region.streetName
-    }
+    })
   }
 }, state)
 
@@ -220,12 +275,7 @@ await assert.rejects(
         label: '同社区',
         radiusMeters: 1200
       },
-      location: {
-        latitude: 31.22945,
-        longitude: 121.45494,
-        communityId: region.communityId,
-        streetId: region.streetId
-      }
+      location: createSellerLocation()
     }
   }, state),
   /已存在同名在售或审核中的商品/
@@ -243,12 +293,7 @@ const idempotentItemPayload = {
     label: '同社区',
     radiusMeters: 1200
   },
-  location: {
-    latitude: 31.22945,
-    longitude: 121.45494,
-    communityId: region.communityId,
-    streetId: region.streetId
-  }
+  location: createSellerLocation()
 }
 const idempotentItem = await handleBffRequest('/items', {
   method: 'POST',
@@ -471,12 +516,7 @@ const riskItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 const riskTrade = await handleBffRequest('/trades', {
@@ -752,12 +792,7 @@ const relistableItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 const removedBySeller = await handleBffRequest(`/items/${relistableItem.id}/status`, {
@@ -789,12 +824,7 @@ const rejectedItemPayload = {
     label: '同社区',
     radiusMeters: 1200
   },
-  location: {
-    latitude: 31.22945,
-    longitude: 121.45494,
-    communityId: region.communityId,
-    streetId: region.streetId
-  }
+  location: createSellerLocation()
 }
 await assert.rejects(
   () => handleBffRequest('/items', {
@@ -841,12 +871,7 @@ const pendingReviewItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 
@@ -907,12 +932,7 @@ const mediaTraceItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 assert.equal(mediaTraceItem.status, ITEM_STATUS.PENDING_REVIEW)
@@ -946,12 +966,7 @@ const reportLockedItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 const reportLockedTrade = await handleBffRequest('/trades', {
@@ -1051,12 +1066,7 @@ const reportableItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 
@@ -1201,12 +1211,7 @@ const deleteItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 
@@ -1267,12 +1272,7 @@ const releaseItem = await handleBffRequest('/items', {
       label: '同社区',
       radiusMeters: 1200
     },
-    location: {
-      latitude: 31.22945,
-      longitude: 121.45494,
-      communityId: region.communityId,
-      streetId: region.streetId
-    }
+    location: createSellerLocation()
   }
 }, state)
 const releaseTrade = await handleBffRequest('/trades', {

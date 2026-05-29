@@ -76,6 +76,8 @@ const item = await post('/items', {
   location: {
     latitude: 31.22945,
     longitude: 121.45494,
+    accuracy: 60,
+    capturedAt: Date.now(),
     communityId: 'client-spoofed-community',
     streetId: 'client-spoofed-street'
   }
@@ -104,6 +106,8 @@ const duplicateItem = await raw('/items', {
     location: {
       latitude: 31.22945,
       longitude: 121.45494,
+      accuracy: 60,
+      capturedAt: Date.now(),
       communityId: region.communityId,
       streetId: region.streetId
     }
@@ -129,6 +133,8 @@ const idempotentItemPayload = {
   location: {
     latitude: 31.22945,
     longitude: 121.45494,
+    accuracy: 60,
+    capturedAt: Date.now(),
     communityId: region.communityId,
     streetId: region.streetId
   }
@@ -360,6 +366,8 @@ const disputeItem = await post('/items', {
   location: {
     latitude: 31.22945,
     longitude: 121.45494,
+    accuracy: 60,
+    capturedAt: Date.now(),
     communityId: region.communityId,
     streetId: region.streetId
   }

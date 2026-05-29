@@ -212,6 +212,8 @@ assert.equal(normalizedRemoteSession.platformId, 'server-openid-smoke')
 const sellerLocation = {
   latitude: 31.22945,
   longitude: 121.45494,
+  accuracy: 50,
+  capturedAt: Date.now(),
   communityId: 'sh-jingan-shimen',
   communityName: '石门二路社区',
   streetId: 'sh-jingan-nanjingxi',
@@ -400,9 +402,40 @@ assert.throws(() => publishGoods({
   tradeScope: item.tradeScope,
   location: {
     latitude: sellerLocation.latitude,
-    longitude: sellerLocation.longitude
+    longitude: sellerLocation.longitude,
+    accuracy: 50,
+    capturedAt: Date.now()
   }
 }, seller), /未能确认发布位置所属社区/)
+
+assert.throws(() => publishGoods({
+  title: '过期定位商品',
+  price: 20,
+  category: 'home',
+  condition: 'good',
+  description: '发布位置必须是新鲜实时定位',
+  images: ['local://stale-location'],
+  tradeScope: item.tradeScope,
+  location: {
+    ...sellerLocation,
+    capturedAt: Date.now() - 6 * 60 * 1000
+  }
+}, seller), /当前位置已过期/)
+
+assert.throws(() => publishGoods({
+  title: '低精度定位商品',
+  price: 20,
+  category: 'home',
+  condition: 'good',
+  description: '发布位置必须有足够精度',
+  images: ['local://low-accuracy-location'],
+  tradeScope: item.tradeScope,
+  location: {
+    ...sellerLocation,
+    accuracy: 260,
+    capturedAt: Date.now()
+  }
+}, seller), /定位精度约 260m/)
 
 assert.throws(() => publishGoods({
   title: '违禁本地商品',

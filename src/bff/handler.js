@@ -370,7 +370,7 @@ function sanitizeIdempotencyReplayResponse(response = {}, state = {}, now = Date
   return replay
 }
 
-function isIdempotentRequest(path, method) {
+export function isIdempotentRequest(path, method) {
   if (!['POST', 'PATCH'].includes(method)) {
     return false
   }
@@ -2699,8 +2699,38 @@ function assertItemPayload(payload = {}) {
     throw new Error('发布位置坐标无效')
   }
 
+  assertSellerLocationQuality(payload.location)
+
   if (!normalizeImages(payload.images).length) {
     throw new Error('请至少添加 1 张物品照片')
+  }
+}
+
+function assertSellerLocationQuality(location = {}) {
+  const capturedAt = Number(location.capturedAt)
+
+  if (!Number.isFinite(capturedAt)) {
+    throw new Error('需要提交实时 GPS 定位时间后才能发布')
+  }
+
+  const now = Date.now()
+
+  if (capturedAt > now + 60 * 1000) {
+    throw new Error('定位时间异常，请重新定位后再发布')
+  }
+
+  if (now - capturedAt > LOCATION_CACHE_TTL_MS) {
+    throw new Error('当前位置已过期，请重新定位后再发布')
+  }
+
+  const accuracy = Number(location.accuracy)
+
+  if (!Number.isFinite(accuracy)) {
+    throw new Error('未获取到定位精度，请使用实时 GPS 定位后再试')
+  }
+
+  if (accuracy > MAX_LOCATION_ACCURACY_METERS) {
+    throw new Error(`定位精度约 ${Math.round(accuracy)}m，请到开阔位置或开启精准定位后重试`)
   }
 }
 

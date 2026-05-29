@@ -250,6 +250,40 @@ const server = createGoodsCommServer({
   contentSafety: safeContentSafety,
   regionResolver: safeRegionResolver
 })
-server.close()
+await new Promise((resolveListen, rejectListen) => {
+  server.once('error', rejectListen)
+  server.listen(0, '127.0.0.1', () => {
+    server.off('error', rejectListen)
+    resolveListen()
+  })
+})
+
+try {
+  const address = server.address()
+  const protectedWriteWithoutIdempotency = await fetch(`http://127.0.0.1:${address.port}/items`, {
+    method: 'POST',
+    headers: {
+      origin: 'https://goods-comm.example.com',
+      'content-type': 'application/json',
+      authorization: 'Bearer missing-token'
+    },
+    body: JSON.stringify({})
+  })
+  const protectedWriteWithoutIdempotencyBody = await protectedWriteWithoutIdempotency.json()
+  assert.equal(protectedWriteWithoutIdempotency.status, 422)
+  assert.equal(protectedWriteWithoutIdempotencyBody.code, 'VALIDATION_ERROR')
+  assert.match(protectedWriteWithoutIdempotencyBody.message, /Idempotency-Key/)
+} finally {
+  await new Promise((resolveClose, rejectClose) => {
+    server.close((error) => {
+      if (error) {
+        rejectClose(error)
+        return
+      }
+
+      resolveClose()
+    })
+  })
+}
 
 console.log('Backend environment guard checks passed')

@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import { isIP } from 'node:net'
-import { handleBffRequest } from '../../src/bff/handler.js'
+import { handleBffRequest, isIdempotentRequest } from '../../src/bff/handler.js'
 import { normalizeBffHttpError } from '../../src/bff/http-error.js'
 import { createRuntimeStateStore } from './state-store.mjs'
 import { createPlatformAuthResolver } from './platform-auth.mjs'
@@ -177,6 +177,7 @@ export function createGoodsCommServer(options = {}) {
       }
 
       const method = routeMethod(request)
+      assertProtectedWriteIdempotency(url.pathname, method, request, deploymentEnv)
 
       if (url.pathname.startsWith('/ops/')) {
         if (url.pathname === '/ops/notification-deliveries' && method === 'GET') {
@@ -922,6 +923,18 @@ function opsAuditTargetForModerationPath(path = '') {
 
 function getIdempotencyKeyFromRequest(request = {}) {
   return String(request.headers?.['idempotency-key'] || request.headers?.['x-idempotency-key'] || '').trim()
+}
+
+function assertProtectedWriteIdempotency(path, method, request = {}, environment = 'dev') {
+  if (!PROTECTED_ENVIRONMENTS.includes(environment) || !isIdempotentRequest(path, method)) {
+    return
+  }
+
+  if (getIdempotencyKeyFromRequest(request)) {
+    return
+  }
+
+  throw createHttpError(422, 'VALIDATION_ERROR', `${environment} 环境写请求必须提供 Idempotency-Key 或 X-Idempotency-Key`)
 }
 
 function hasCoordinateData(data = {}) {

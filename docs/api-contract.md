@@ -8,7 +8,7 @@
 
 ## 0. 写请求幂等
 
-生产端侧对发布商品、商品状态变更、发起交易、交易状态变更、提交评价、标记通知已读、举报和后台复核 / 争议处理等写请求，应携带 `Idempotency-Key` 或 `X-Idempotency-Key`。当前 `src/services/api.js` 和业务 service 已为主要端侧写请求生成稳定幂等键。
+生产端侧对发布商品、商品状态变更、发起交易、交易状态变更、提交评价、标记通知已读、举报和后台复核 / 争议处理等写请求，必须携带 `Idempotency-Key` 或 `X-Idempotency-Key`；pre/prod HTTP 后端会拒绝缺少幂等键的核心写请求。当前 `src/services/api.js` 和业务 service 已为主要端侧写请求生成稳定幂等键。
 
 服务端行为：
 
@@ -269,6 +269,8 @@ usage: item_image
   "location": {
     "latitude": 31.22945,
     "longitude": 121.45494,
+    "accuracy": 50,
+    "capturedAt": 1770000000000,
     "communityId": "sh-jingan-shimen",
     "streetId": "sh-jingan-nanjingxi"
   }
@@ -278,6 +280,7 @@ usage: item_image
 生产要求：
 
 - 服务端从 token 绑定卖家，不接受客户端伪造 seller。
+- `location` 必须来自新鲜、带精度的实时 GPS；过期、缺少精度或低精度坐标必须拒绝发布。
 - `location` 的经纬度可用于服务端解析；`communityId`、`streetId` 等行政区字段只能作为展示初值，最终归属必须由服务端重算并覆盖。
 - 商品创建成功后的公开响应也必须复用商品脱敏规则：卖家联系码和精确发布坐标不返回，服务端保留坐标用于交易校验和距离计算。
 - 同一卖家存在同名 `pending_review` / `online` / `reserved` 商品时，服务端必须拒绝重复发布，避免刷屏和重复审核。

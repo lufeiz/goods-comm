@@ -189,6 +189,49 @@ try {
   assert.equal(missingAsset.status, 404)
   assert.equal(missingAsset.code, 'NOT_FOUND')
 
+  const stalePublishLocation = await postExpectError(`${baseUrl}/items`, {
+    title: '后端过期定位商品',
+    price: 59,
+    category: 'home',
+    condition: 'good',
+    description: '发布位置必须是新鲜实时定位',
+    images: [upload],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: {
+      ...sellerLocation,
+      capturedAt: Date.now() - 6 * 60 * 1000
+    }
+  }, seller.token)
+  assert.equal(stalePublishLocation.status, 422)
+  assert.equal(stalePublishLocation.code, 'VALIDATION_ERROR')
+  assert.match(stalePublishLocation.message, /当前位置已过期/)
+
+  const lowAccuracyPublishLocation = await postExpectError(`${baseUrl}/items`, {
+    title: '后端低精度定位商品',
+    price: 59,
+    category: 'home',
+    condition: 'good',
+    description: '发布位置必须有足够精度',
+    images: [upload],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: {
+      ...sellerLocation,
+      accuracy: 260,
+      capturedAt: Date.now()
+    }
+  }, seller.token)
+  assert.equal(lowAccuracyPublishLocation.status, 422)
+  assert.equal(lowAccuracyPublishLocation.code, 'VALIDATION_ERROR')
+  assert.match(lowAccuracyPublishLocation.message, /定位精度约 260m/)
+
   const item = await post(`${baseUrl}/items`, {
     title: '后端烟测商品',
     price: 99,
