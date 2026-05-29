@@ -15,6 +15,8 @@ const auditPath = process.env.GOODS_COMM_SYNC_AUDIT_PATH || '/private/tmp/goods-
 const lockTtlMs = Number(process.env.GOODS_COMM_SYNC_LOCK_TTL_MS || 2 * 60 * 60 * 1000)
 const runPreSmoke = process.env.GOODS_COMM_SYNC_RUN_PRE_SMOKE === 'true'
 const runPreMainSmoke = process.env.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE === 'true'
+const preHealthSmokeAttempts = parsePositiveInteger(process.env.GOODS_COMM_SYNC_HEALTH_ATTEMPTS || '12', 'GOODS_COMM_SYNC_HEALTH_ATTEMPTS')
+const preHealthSmokeIntervalMs = parsePositiveInteger(process.env.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || '10000', 'GOODS_COMM_SYNC_HEALTH_INTERVAL_MS')
 const resetSql = resolve('backend/db/pre-sync-reset.sql')
 const anonymizeSql = resolve('backend/db/pre-sync-anonymize.sql')
 const PRE_PROD_TOPOLOGY_MATCH_KEYS = [
@@ -68,6 +70,8 @@ if (!execute) {
   console.log(`Lock path: ${lockPath}`)
   console.log(`Audit path: ${auditPath}`)
   console.log(`Run pre health smoke: ${runPreSmoke ? 'yes' : 'no'}`)
+  console.log(`Pre health smoke attempts: ${preHealthSmokeAttempts}`)
+  console.log(`Pre health smoke interval ms: ${preHealthSmokeIntervalMs}`)
   console.log(`Run pre main-flow smoke: ${runPreMainSmoke ? 'yes' : 'no'}`)
   console.log('Manual run: use --execute and GOODS_COMM_SYNC_CONFIRM=sync-prod-to-pre after credentials and pg tools are available.')
   console.log('Automatic run: use --auto with GOODS_COMM_SYNC_AUTO_ENABLED=true from a trusted scheduler.')
@@ -104,7 +108,15 @@ try {
   run('psql', [preUrl, '-f', anonymizeSql])
 
   if (runPreSmoke) {
-    run('node', ['scripts/deployed-health-smoke.mjs', '--env', 'pre'])
+    run('node', [
+      'scripts/deployed-health-smoke.mjs',
+      '--env',
+      'pre',
+      '--attempts',
+      String(preHealthSmokeAttempts),
+      '--interval-ms',
+      String(preHealthSmokeIntervalMs)
+    ])
   }
 
   if (runPreMainSmoke) {
@@ -222,6 +234,8 @@ async function appendSyncAudit(record) {
     preDatabase: maskConnectionString(preUrl),
     dumpPath,
     runPreSmoke,
+    preHealthSmokeAttempts,
+    preHealthSmokeIntervalMs,
     runPreMainSmoke
   }
 
@@ -250,4 +264,14 @@ function run(command, args) {
   if (result.status !== 0) {
     throw new Error(`${command} failed with exit code ${result.status}`)
   }
+}
+
+function parsePositiveInteger(value = '', label) {
+  const parsed = Number(value)
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer, got ${value}`)
+  }
+
+  return parsed
 }

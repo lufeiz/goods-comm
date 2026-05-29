@@ -70,7 +70,7 @@
 - `npm run smoke:deployed:local-main`：启动本地 Node HTTP 后端，并用同一套 `scripts/deployed-main-flow-smoke.mjs` 黑盒验证登录、定位、上传、发布、交易、卖家确认、完成售出、评价和退出登录，避免部署后主链路 smoke 脚本只做语法检查。该本地自测通过 `GOODS_COMM_SMOKE_API_BASE_URL` 指向临时后端；真实 pre/prod 仍使用 `.env.pre/.env.prod` 的 HTTPS API 域名。
 - `npm run sync:prod-to-pre:plan`：输出 prod 到 pre 数据同步计划，不写数据库。
 - `GOODS_COMM_SYNC_CONFIRM=sync-prod-to-pre npm run sync:prod-to-pre`：手动执行 prod 到 pre 同步，要求真实连接串、PostgreSQL 工具、确认变量，并要求 pre/prod 关键拓扑变量一致。
-- `GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto`：给可信定时任务使用的自动同步入口，带锁文件、审计日志和占位连接串保护；可选 `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true` 在同步后跑 pre 健康 smoke，可选 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` 在同步后跑 pre 主链路 smoke。
+- `GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto`：给可信定时任务使用的自动同步入口，带锁文件、审计日志和占位连接串保护；可选 `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true` 在同步后跑带重试的 pre 健康 smoke，可选 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` 在同步后跑 pre 主链路 smoke；健康 smoke 等待窗口可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整。
 - `.github/workflows/prod-to-pre-sync.yml`：prod 到 pre 数据同步的 GitHub Actions 运维入口。手动 `plan` 只输出计划，手动 `execute` 需要输入 `confirm_sync=sync-prod-to-pre`；手动执行可选择 `run_pre_smoke` 和 `run_pre_main_smoke`；定时任务只有仓库变量 `GOODS_COMM_SYNC_AUTO_ENABLED=true` 时才会真正执行，且可用仓库变量 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` 开启同步后 pre 主链路 smoke。需要配置 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret、数据库可访问网络，以及主链路 smoke 所需的 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE`；工作流只上传脱敏同步审计日志，不上传生产 dump。
 
 ## 4. 不阻塞开发的占位策略

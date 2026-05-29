@@ -183,7 +183,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 
 - 在腾讯云定时任务、云托管定时触发器或内部 CI runner 上每天低峰执行一次 `npm run sync:prod-to-pre:auto`。
 - 执行前注入真实 prod/pre 数据库连接串和 `GOODS_COMM_SYNC_AUTO_ENABLED=true`；自动模式不读取手动确认变量，便于放入定时任务。
-- 如需同步后自动检查 pre 健康状态，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true`，脚本会执行 `node scripts/deployed-health-smoke.mjs --env pre`。
+- 如需同步后自动检查 pre 健康状态，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true`，脚本会执行 `node scripts/deployed-health-smoke.mjs --env pre`，默认等待 12 次、每次间隔 10 秒；可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整等待窗口。
 - 如需同步后自动验证 pre 主链路，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，脚本会执行 `node scripts/deployed-main-flow-smoke.mjs --env pre`；这需要同时配置 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 和必要时的 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL`。
 - 可按任务环境设置 `GOODS_COMM_SYNC_LOCK_PATH`、`GOODS_COMM_SYNC_AUDIT_PATH` 和 `GOODS_COMM_SYNC_DUMP_PATH`，保证锁、审计日志和 dump 文件落在可持久化目录。
 - GitHub Actions 已提供 `.github/workflows/prod-to-pre-sync.yml`：`workflow_dispatch` 支持手动 `plan` / `execute`，`schedule` 支持每天低峰自动运行；只有仓库变量 `GOODS_COMM_SYNC_AUTO_ENABLED=true` 时，定时任务才会真正执行同步。手动执行可选择 `run_pre_main_smoke`，定时任务可用仓库变量 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` 打开同步后 pre 主链路 smoke。工作流从 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入 `.env.pre.local` / `.env.prod.local`，dump 和锁文件落在 runner 临时目录，只上传脱敏同步审计日志，不上传生产 dump。

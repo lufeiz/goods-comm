@@ -16,8 +16,26 @@ assert.match(plan.stdout, /Prod to pre sync plan/)
 assert.match(plan.stdout, /Automatic run/)
 assert.match(plan.stdout, /Audit path/)
 assert.match(plan.stdout, /Run pre health smoke: no/)
+assert.match(plan.stdout, /Pre health smoke attempts: 12/)
+assert.match(plan.stdout, /Pre health smoke interval ms: 10000/)
 assert.match(plan.stdout, /Run pre main-flow smoke: no/)
 assert.match(plan.stdout, /GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true/)
+
+const planWithHealthRetry = runSyncScript([], {
+  GOODS_COMM_SYNC_RUN_PRE_SMOKE: 'true',
+  GOODS_COMM_SYNC_HEALTH_ATTEMPTS: '3',
+  GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: '250'
+})
+assert.equal(planWithHealthRetry.status, 0)
+assert.match(planWithHealthRetry.stdout, /Run pre health smoke: yes/)
+assert.match(planWithHealthRetry.stdout, /Pre health smoke attempts: 3/)
+assert.match(planWithHealthRetry.stdout, /Pre health smoke interval ms: 250/)
+
+const planWithInvalidHealthRetry = runSyncScript([], {
+  GOODS_COMM_SYNC_HEALTH_ATTEMPTS: '0'
+})
+assert.notEqual(planWithInvalidHealthRetry.status, 0)
+assert.match(planWithInvalidHealthRetry.stderr, /GOODS_COMM_SYNC_HEALTH_ATTEMPTS must be a positive integer/)
 
 const planWithMainSmoke = runSyncScript([], {
   GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: 'true'
