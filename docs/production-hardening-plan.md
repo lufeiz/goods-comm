@@ -165,7 +165,7 @@ DONE  Build complete.  # H5 prod
 ```
 
 部署后健康验证入口已补齐，但当前 `.env.pre/.env.prod` 仍是占位域名，因此 `npm run smoke:deployed:pre` / `npm run smoke:deployed:prod` 要在真实 HTTPS API 域名替换后执行。
-部署后健康和主链路验证入口已补齐：`npm run smoke:deployed:pre` 会验证 `/health` / `/health/ready` 与生产依赖模式；`npm run smoke:deployed:pre:main` 会验证登录、区域解析、上传、发布、交易、卖家确认、完成售出、交易评价和退出登录；它需要真实平台登录 code、网格覆盖坐标，以及微信图片异步审核场景下的已审核测试图片 URL。写入型步骤会携带 `Idempotency-Key` 并立即重放断言，避免部署后 smoke 因网络重试或 CI 重试重复创建商品、交易或评价；需要跨进程复跑同一 smoke 时，可固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`。`npm run smoke:deployed:local-health` / `npm run smoke:deployed:local-main` 会启动本地后端并通过 `GOODS_COMM_SMOKE_API_BASE_URL` 复用同一套部署后 smoke 脚本做黑盒自测，避免真实部署前只验证到脚本语法。
+部署后健康和主链路验证入口已补齐：`npm run smoke:deployed:pre` 会验证 `/health` / `/health/ready` 与生产依赖模式；`npm run smoke:deployed:pre:main` 会验证登录、区域解析、上传、发布、交易、卖家确认、完成售出、售出后详情状态、售出后拒绝再次交易、交易评价、退出登录和退出后 token 拒绝访问；它需要真实平台登录 code、网格覆盖坐标，以及微信图片异步审核场景下的已审核测试图片 URL。写入型步骤会携带 `Idempotency-Key` 并立即重放断言，避免部署后 smoke 因网络重试或 CI 重试重复创建商品、交易或评价；需要跨进程复跑同一 smoke 时，可固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`。`npm run smoke:deployed:local-health` / `npm run smoke:deployed:local-main` 会启动本地后端并通过 `GOODS_COMM_SMOKE_API_BASE_URL` 复用同一套部署后 smoke 脚本做黑盒自测，避免真实部署前只验证到脚本语法。
 
 ## 5. 下一阶段必须做
 
