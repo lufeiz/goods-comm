@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { isIP } from 'node:net'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -19,6 +20,30 @@ const dockerCommand = firstAvailableCommand(['docker'])
 const tccliCommand = firstAvailableCommand(['tccli'])
 const provider = resolveProvider()
 const plan = createPlan(provider)
+const REAL_BACKEND_DEPLOY_KEYS = [
+  'VITE_API_BASE_URL',
+  'GOODS_COMM_ALLOWED_ORIGINS',
+  'GOODS_COMM_PUBLIC_ASSET_BASE_URL',
+  'GOODS_COMM_DATABASE_URL',
+  'GOODS_COMM_COS_BUCKET',
+  'GOODS_COMM_COS_REGION',
+  'GOODS_COMM_COS_SECRET_ID',
+  'GOODS_COMM_COS_SECRET_KEY',
+  'GOODS_COMM_COS_BASE_URL',
+  'GOODS_COMM_CDN_BASE_URL',
+  'GOODS_COMM_MAP_REGION_DATASET',
+  'GOODS_COMM_TENCENT_MAP_KEY',
+  'GOODS_COMM_MODERATION_WEBHOOK_SECRET',
+  'GOODS_COMM_SESSION_SECRET',
+  'GOODS_COMM_OPS_SESSION_SECRET',
+  'GOODS_COMM_OPS_ACCOUNTS',
+  'GOODS_COMM_TRUSTED_PROXY_IPS',
+  'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
+  'GOODS_COMM_WECHAT_APP_ID',
+  'GOODS_COMM_WECHAT_APP_SECRET',
+  'GOODS_COMM_ALIPAY_APP_ID',
+  'GOODS_COMM_ALIPAY_PRIVATE_KEY'
+]
 const missing = findMissingPreconditions(provider)
 
 if (!execute) {
@@ -134,26 +159,8 @@ function resolveProvider() {
 
 function findMissingPreconditions(targetProvider) {
   const missingItems = []
-  const commonKeys = [
-    'GOODS_COMM_DATABASE_URL',
-    'GOODS_COMM_COS_BUCKET',
-    'GOODS_COMM_COS_REGION',
-    'GOODS_COMM_COS_SECRET_ID',
-    'GOODS_COMM_COS_SECRET_KEY',
-    'GOODS_COMM_COS_BASE_URL',
-    'GOODS_COMM_CDN_BASE_URL',
-    'GOODS_COMM_MAP_REGION_DATASET',
-    'GOODS_COMM_TENCENT_MAP_KEY',
-    'GOODS_COMM_MODERATION_WEBHOOK_SECRET',
-    'GOODS_COMM_SESSION_SECRET',
-    'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
-    'GOODS_COMM_WECHAT_APP_ID',
-    'GOODS_COMM_WECHAT_APP_SECRET',
-    'GOODS_COMM_ALIPAY_APP_ID',
-    'GOODS_COMM_ALIPAY_PRIVATE_KEY'
-  ]
 
-  for (const key of commonKeys) {
+  for (const key of REAL_BACKEND_DEPLOY_KEYS) {
     if (!values[key] || containsPlaceholder(values[key])) {
       missingItems.push(`[${environment}] ${key} must be real before deploy`)
     }
@@ -162,6 +169,13 @@ function findMissingPreconditions(targetProvider) {
   const regionDataset = parseRegionDatasetSetting(values.GOODS_COMM_MAP_REGION_DATASET)
   if (!regionDataset.valid) {
     missingItems.push(`[${environment}] GOODS_COMM_MAP_REGION_DATASET must be a non-empty JSON array before deploy: ${regionDataset.reason}`)
+  }
+
+  if (values.GOODS_COMM_TRUSTED_PROXY_IPS && !containsPlaceholder(values.GOODS_COMM_TRUSTED_PROXY_IPS)) {
+    const trustedProxyList = parseTrustedProxyListSetting(values.GOODS_COMM_TRUSTED_PROXY_IPS)
+    if (!trustedProxyList.valid) {
+      missingItems.push(`[${environment}] GOODS_COMM_TRUSTED_PROXY_IPS must be "none" or a comma-separated list of IPs/IPv4 CIDRs before deploy: ${trustedProxyList.reason}`)
+    }
   }
 
   if (!skipDatabaseMigration) {
@@ -346,6 +360,90 @@ function parseRegionDatasetSetting(value = '') {
       reason: 'value is not valid JSON'
     }
   }
+}
+
+function parseTrustedProxyListSetting(value = '') {
+  const normalized = String(value || '').trim()
+
+  if (!normalized || normalized.toLowerCase() === 'none') {
+    return {
+      valid: true,
+      reason: ''
+    }
+  }
+
+  if (containsPlaceholder(normalized)) {
+    return {
+      valid: false,
+      reason: 'value still contains a placeholder'
+    }
+  }
+
+  const entries = normalized.split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+  const invalid = entries.find((entry) => !isTrustedProxyEntry(entry))
+
+  if (invalid) {
+    return {
+      valid: false,
+      reason: `invalid entry ${invalid}`
+    }
+  }
+
+  return {
+    valid: true,
+    reason: ''
+  }
+}
+
+function isTrustedProxyEntry(value = '') {
+  if (value.includes('/')) {
+    const [ip, prefixValue] = value.split('/')
+    const prefix = Number(prefixValue)
+
+    return ipv4ToNumber(ip) !== null && Number.isInteger(prefix) && prefix >= 0 && prefix <= 32
+  }
+
+  return isIP(normalizeIpAddress(value)) !== 0
+}
+
+function normalizeIpAddress(value = '') {
+  const normalized = String(value || '').trim()
+
+  if (!normalized) {
+    return ''
+  }
+
+  return normalized.startsWith('::ffff:')
+    ? normalized.slice('::ffff:'.length)
+    : normalized
+}
+
+function ipv4ToNumber(value = '') {
+  const parts = String(value || '').trim().split('.')
+
+  if (parts.length !== 4) {
+    return null
+  }
+
+  let result = 0
+
+  for (const part of parts) {
+    if (!/^\d{1,3}$/.test(part)) {
+      return null
+    }
+
+    const octet = Number(part)
+
+    if (!Number.isInteger(octet) || octet < 0 || octet > 255) {
+      return null
+    }
+
+    result = ((result << 8) | octet) >>> 0
+  }
+
+  return result
 }
 
 function run(command, args) {

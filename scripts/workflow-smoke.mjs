@@ -139,7 +139,12 @@ function assertDirectBackendDeployProtection() {
     "run('npm', ['run', 'build:backend'])",
     "run('npm', ['run', 'smoke:backend:artifact'])",
     'Verify dist/backend with npm run smoke:backend:artifact.',
-    "run(process.execPath, ['scripts/migrate-database.mjs', '--env', environment, '--execute'])"
+    "run(process.execPath, ['scripts/migrate-database.mjs', '--env', environment, '--execute'])",
+    'VITE_API_BASE_URL',
+    'GOODS_COMM_ALLOWED_ORIGINS',
+    'GOODS_COMM_OPS_SESSION_SECRET',
+    'GOODS_COMM_OPS_ACCOUNTS',
+    'GOODS_COMM_TRUSTED_PROXY_IPS'
   ])
 
   const buildIndex = deployBackendScript.indexOf("run('npm', ['run', 'build:backend'])")

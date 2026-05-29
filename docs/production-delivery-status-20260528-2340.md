@@ -105,6 +105,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，运营后台登录新增账号级失败窗口和短期锁定：`GOODS_COMM_OPS_LOGIN_MAX_FAILURES`、`GOODS_COMM_OPS_LOGIN_WINDOW_MS`、`GOODS_COMM_OPS_LOGIN_LOCK_MS` 控制失败次数、统计窗口和锁定时长；后端返回 `429 TOO_MANY_REQUESTS`，pre/prod 拓扑一致性也会检查这些配置。
 - 2026-05-29 续做后，后端新增 `GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS` 客户端基础限流，进入业务 handler 前按客户端 IP 拦截超频请求并返回 `429 TOO_MANY_REQUESTS`；`/health` / `/health/ready` 保持可探测，pre/prod 拓扑一致性也会检查这些配置。
 - 2026-05-29 续做后，后端新增 `GOODS_COMM_TRUSTED_PROXY_IPS`：只有直连来源命中可信代理 IP / CIDR 白名单时，才读取 `x-forwarded-for` 作为限流客户端标识；否则忽略该头，避免公网客户端伪造来源绕过基础限流。
+- 2026-05-29 续做后，后端部署 plan 的缺失前置项已与生产审计口径对齐：会列出真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，避免真实部署前遗漏运营后台或代理安全配置。
 - 2026-05-29 续做后，后端 JSON、OPTIONS 和资产响应统一补充基础安全响应头：`x-content-type-options: nosniff`、`x-frame-options: DENY`、`referrer-policy: no-referrer`、`permissions-policy: geolocation=(), camera=(), microphone=()`；pre/prod 运行环境额外返回 HSTS。
 - 已提供 CloudBase 配置、Dockerfile、腾讯云部署说明。
 - 已新增发布候选门禁 `npm run verify:release`。
