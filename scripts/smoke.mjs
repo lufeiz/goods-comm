@@ -511,6 +511,11 @@ storage.set('goods.trades', storage.get('goods.trades').map((candidate) =>
       }
     : candidate
 ))
+const expiredDuplicateTrade = createTradeIntent(published, smokeEligibility, buyer)
+assert.equal(expiredDuplicateTrade.id, confirmed.id)
+assert.equal(expiredDuplicateTrade.contactCode, '')
+assert.equal(expiredDuplicateTrade.contactCodeExpiresAt, null)
+assert.equal(getTradeContactText(expiredDuplicateTrade), '一次性联系码已过期，请取消后重新发起交易')
 const expiredContactTrade = listTradeIntents({
   user: buyer
 }).find((candidate) => candidate.id === confirmed.id)

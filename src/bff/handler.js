@@ -920,6 +920,8 @@ function createTrade(options = {}, state) {
     throw new Error(eligibility.message)
   }
 
+  clearExpiredTradeContactCodes(state)
+
   const duplicate = state.trades.find((trade) =>
     trade.itemId === item.id &&
     trade.buyer?.id === buyer.id &&

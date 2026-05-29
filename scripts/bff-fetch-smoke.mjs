@@ -268,6 +268,20 @@ assert.notEqual(confirmed.contactCode, sellerSession.user.contactCode)
 assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
 const storedConfirmedTrade = state.trades.find((candidate) => candidate.id === trade.id)
 storedConfirmedTrade.contactCodeExpiresAt = Date.now() - 1
+const duplicateTradeAfterContactExpiry = await post('/trades', {
+  itemId: item.id,
+  buyerLocation: {
+    latitude: 31.2301,
+    longitude: 121.4556,
+    accuracy: 60,
+    capturedAt: Date.now()
+  }
+}, buyerSession.token)
+assert.equal(duplicateTradeAfterContactExpiry.id, trade.id)
+assert.equal(duplicateTradeAfterContactExpiry.contactCode, '')
+assert.equal(duplicateTradeAfterContactExpiry.contactCodeExpiresAt, null)
+assert.equal(state.trades.find((candidate) => candidate.id === trade.id).contactCode, '')
+assert.equal(state.trades.find((candidate) => candidate.id === trade.id).contactCodeExpiresAt, null)
 const replayedConfirmedAfterContactExpiry = await patch(`/trades/${trade.id}/status`, {
   status: TRADE_STATUS.PENDING_MEETUP
 }, sellerSession.token, {

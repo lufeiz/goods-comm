@@ -587,6 +587,24 @@ assert.notEqual(confirmed.contactCode, sellerSession.user.contactCode)
 assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
 const storedConfirmedTrade = state.trades.find((candidate) => candidate.id === trade.id)
 storedConfirmedTrade.contactCodeExpiresAt = Date.now() - 1
+const duplicateTradeAfterContactExpiry = await handleBffRequest('/trades', {
+  method: 'POST',
+  token: buyerSession.token,
+  data: {
+    itemId: item.id,
+    buyerLocation: {
+      latitude: 31.2301,
+      longitude: 121.4556,
+      accuracy: 60,
+      capturedAt: Date.now()
+    }
+  }
+}, state)
+assert.equal(duplicateTradeAfterContactExpiry.id, trade.id)
+assert.equal(duplicateTradeAfterContactExpiry.contactCode, '')
+assert.equal(duplicateTradeAfterContactExpiry.contactCodeExpiresAt, null)
+assert.equal(state.trades.find((candidate) => candidate.id === trade.id).contactCode, '')
+assert.equal(state.trades.find((candidate) => candidate.id === trade.id).contactCodeExpiresAt, null)
 const replayedConfirmedAfterContactExpiry = await handleBffRequest(`/trades/${trade.id}/status`, {
   method: 'PATCH',
   token: sellerSession.token,

@@ -701,7 +701,7 @@ export function createTradeIntent(item, eligibility, buyer) {
     throw new Error('物品已完成交易')
   }
 
-  const trades = getStorageArray(TRADES_KEY)
+  const trades = clearExpiredTradeContactCodes(getStorageArray(TRADES_KEY))
   const duplicate = trades.find((trade) =>
     trade.itemId === currentItem.id &&
     trade.buyer?.id === buyer.id &&

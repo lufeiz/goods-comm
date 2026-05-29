@@ -714,6 +714,18 @@ try {
   assert.notEqual(confirmed.contactCode, seller.user.contactCode)
   assert.equal(confirmed.contactCodeExpiresAt > Date.now(), true)
   await expireTradeContactCodeInStateFile(statePath, trade.id)
+  const duplicateTradeAfterContactExpiry = await post(`${baseUrl}/trades`, {
+    itemId: item.id,
+    buyerLocation: {
+      latitude: 31.2301,
+      longitude: 121.4556,
+      accuracy: 60,
+      capturedAt: Date.now()
+    }
+  }, buyer.token)
+  assert.equal(duplicateTradeAfterContactExpiry.id, trade.id)
+  assert.equal(duplicateTradeAfterContactExpiry.contactCode, '')
+  assert.equal(duplicateTradeAfterContactExpiry.contactCodeExpiresAt, null)
   const replayedConfirmedAfterContactExpiry = await patch(`${baseUrl}/trades/${trade.id}/status`, {
     status: TRADE_STATUS.PENDING_MEETUP
   }, seller.token, {
