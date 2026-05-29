@@ -63,7 +63,7 @@
 - `npm run db:migrate:plan -- --env pre`：输出 pre 数据库 schema 初始化计划。
 - `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre`：真实执行 pre 数据库 schema 初始化，要求真实连接串和 `psql`。
 - `npm run deploy:backend:pre:plan`：输出微信优先、腾讯 fallback 的后端部署计划和缺失前置条件；计划包含真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，也包含 `build:backend` 后的 `smoke:backend:artifact`，确保真实部署前先验证后端部署包。
-- `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre`：真实执行后端部署，默认先构建并验证后端部署包，再跑 pre 数据库迁移，最后部署新后端，要求真实云配置、CLI、`psql` 和部署凭据；只有确认同版本 schema 已迁移时才使用 `--skip-db-migrate` 跳过迁移。
+- `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre`：真实执行后端部署，默认先构建并验证后端部署包，再跑 pre 数据库迁移，部署新后端后立即执行 deployed health smoke；要求真实云配置、CLI、`psql` 和部署凭据；只有确认同版本 schema 已迁移时才使用 `--skip-db-migrate` 跳过迁移。需要把部署和主链路验证绑定到同一个直接命令时，可加 `--run-main-smoke` 或 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会要求 seller/buyer code、经纬度，prod 还要求 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true`。
 - `npm run smoke:deployed:pre`：部署后检查 health/ready 与生产依赖模式。
 - `npm run smoke:deployed:local-health`：启动本地 Node HTTP 后端，并用同一套 `scripts/deployed-health-smoke.mjs` 黑盒验证 `/health` 和 `/health/ready`；该本地自测通过 `GOODS_COMM_SMOKE_API_BASE_URL` 指向临时后端，真实 pre/prod 仍使用 `.env.pre/.env.prod` 的 HTTPS API 域名。
 - `npm run smoke:deployed:pre:main`：部署后检查登录、定位、上传、发布、交易、卖家确认、完成售出主链路；需要短期平台登录 code、网格覆盖坐标，以及必要时的已审核测试图片 URL。写请求会带幂等键并立即验证回放；跨进程重试同一次 smoke 时可固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`。

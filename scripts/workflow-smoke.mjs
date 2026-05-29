@@ -138,7 +138,11 @@ function assertDirectBackendDeployProtection() {
   assertIncludesAll('scripts/deploy-backend.mjs', deployBackendScript, [
     "run('npm', ['run', 'build:backend'])",
     "run('npm', ['run', 'smoke:backend:artifact'])",
+    "run(process.execPath, ['scripts/deployed-health-smoke.mjs', '--env', environment])",
+    "run(process.execPath, ['scripts/deployed-main-flow-smoke.mjs', '--env', environment])",
     'Verify dist/backend with npm run smoke:backend:artifact.',
+    'Run deployed health smoke with node scripts/deployed-health-smoke.mjs --env',
+    'Main-flow deployed smoke is optional here',
     "run(process.execPath, ['scripts/migrate-database.mjs', '--env', environment, '--execute'])",
     'VITE_API_BASE_URL',
     'GOODS_COMM_ALLOWED_ORIGINS',

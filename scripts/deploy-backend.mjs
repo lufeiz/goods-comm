@@ -14,6 +14,8 @@ const execute = process.argv.includes('--execute')
 const environment = getEnvironmentArg()
 const requestedProvider = getArgValue('--provider') || 'auto'
 const skipDatabaseMigration = process.argv.includes('--skip-db-migrate') || process.env.GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE === 'true'
+const skipDeployedHealthSmoke = process.argv.includes('--skip-deployed-health-smoke') || process.env.GOODS_COMM_DEPLOY_SKIP_DEPLOYED_HEALTH_SMOKE === 'true'
+const runDeployedMainSmoke = process.argv.includes('--run-main-smoke') || process.env.GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE === 'true'
 const values = await readEnvironmentFile(environment)
 const cloudbaseCommand = firstAvailableCommand(['cloudbase', 'tcb'])
 const dockerCommand = firstAvailableCommand(['docker'])
@@ -102,6 +104,14 @@ if (provider === 'cloudbase') {
   ])
 }
 
+if (!skipDeployedHealthSmoke) {
+  run(process.execPath, ['scripts/deployed-health-smoke.mjs', '--env', environment])
+}
+
+if (runDeployedMainSmoke) {
+  run(process.execPath, ['scripts/deployed-main-flow-smoke.mjs', '--env', environment])
+}
+
 console.log(`Backend deploy command completed for ${environment} via ${provider}`)
 
 function createPlan(targetProvider) {
@@ -122,7 +132,18 @@ function createPlan(targetProvider) {
     lines.push(`7. Ask Tencent CLI to deploy service ${values.GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE || 'missing'} in ${values.GOODS_COMM_TENCENT_REGION || 'missing'}.`)
   }
 
-  lines.push('8. After deploy, run readiness and pre/prod smoke against the deployed HTTPS API.')
+  if (skipDeployedHealthSmoke) {
+    lines.push('8. Skip deployed health smoke because --skip-deployed-health-smoke or GOODS_COMM_DEPLOY_SKIP_DEPLOYED_HEALTH_SMOKE=true was provided.')
+  } else {
+    lines.push(`8. Run deployed health smoke with node scripts/deployed-health-smoke.mjs --env ${environment}.`)
+  }
+
+  if (runDeployedMainSmoke) {
+    lines.push(`9. Run deployed main-flow smoke with node scripts/deployed-main-flow-smoke.mjs --env ${environment}.`)
+  } else {
+    lines.push('9. Main-flow deployed smoke is optional here; enable it with --run-main-smoke or GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true after providing seller/buyer codes and coordinates.')
+  }
+
   return lines
 }
 
@@ -141,7 +162,8 @@ function printPlan() {
     }
   } else {
     const migrationConfirm = skipDatabaseMigration ? '' : `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment} `
-    console.log(`Ready to execute with ${migrationConfirm}GOODS_COMM_DEPLOY_CONFIRM=deploy-${environment} and --execute.`)
+    const mainSmokeFlag = runDeployedMainSmoke ? ' with deployed main-flow smoke' : ''
+    console.log(`Ready to execute${mainSmokeFlag} with ${migrationConfirm}GOODS_COMM_DEPLOY_CONFIRM=deploy-${environment} and --execute.`)
   }
 }
 
@@ -185,6 +207,23 @@ function findMissingPreconditions(targetProvider) {
 
     if (!commandAvailable('psql')) {
       missingItems.push('psql is required because backend deploy applies database migration before starting the new backend')
+    }
+  }
+
+  if (runDeployedMainSmoke) {
+    for (const key of [
+      'GOODS_COMM_SMOKE_SELLER_CODE',
+      'GOODS_COMM_SMOKE_BUYER_CODE',
+      'GOODS_COMM_SMOKE_LATITUDE',
+      'GOODS_COMM_SMOKE_LONGITUDE'
+    ]) {
+      if (!process.env[key]) {
+        missingItems.push(`${key} is required when --run-main-smoke or GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true is set`)
+      }
+    }
+
+    if (environment === 'prod' && process.env.GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION !== 'true') {
+      missingItems.push('GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true is required when running prod main-flow smoke')
     }
   }
 
