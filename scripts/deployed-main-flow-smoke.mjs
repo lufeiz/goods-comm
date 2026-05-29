@@ -97,9 +97,13 @@ const replayedItem = await post('/items', itemPayload, seller.token, idempotency
 assertEqual(item.status, 'online', 'published item status')
 assertEqual(replayedItem.id, item.id, 'replayed item id')
 assertEqual(item.location.communityId || region.communityId, region.communityId || item.location.communityId, 'published item region')
+assertPublicItemPrivacy(item, 'published item response')
 
 const list = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}`)
-assert(toArray(list.items).some((candidate) => candidate.id === item.id), 'published item did not appear in public list')
+const listedItem = toArray(list.items).find((candidate) => candidate.id === item.id)
+assert(listedItem, 'published item did not appear in public list')
+assertPublicItemPrivacy(listedItem, 'public list item')
+assert(Number.isFinite(Number(listedItem.distanceMeters)), 'public list item distanceMeters')
 
 const tradePayload = {
   itemId: item.id,
@@ -158,6 +162,7 @@ const sellerNotificationsAfterComplete = await get('/notifications', seller.toke
 findNotification(sellerNotificationsAfterComplete, 'trade_completed', trade.id, 'seller trade completed notification')
 const soldItem = await get(`/items/${encodeURIComponent(item.id)}`)
 assertEqual(soldItem.status, 'sold', 'completed trade item status')
+assertPublicItemPrivacy(soldItem, 'sold item detail')
 const postSoldTradeError = await postExpectError('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreateAfterSold))
 assertEqual(postSoldTradeError.status, 409, 'post-sale trade rejection status')
 assertEqual(postSoldTradeError.code, 'CONFLICT', 'post-sale trade rejection code')
@@ -285,6 +290,7 @@ async function runAccountDeletionSmoke() {
   }
   const deleteItem = await post('/items', deleteItemPayload, account.token, idempotencyOptions(idempotencyKeys.accountDeleteItem))
   assertEqual(deleteItem.status, 'online', 'account deletion smoke item status')
+  assertPublicItemPrivacy(deleteItem, 'account deletion smoke item response')
 
   const deletion = await post('/auth/delete-account', {
     reason: 'deployed_main_flow_smoke'
@@ -325,6 +331,27 @@ function selectPublishImage(uploadedImage) {
     originalName: 'approved-smoke-image.jpg',
     checksum: process.env.GOODS_COMM_SMOKE_APPROVED_IMAGE_CHECKSUM || '',
     status: 'uploaded'
+  }
+}
+
+function assertPublicItemPrivacy(item = {}, label) {
+  assert(item && typeof item === 'object', `${label} missing item`)
+  assert(item.seller && typeof item.seller === 'object', `${label} missing seller`)
+  assert(item.location && typeof item.location === 'object', `${label} missing location`)
+  assert(item.location.communityId || item.location.streetId, `${label} missing public region`)
+
+  for (const key of ['contactCode', 'contact', 'phone', 'mobile', 'wechat', 'openId', 'openid', 'unionId', 'unionid']) {
+    assertNoOwnKey(item.seller, key, `${label} seller`)
+  }
+
+  for (const key of ['latitude', 'longitude', 'accuracy', 'capturedAt', 'poiName', 'address']) {
+    assertNoOwnKey(item.location, key, `${label} location`)
+  }
+}
+
+function assertNoOwnKey(object = {}, key, label) {
+  if (Object.prototype.hasOwnProperty.call(object, key)) {
+    throw new Error(`${label} leaked ${key}`)
   }
 }
 
