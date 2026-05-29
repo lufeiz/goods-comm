@@ -189,6 +189,46 @@ try {
   assert.equal(missingAsset.status, 404)
   assert.equal(missingAsset.code, 'NOT_FOUND')
 
+  const forgedUploadedImageItem = await postExpectError(`${baseUrl}/items`, {
+    title: '后端伪造已上传图片商品',
+    price: 59,
+    category: 'home',
+    condition: 'good',
+    description: '客户端不能伪造 uploaded 图片状态',
+    images: [{
+      url: 'https://cdn.example.com/backend-forged-uploaded-image.jpg',
+      status: 'uploaded'
+    }],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: sellerLocation
+  }, seller.token)
+  assert.equal(forgedUploadedImageItem.status, 422)
+  assert.equal(forgedUploadedImageItem.code, 'VALIDATION_ERROR')
+  assert.match(forgedUploadedImageItem.message, /图片未通过当前账号上传或审核/)
+
+  const buyerOwnedUpload = await uploadFile(`${baseUrl}/uploads/items`, uploadBytes, buyer.token)
+  const crossOwnerUploadedImageItem = await postExpectError(`${baseUrl}/items`, {
+    title: '后端跨账号图片商品',
+    price: 59,
+    category: 'home',
+    condition: 'good',
+    description: '卖家不能复用买家上传的图片',
+    images: [buyerOwnedUpload],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: sellerLocation
+  }, seller.token)
+  assert.equal(crossOwnerUploadedImageItem.status, 422)
+  assert.equal(crossOwnerUploadedImageItem.code, 'VALIDATION_ERROR')
+  assert.match(crossOwnerUploadedImageItem.message, /图片未通过当前账号上传或审核/)
+
   const stalePublishLocation = await postExpectError(`${baseUrl}/items`, {
     title: '后端过期定位商品',
     price: 59,

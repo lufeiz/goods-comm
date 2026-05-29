@@ -724,8 +724,14 @@ function createItem(options = {}, state) {
 
   assertNoDuplicateActiveItem(user.id, payload, state)
 
-  const review = reviewItemContent(payload)
-  const images = normalizeImages(payload.images).map((image) => ({
+  const rawImages = normalizeImages(payload.images)
+  assertUploadedImagesTrusted(rawImages, user, state)
+
+  const review = reviewItemContent({
+    ...payload,
+    images: rawImages
+  })
+  const images = rawImages.map((image) => ({
     ...image,
     status: image.status === 'uploaded' ? 'uploaded' : 'pending_review'
   }))
@@ -2732,6 +2738,46 @@ function assertSellerLocationQuality(location = {}) {
   if (accuracy > MAX_LOCATION_ACCURACY_METERS) {
     throw new Error(`定位精度约 ${Math.round(accuracy)}m，请到开阔位置或开启精准定位后重试`)
   }
+}
+
+function assertUploadedImagesTrusted(images = [], user = {}, state = {}) {
+  for (const image of images) {
+    if (image.status !== 'uploaded') {
+      continue
+    }
+
+    const upload = findTrustedUploadForImage(image, user, state)
+
+    if (!upload) {
+      throw new Error('图片未通过当前账号上传或审核，请重新上传')
+    }
+  }
+}
+
+function findTrustedUploadForImage(image = {}, user = {}, state = {}) {
+  const uploads = Array.isArray(state.uploads) ? state.uploads : []
+
+  return uploads.find((upload) =>
+    upload?.ownerId === user.id &&
+    upload.status === 'uploaded' &&
+    doesImageReferenceUpload(image, upload)
+  )
+}
+
+function doesImageReferenceUpload(image = {}, upload = {}) {
+  if (image.id) {
+    return upload.id === image.id
+  }
+
+  if (image.storageKey) {
+    return Boolean(upload.storageKey && upload.storageKey === image.storageKey)
+  }
+
+  if (image.checksum) {
+    return Boolean(upload.checksum && upload.checksum === image.checksum)
+  }
+
+  return Boolean(image.url && upload.url && upload.url === image.url)
 }
 
 function assertNoDuplicateActiveItem(sellerId, payload = {}, state) {

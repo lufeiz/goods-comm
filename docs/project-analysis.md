@@ -415,7 +415,7 @@ wx17450fc9a94221e4
 
 ### 7. 图片与内容审核需要接真实基础设施
 
-商品卡片和详情页已支持图片展示，发布页强制至少 1 张图片；远端模式走 `/uploads/items`；Node HTTP 后端已支持 multipart 图片字节落盘、返回 `storageKey` / `size` / `mimeType` / `checksum` / `traceId`，并可通过 `/assets/...` 读取，资源缺失会返回 `404 NOT_FOUND`；BFF 和本地演示路径都会拒绝违禁词提交和同名活跃商品重复发布，BFF 还支持 `pending_review`、按微信图片 `trace_id` 回调审核、举报对象/原因/权限校验、重复举报幂等、写请求幂等键回放、高风险举报下架并将活跃交易转入争议，以及运营处理举报后恢复误报商品或确认下架。真实生产仍需要把本地对象存储适配器替换为 COS / CloudBase storage，配置微信异步回调、图片压缩和后台复核台。
+商品卡片和详情页已支持图片展示，发布页强制至少 1 张图片；远端模式走 `/uploads/items`；Node HTTP 后端已支持 multipart 图片字节落盘、返回 `storageKey` / `size` / `mimeType` / `checksum` / `traceId`，并可通过 `/assets/...` 读取，资源缺失会返回 `404 NOT_FOUND`；发布时 `uploaded` 图片必须匹配当前卖家的上传记录，不能复用其他账号上传或客户端伪造的已审核 URL；BFF 和本地演示路径都会拒绝违禁词提交和同名活跃商品重复发布，BFF 还支持 `pending_review`、按微信图片 `trace_id` 回调审核、举报对象/原因/权限校验、重复举报幂等、写请求幂等键回放、高风险举报下架并将活跃交易转入争议，以及运营处理举报后恢复误报商品或确认下架。真实生产仍需要把本地对象存储适配器替换为 COS / CloudBase storage，配置微信异步回调、图片压缩和后台复核台。
 
 建议优先级：P1。
 

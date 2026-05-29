@@ -61,6 +61,39 @@ assert.equal(region.communityId, 'sh-jingan-shimen')
 const upload = await uploadItemImage(sellerSession.token)
 assert.equal(upload.status, 'uploaded')
 
+const forgedUploadedImageItem = await raw('/items', {
+  method: 'POST',
+  token: sellerSession.token,
+  data: {
+    title: 'Fetch 伪造已上传图片商品',
+    price: 118,
+    category: 'home',
+    condition: 'good',
+    description: '客户端不能伪造 uploaded 图片状态',
+    images: [{
+      url: 'https://cdn.example.com/fetch-forged-uploaded-image.jpg',
+      status: 'uploaded'
+    }],
+    tradeScope: {
+      type: 'community',
+      label: '同社区',
+      radiusMeters: 1200
+    },
+    location: {
+      latitude: 31.22945,
+      longitude: 121.45494,
+      accuracy: 60,
+      capturedAt: Date.now(),
+      communityId: region.communityId,
+      streetId: region.streetId
+    }
+  }
+}, sellerSession.token)
+const forgedUploadedImageItemError = await readError(forgedUploadedImageItem)
+assert.equal(forgedUploadedImageItem.status, 422)
+assert.equal(forgedUploadedImageItemError.code, 'VALIDATION_ERROR')
+assert.match(forgedUploadedImageItemError.message, /图片未通过当前账号上传或审核/)
+
 const item = await post('/items', {
   title: 'Fetch 适配商品',
   price: 118,

@@ -257,7 +257,10 @@ usage: item_image
   "description": "自提优先",
   "images": [
     {
+      "id": "upload_1770000000000_abcd",
       "url": "https://cdn.example.com/items/xxx.jpg",
+      "storageKey": "items/2026/05/xxx.jpg",
+      "checksum": "sha256:...",
       "status": "uploaded"
     }
   ],
@@ -280,6 +283,7 @@ usage: item_image
 生产要求：
 
 - 服务端从 token 绑定卖家，不接受客户端伪造 seller。
+- 标记为 `uploaded` 的图片必须能匹配当前卖家通过 `/uploads/items` 创建的上传记录；客户端不能只靠传入 URL 和 `status=uploaded` 绕过上传归属或图片审核链路。
 - `location` 必须来自新鲜、带精度的实时 GPS；过期、缺少精度或低精度坐标必须拒绝发布。
 - `location` 的经纬度可用于服务端解析；`communityId`、`streetId` 等行政区字段只能作为展示初值，最终归属必须由服务端重算并覆盖。
 - 商品创建成功后的公开响应也必须复用商品脱敏规则：卖家联系码和精确发布坐标不返回，服务端保留坐标用于交易校验和距离计算。

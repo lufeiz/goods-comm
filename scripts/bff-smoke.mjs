@@ -228,6 +228,57 @@ await assert.rejects(
   /定位精度约 260m/
 )
 
+await assert.rejects(
+  () => handleBffRequest('/items', {
+    method: 'POST',
+    token: sellerSession.token,
+    data: {
+      title: 'BFF 伪造已上传图片商品',
+      price: 128,
+      category: 'home',
+      condition: 'good',
+      description: '客户端不能伪造 uploaded 图片状态',
+      images: [{
+        url: 'https://cdn.example.com/forged-uploaded-image.jpg',
+        status: 'uploaded'
+      }],
+      tradeScope: {
+        type: 'community',
+        label: '同社区',
+        radiusMeters: 1200
+      },
+      location: createSellerLocation()
+    }
+  }, state),
+  /图片未通过当前账号上传或审核/
+)
+const buyerOwnedUpload = await handleBffRequest('/uploads/items', {
+  method: 'UPLOAD',
+  token: buyerSession.token,
+  filePath: '/tmp/buyer-owned-item.jpg'
+}, state)
+await assert.rejects(
+  () => handleBffRequest('/items', {
+    method: 'POST',
+    token: sellerSession.token,
+    data: {
+      title: 'BFF 跨账号图片商品',
+      price: 128,
+      category: 'home',
+      condition: 'good',
+      description: '卖家不能复用买家上传的图片',
+      images: [buyerOwnedUpload],
+      tradeScope: {
+        type: 'community',
+        label: '同社区',
+        radiusMeters: 1200
+      },
+      location: createSellerLocation()
+    }
+  }, state),
+  /图片未通过当前账号上传或审核/
+)
+
 const item = await handleBffRequest('/items', {
   method: 'POST',
   token: sellerSession.token,

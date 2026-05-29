@@ -17,7 +17,7 @@ export async function uploadItemImages(images = [], user) {
   const uploaded = []
 
   for (const image of normalized) {
-    if (image.status === 'uploaded' && image.url) {
+    if (isTrustedUploadedImageReference(image)) {
       uploaded.push(image)
       continue
     }
@@ -33,6 +33,12 @@ export async function uploadItemImages(images = [], user) {
   }
 
   return uploaded
+}
+
+function isTrustedUploadedImageReference(image = {}) {
+  return image.status === 'uploaded' &&
+    Boolean(image.url) &&
+    Boolean(image.id || image.storageKey || image.checksum || image.traceId)
 }
 
 export function normalizeImages(images = []) {
