@@ -40,6 +40,10 @@ for (const [index, step] of steps.entries()) {
 
 console.log(`Release gate ${profile} profile completed in ${Math.round((Date.now() - startedAt) / 1000)}s`)
 
+if (profile !== 'release') {
+  console.log('Release gate note: quick/full profiles are CI or release-candidate gates only; they write the production readiness audit but do not fail on remaining production blockers. Run npm run verify:release:strict before a real pre/prod release.')
+}
+
 async function addSyntaxChecks() {
   const files = [
     ...(await listJavaScriptFiles(resolve(root, 'backend'))),

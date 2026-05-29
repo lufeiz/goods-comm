@@ -144,6 +144,7 @@ npm run verify:release
 - 2026-05-29 续做后，`verify:release` / `verify:release:quick` 已接入 `scripts/artifact-smoke.mjs`，会在构建后断言 H5 / 微信 / 支付宝产物包含核心页面、tabBar、关键组件和 H5 页面 chunk。
 - 2026-05-29 续做后，产物 smoke 进一步覆盖 H5 / 微信 / 支付宝四环境运行时配置，断言产物内嵌的 `VITE_APP_ENV` 和 `VITE_API_BASE_URL` 匹配对应 `.env.*`，降低 pre/prod 错包风险。
 - 2026-05-29 续做后，新增 `npm run smoke:workflows`，并接入 `verify:release` / `verify:release:strict`，覆盖 CI release gate、strict 审计上传、部署后 smoke 强制、prod 显式确认和 prod-to-pre sync 不上传生产 dump 等发布工作流保护。
+- 2026-05-29 续做后，`verify:release` / `verify:release:quick` 会在成功输出末尾明确提示 quick/full 只是 CI 或发布候选门禁，不会因为剩余生产 blocker 失败；`smoke:workflows` 已固定这个 release profile 边界，避免普通 CI 绿色被误读为生产放行。
 - 2026-05-29 续做后，新增 `npm run smoke:pages` 并接入 `verify:release` / `verify:release:strict`，静态校验页面注册、tabBar、页面跳转、模板事件处理器和登录 / 定位 / 发布 / 交易 / 运营 / 协议关键 service 接入。
 - 2026-05-29 续做后，已用 Browser 打开本地 H5 构建产物 `http://127.0.0.1:4187/` 做渲染 QA：桌面首屏、搜索交互和 390x844 移动视口均能渲染核心内容，浏览器 console 无相关 error / warn；截图证据保存于 `/private/tmp/goods-comm-h5-qa/`，未写入仓库。
 - 2026-05-29 续做后，prod-to-pre 同步新增 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，可在同步并脱敏后自动跑 pre 主链路 smoke；GitHub `prod-to-pre-sync` workflow 已增加 `run_pre_main_smoke` 输入和所需 smoke secret 透传。

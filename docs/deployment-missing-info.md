@@ -52,8 +52,8 @@
 - `npm run audit:production-readiness -- --check-only`：只做检查并在存在上线 blocker 时返回非 0，可放入发布门禁或 CI。
 - `npm run audit:production-readiness:strict`：生成严格上线审计报告，额外把部署后主链路 smoke 输入缺失视为 blocker，默认写入 `docs/deployment-readiness-audit-strict.md` 和 `docs/deployment-readiness-audit-strict.json`。
 - `npm run audit:production-readiness:strict-check`：只做严格上线检查并在存在 blocker 时返回非 0；`verify:release:strict` 使用同一口径。
-- `npm run verify:release:quick`：本地快速门禁，执行语法检查、核心 smoke、默认三端构建和生产审计报告。
-- `npm run verify:release`：CI / 发布候选门禁，执行语法检查、完整 smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告。
+- `npm run verify:release:quick`：本地快速门禁，执行语法检查、核心 smoke、默认三端构建和生产审计报告；命令结束时会明确提示 quick/full 不是生产放行口径。
+- `npm run verify:release`：CI / 发布候选门禁，执行语法检查、完整 smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；命令结束时会明确提示 full 只生成生产审计，不会因为剩余生产 blocker 失败。
 - `npm run verify:release:strict`：真实上线门禁，在 full 门禁基础上把生产就绪审计改为强制 `--check-only --require-deployed-smoke-inputs`；pre/prod 真实资源、密钥、工具链和部署后 smoke 输入未补齐时会失败。
 - `npm run smoke:pages`：静态检查 `src/pages.json`、tabBar、页面文件、模板事件处理器、页面跳转路径，以及登录、定位、发布、交易、运营、协议等关键页面必须接入的 service；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:backend:artifact`：检查 `dist/backend` 后端部署包包含 `package.json`、`package-lock.json`、Node HTTP server、BFF、PostgreSQL store、数据库 schema、容器 Dockerfile 和关键业务依赖，并验证 Dockerfile 会用 `npm ci` 按 artifact lockfile 安装生产依赖，避免真实 PostgreSQL store 部署时缺少或漂移 `pg`；`verify:release` / `verify:release:strict` 已在 `build:backend` 后接入该检查。

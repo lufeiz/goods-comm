@@ -10,9 +10,11 @@ const workflows = {
   prodToPreSync: await readWorkflow('prod-to-pre-sync.yml')
 }
 const deployBackendScript = await readFile(resolve(root, 'scripts/deploy-backend.mjs'), 'utf8')
+const releaseGateScript = await readFile(resolve(root, 'scripts/verify-release-gate.mjs'), 'utf8')
 
 assertNoPullRequestTarget()
 assertCiReleaseGate()
+assertReleaseGateProfileBoundary()
 assertStrictReleaseGate()
 assertProdToPreSyncWorkflow()
 assertDirectBackendDeployProtection()
@@ -55,6 +57,17 @@ function assertCiReleaseGate() {
     'node-version: 24',
     'run: npm ci',
     'run: npm run verify:release'
+  ])
+}
+
+function assertReleaseGateProfileBoundary() {
+  assertIncludesAll('scripts/verify-release-gate.mjs', releaseGateScript, [
+    "args: ['scripts/production-readiness-audit.mjs', '--check-only', '--require-deployed-smoke-inputs']",
+    "args: ['scripts/production-readiness-audit.mjs']",
+    "if (profile !== 'release')",
+    'quick/full profiles are CI or release-candidate gates only',
+    'do not fail on remaining production blockers',
+    'Run npm run verify:release:strict before a real pre/prod release.'
   ])
 }
 
