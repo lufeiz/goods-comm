@@ -119,7 +119,10 @@ assertEqual(trade.status, 'pending_seller_confirm', 'created trade status')
 assertEqual(replayedTrade.id, trade.id, 'replayed trade id')
 const sellerTradesAfterCreate = await get('/trades', seller.token)
 const sellerCreatedTrade = findTrade(sellerTradesAfterCreate, trade.id, 'pending_seller_confirm', 'seller created trade list')
-assertEqual(sellerCreatedTrade.contactCode, '', 'seller pending trade contact code')
+assertTradeContactHidden(sellerCreatedTrade, 'seller pending trade')
+const buyerTradesAfterCreate = await get('/trades', buyer.token)
+const buyerCreatedTrade = findTrade(buyerTradesAfterCreate, trade.id, 'pending_seller_confirm', 'buyer created trade list')
+assertTradeContactHidden(buyerCreatedTrade, 'buyer pending trade')
 const sellerNotificationsAfterCreate = await get('/notifications', seller.token)
 const sellerTradeCreatedNotification = findNotification(sellerNotificationsAfterCreate, 'trade_created', trade.id, 'seller trade created notification')
 const readSellerTradeCreatedNotification = await patch(`/notifications/${sellerTradeCreatedNotification.id}/read`, {}, seller.token)
@@ -134,13 +137,16 @@ const replayedConfirmed = await patch(`/trades/${trade.id}/status`, confirmPaylo
 
 assertEqual(confirmed.status, 'pending_meetup', 'confirmed trade status')
 assertEqual(replayedConfirmed.id, confirmed.id, 'replayed confirmed trade id')
-assert(Boolean(confirmed.contactCode), 'confirmed trade did not expose contactCode')
+assertOneTimeContactCode(confirmed, 'confirmed trade')
+assertOneTimeContactCode(replayedConfirmed, 'replayed confirmed trade')
 const sellerTradesAfterConfirm = await get('/trades', seller.token)
 const sellerConfirmedTrade = findTrade(sellerTradesAfterConfirm, trade.id, 'pending_meetup', 'seller confirmed trade list')
 assertEqual(sellerConfirmedTrade.contactCode, confirmed.contactCode, 'seller confirmed trade contact code')
+assertOneTimeContactCode(sellerConfirmedTrade, 'seller confirmed trade')
 const buyerTradesAfterConfirm = await get('/trades', buyer.token)
 const buyerConfirmedTrade = findTrade(buyerTradesAfterConfirm, trade.id, 'pending_meetup', 'buyer confirmed trade list')
 assertEqual(buyerConfirmedTrade.contactCode, confirmed.contactCode, 'buyer confirmed trade contact code')
+assertOneTimeContactCode(buyerConfirmedTrade, 'buyer confirmed trade')
 const buyerNotificationsAfterConfirm = await get('/notifications', buyer.token)
 findNotification(buyerNotificationsAfterConfirm, 'trade_confirmed', trade.id, 'buyer trade confirmed notification')
 
@@ -152,12 +158,14 @@ const replayedCompleted = await patch(`/trades/${trade.id}/status`, completePayl
 
 assertEqual(completed.status, 'completed', 'completed trade status')
 assertEqual(replayedCompleted.id, completed.id, 'replayed completed trade id')
+assertTradeContactHidden(completed, 'completed trade')
+assertTradeContactHidden(replayedCompleted, 'replayed completed trade')
 const sellerTradesAfterComplete = await get('/trades', seller.token)
 const sellerCompletedTrade = findTrade(sellerTradesAfterComplete, trade.id, 'completed', 'seller completed trade list')
-assertEqual(sellerCompletedTrade.contactCode, '', 'seller completed trade contact code')
+assertTradeContactHidden(sellerCompletedTrade, 'seller completed trade')
 const buyerTradesAfterComplete = await get('/trades', buyer.token)
 const buyerCompletedTrade = findTrade(buyerTradesAfterComplete, trade.id, 'completed', 'buyer completed trade list')
-assertEqual(buyerCompletedTrade.contactCode, '', 'buyer completed trade contact code')
+assertTradeContactHidden(buyerCompletedTrade, 'buyer completed trade')
 const sellerNotificationsAfterComplete = await get('/notifications', seller.token)
 findNotification(sellerNotificationsAfterComplete, 'trade_completed', trade.id, 'seller trade completed notification')
 const soldItem = await get(`/items/${encodeURIComponent(item.id)}`)
@@ -347,6 +355,25 @@ function assertPublicItemPrivacy(item = {}, label) {
   for (const key of ['latitude', 'longitude', 'accuracy', 'capturedAt', 'poiName', 'address']) {
     assertNoOwnKey(item.location, key, `${label} location`)
   }
+}
+
+function assertTradeContactHidden(trade = {}, label) {
+  assertEqual(trade.contactCode || '', '', `${label} contact code`)
+  assertEqual(trade.contactCodeExpiresAt || null, null, `${label} contact code expiry`)
+}
+
+function assertOneTimeContactCode(trade = {}, label) {
+  assert(/^GC-[A-F0-9]{6}-[A-Z0-9]{4}$/.test(String(trade.contactCode || '')), `${label} contact code format`)
+
+  if (seller.user?.contactCode) {
+    assert(trade.contactCode !== seller.user.contactCode, `${label} must not reuse seller fixed contact code`)
+  }
+
+  if (buyer.user?.contactCode) {
+    assert(trade.contactCode !== buyer.user.contactCode, `${label} must not reuse buyer fixed contact code`)
+  }
+
+  assert(Number(trade.contactCodeExpiresAt) > Date.now(), `${label} contact code expiry`)
 }
 
 function assertNoOwnKey(object = {}, key, label) {
