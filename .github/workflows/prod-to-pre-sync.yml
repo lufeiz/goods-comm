@@ -21,6 +21,16 @@ on:
         required: true
         default: true
         type: boolean
+      health_attempts:
+        description: Pre health smoke retry attempts after sync
+        required: true
+        default: '12'
+        type: string
+      health_interval_ms:
+        description: Pre health smoke retry interval in milliseconds after sync
+        required: true
+        default: '10000'
+        type: string
       run_pre_main_smoke:
         description: Run deployed pre main-flow smoke after successful sync; requires smoke login codes and coordinates
         required: true
@@ -46,6 +56,8 @@ jobs:
       GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
       GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
       GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event_name == 'schedule' && 'true' || inputs.run_pre_smoke }}
+      GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_HEALTH_ATTEMPTS || inputs.health_attempts }}
+      GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || inputs.health_interval_ms }}
       GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE == 'true' && 'true' || inputs.run_pre_main_smoke }}
       GOODS_COMM_SYNC_CONFIRM: ${{ inputs.confirm_sync }}
       GOODS_COMM_SYNC_AUTO_ENABLED: ${{ vars.GOODS_COMM_SYNC_AUTO_ENABLED }}
