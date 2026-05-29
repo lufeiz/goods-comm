@@ -206,7 +206,9 @@ usage: item_image
   "keyword": "折叠椅",
   "category": "home",
   "latitude": 31.23,
-  "longitude": 121.45
+  "longitude": 121.45,
+  "accuracy": 50,
+  "capturedAt": 1770000000000
 }
 ```
 
@@ -239,7 +241,7 @@ usage: item_image
 
 - `seller` 只能返回展示字段，不能在商品列表或公开详情中返回 `contactCode`、手机号、微信号等联系信息。
 - 公开商品响应的 `location` 只能返回社区/街道等展示字段，不能返回卖家发布的精确 `latitude` / `longitude`、POI 名称或详细地址。
-- 列表展示必须带 `latitude` / `longitude`；端侧没有有效当前位置时直接返回空列表，不请求远端 `/items`；Node HTTP 后端会先用服务端地图解析当前位置，再复用交易资格规则过滤同社区 / 同街道和半径范围，只返回当前用户可发起交易范围内的在线商品。本地 fallback 也保持同一规则，无当前位置时不展示公开商品。
+- 列表展示必须带新鲜、带精度且精度合格的实时定位：`latitude` / `longitude` / `accuracy` / `capturedAt`；端侧没有有效当前位置时直接返回空列表，不请求远端 `/items`；Node HTTP 后端会先校验定位质量、再用服务端地图解析当前位置，并复用交易资格规则过滤同社区 / 同街道和半径范围，只返回当前用户可发起交易范围内的在线商品。本地 fallback 也保持同一规则，无有效当前位置时不展示公开商品。
 - BFF 可在响应中返回顶层 `distanceMeters`，端侧不能依赖公开商品坐标自行计算距离。
 
 ### `POST /items`

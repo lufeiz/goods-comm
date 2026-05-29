@@ -295,10 +295,17 @@ try {
   const noLocationList = await get(`${baseUrl}/items`)
   assert.equal(noLocationList.items.some((candidate) => candidate.id === item.id), false)
 
-  const visibleNearList = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556`)
+  const listWithoutLocationQuality = await requestExpectError(`${baseUrl}/items?latitude=31.2301&longitude=121.4556`, {
+    method: 'GET'
+  })
+  assert.equal(listWithoutLocationQuality.status, 422)
+  assert.equal(listWithoutLocationQuality.code, 'VALIDATION_ERROR')
+  assert.match(listWithoutLocationQuality.message, /需要提交实时 GPS 定位时间/)
+
+  const visibleNearList = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556&accuracy=60&capturedAt=${Date.now()}`)
   assert.equal(visibleNearList.items.some((candidate) => candidate.id === item.id), true)
 
-  const outsideScopeList = await get(`${baseUrl}/items?latitude=31.23648&longitude=121.44373`)
+  const outsideScopeList = await get(`${baseUrl}/items?latitude=31.23648&longitude=121.44373&accuracy=60&capturedAt=${Date.now()}`)
   assert.equal(outsideScopeList.items.some((candidate) => candidate.id === item.id), false)
 
   const duplicate = await postExpectError(`${baseUrl}/items`, {
@@ -749,7 +756,7 @@ try {
     event.context.longitude === undefined
   ), true)
 
-  const list = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556`)
+  const list = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556&accuracy=60&capturedAt=${Date.now()}`)
   assert.equal(list.items.some((candidate) => candidate.id === item.id), true)
   assert.equal(Number.isFinite(Number(list.items.find((candidate) => candidate.id === item.id).distanceMeters)), true)
 
@@ -986,7 +993,7 @@ try {
     notification.type === 'trade_dispute_resolved' &&
     notification.targetId === disputeTrade.id
   ))
-  const publicAfterSold = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556`)
+  const publicAfterSold = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556&accuracy=60&capturedAt=${Date.now()}`)
   assert.equal(publicAfterSold.items.some((candidate) => candidate.id === item.id), false)
 
   const deleteSeller = await post(`${baseUrl}/auth/login`, {

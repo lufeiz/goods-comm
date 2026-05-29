@@ -233,12 +233,16 @@ const item = {
 
 const nearUser = {
   latitude: 31.2301,
-  longitude: 121.4556
+  longitude: 121.4556,
+  accuracy: 60,
+  capturedAt: Date.now()
 }
 
 const farUser = {
   latitude: 31.264,
-  longitude: 121.51
+  longitude: 121.51,
+  accuracy: 60,
+  capturedAt: Date.now()
 }
 
 const region = {

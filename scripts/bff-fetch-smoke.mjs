@@ -191,7 +191,12 @@ const replayedItem = await readData(await raw('/items', {
 assert.equal(replayedItem.id, idempotentItem.id)
 assert.equal(state.items.filter((candidate) => candidate.title === idempotentItemPayload.title).length, 1)
 
-const listed = await get('/items?category=home&latitude=31.2301&longitude=121.4556')
+const untrustedListLocation = await raw('/items?category=home&latitude=31.2301&longitude=121.4556')
+const untrustedListLocationError = await readError(untrustedListLocation)
+assert.equal(untrustedListLocation.status, 422)
+assert.match(untrustedListLocationError.message, /需要提交实时 GPS 定位时间/)
+
+const listed = await get(`/items?category=home&latitude=31.2301&longitude=121.4556&accuracy=60&capturedAt=${Date.now()}`)
 assert.equal(listed.items.length, 1)
 assertNoPublicCoordinates(listed.items[0])
 assert.equal(Number.isFinite(Number(listed.items[0].distanceMeters)), true)

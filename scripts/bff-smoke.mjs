@@ -373,12 +373,26 @@ await assert.rejects(
   /幂等键已被不同请求使用/
 )
 
+await assert.rejects(
+  () => handleBffRequest('/items', {
+    method: 'GET',
+    data: {
+      category: 'home',
+      latitude: 31.2301,
+      longitude: 121.4556
+    }
+  }, state),
+  /需要提交实时 GPS 定位时间/
+)
+
 const listed = await handleBffRequest('/items', {
   method: 'GET',
   data: {
     category: 'home',
     latitude: 31.2301,
-    longitude: 121.4556
+    longitude: 121.4556,
+    accuracy: 60,
+    capturedAt: Date.now()
   }
 }, state)
 
@@ -400,7 +414,9 @@ const listedOutsideScope = await handleBffRequest('/items', {
   data: {
     category: 'home',
     latitude: 31.23648,
-    longitude: 121.44373
+    longitude: 121.44373,
+    accuracy: 60,
+    capturedAt: Date.now()
   }
 }, state)
 assert.equal(listedOutsideScope.items.some((candidate) => candidate.id === item.id), false)

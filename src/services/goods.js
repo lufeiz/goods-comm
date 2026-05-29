@@ -53,7 +53,7 @@ const BLOCKED_CONTENT_WORDS = ['违禁', '假货', '诈骗', '管制']
 const REPORT_TAKE_DOWN_REASONS = ['prohibited', 'fraud', 'privacy']
 
 export async function fetchGoodsList(filters = {}) {
-  if (!hasCoordinateLocation(filters.currentLocation)) {
+  if (!hasTrustedListLocation(filters.currentLocation)) {
     return []
   }
 
@@ -352,7 +352,9 @@ export async function changeTradeStatus(tradeId, nextStatus, actor) {
 export function listGoods(filters = {}) {
   const keyword = normalizeKeyword(filters.keyword)
   const category = filters.category || 'all'
-  const currentLocation = filters.currentLocation || null
+  const currentLocation = hasTrustedListLocation(filters.currentLocation)
+    ? filters.currentLocation
+    : null
   const currentRegion = normalizeCurrentRegion(filters, currentLocation)
   const visibleStatuses = filters.includeUnavailable
     ? [ITEM_STATUS.ONLINE, ITEM_STATUS.RESERVED, ITEM_STATUS.SOLD]
@@ -1705,6 +1707,8 @@ function serializeListFilters(filters = {}) {
     category: filters.category || 'all',
     latitude: filters.currentLocation?.latitude,
     longitude: filters.currentLocation?.longitude,
+    accuracy: filters.currentLocation?.accuracy,
+    capturedAt: filters.currentLocation?.capturedAt,
     communityId: filters.currentLocation?.communityId,
     streetId: filters.currentLocation?.streetId
   }
@@ -1742,6 +1746,22 @@ function normalizeRemoteDistance(item, currentLocation) {
 
 function hasCoordinateLocation(location = {}) {
   return Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude))
+}
+
+function hasTrustedListLocation(location = {}) {
+  if (!hasCoordinateLocation(location)) {
+    return false
+  }
+
+  const capturedAt = Number(location.capturedAt)
+  const accuracy = Number(location.accuracy)
+  const now = Date.now()
+
+  return Number.isFinite(capturedAt) &&
+    capturedAt <= now + 60 * 1000 &&
+    now - capturedAt <= LOCATION_CACHE_TTL_MS &&
+    Number.isFinite(accuracy) &&
+    accuracy <= MAX_LOCATION_ACCURACY_METERS
 }
 
 function normalizeCurrentRegion(filters = {}, currentLocation = null) {

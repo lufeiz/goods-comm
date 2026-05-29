@@ -99,7 +99,7 @@ assertEqual(replayedItem.id, item.id, 'replayed item id')
 assertEqual(item.location.communityId || region.communityId, region.communityId || item.location.communityId, 'published item region')
 assertPublicItemPrivacy(item, 'published item response')
 
-const list = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}`)
+const list = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}&accuracy=${encodeURIComponent(accuracy.value)}&capturedAt=${encodeURIComponent(smokeCapturedAt.value)}`)
 const listedItem = toArray(list.items).find((candidate) => candidate.id === item.id)
 assert(listedItem, 'published item did not appear in public list')
 assertPublicItemPrivacy(listedItem, 'public list item')
@@ -190,7 +190,7 @@ assert(toArray(reviews.reviews).some((candidate) => candidate.id === review.id),
 const sellerNotificationsAfterReview = await get('/notifications', seller.token)
 findNotification(sellerNotificationsAfterReview, 'trade_reviewed', trade.id, 'seller trade reviewed notification')
 
-const soldList = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}`)
+const soldList = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}&accuracy=${encodeURIComponent(accuracy.value)}&capturedAt=${encodeURIComponent(smokeCapturedAt.value)}`)
 assert(!toArray(soldList.items).some((candidate) => candidate.id === item.id), 'sold item still appears in public list')
 
 if (shouldRunAccountDeleteSmoke) {
