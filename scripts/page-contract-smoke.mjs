@@ -37,7 +37,8 @@ for (const tabPath of requiredTabBarPages) {
 
 const pageSources = new Map()
 const componentSources = new Map([
-  ['components/GoodCard.vue', await readFile(join(root, 'src/components/GoodCard.vue'), 'utf8')]
+  ['components/GoodCard.vue', await readFile(join(root, 'src/components/GoodCard.vue'), 'utf8')],
+  ['components/LocationGuard.vue', await readFile(join(root, 'src/components/LocationGuard.vue'), 'utf8')]
 ])
 
 for (const pagePath of pagePaths) {
@@ -176,6 +177,8 @@ function verifyPageContracts() {
     'pages/ops/ops notification fallback must not reference queue outside its block scope'
   )
 
+  verifyDisplayStateContracts()
+
   for (const [path, source] of [
     ['src/components/GoodCard.vue', componentSources.get('components/GoodCard.vue')],
     ['src/pages/detail/detail.vue', pageSources.get('pages/detail/detail')]
@@ -188,6 +191,126 @@ function verifyPageContracts() {
       !source.includes('images?.[0]?.url || this.item') && !source.includes('images?.[0]?.url || this.item?.images?.[0]'),
       `${path} must not use the first image object itself as an image src`
     )
+  }
+}
+
+function verifyDisplayStateContracts() {
+  const displayContracts = [
+    {
+      path: 'src/components/LocationGuard.vue',
+      source: componentSources.get('components/LocationGuard.vue'),
+      label: 'location display and error states',
+      tokens: [
+        'profile?.error',
+        'profile.error.message',
+        'errorView.actionText',
+        'qualityText',
+        '未确认当前位置',
+        '授权后可查看距离并发起符合范围的交易',
+        '选择',
+        '定位中'
+      ]
+    },
+    {
+      path: 'src/components/GoodCard.vue',
+      source: componentSources.get('components/GoodCard.vue'),
+      label: 'market item card display states',
+      tokens: [
+        'coverImage',
+        'coverClass',
+        'coverText',
+        '授权后看距离',
+        'reserved: \'已锁定\'',
+        'sold: \'已售出\'',
+        'formatDistance(this.item.distanceMeters)'
+      ]
+    },
+    {
+      path: 'src/pages/home/home.vue',
+      source: pageSources.get('pages/home/home'),
+      label: 'market list display states',
+      tokens: [
+        '{{ items.length }} 件',
+        '暂无匹配物品',
+        '换个关键词',
+        ':item="item"',
+        '@open="openItem"',
+        'currentLocation: this.locationProfile?.location'
+      ]
+    },
+    {
+      path: 'src/pages/publish/publish.vue',
+      source: pageSources.get('pages/publish/publish'),
+      label: 'publish form display states',
+      tokens: [
+        '物品照片',
+        '添加照片',
+        '请至少添加 1 张物品照片',
+        '发布位置',
+        'regionLabel',
+        '请先刷新定位',
+        '发布到邻里集市',
+        '发布中'
+      ]
+    },
+    {
+      path: 'src/pages/detail/detail.vue',
+      source: pageSources.get('pages/detail/detail'),
+      label: 'item detail sale-state display',
+      tokens: [
+        '物品不存在或已下架',
+        'itemStatusText',
+        'canStartTrade',
+        'tradeButtonText',
+        '自己的物品',
+        '交易处理中',
+        '已售出',
+        '发起交易会重新使用实时 GPS 定位做最终校验',
+        '选择位置预估'
+      ]
+    },
+    {
+      path: 'src/pages/orders/orders.vue',
+      source: pageSources.get('pages/orders/orders'),
+      label: 'trade list and notification display states',
+      tokens: [
+        'notifications.length',
+        'notification.readAt ? \'is-read\' : \'\'',
+        '请先登录',
+        '还没有交易意向',
+        'contactText(trade)',
+        'disputeText(trade)',
+        'auditText(trade)',
+        '交易评价',
+        '已评价'
+      ]
+    },
+    {
+      path: 'src/pages/mine/mine.vue',
+      source: pageSources.get('pages/mine/mine'),
+      label: 'profile, account, and owned item display states',
+      tokens: [
+        '未登录用户',
+        '我已阅读并同意',
+        '我的发布',
+        'itemStatusText(item.status)',
+        'canRelistItem(item)',
+        '内部运营',
+        '账号与数据',
+        '注销账号'
+      ]
+    }
+  ]
+
+  for (const contract of displayContracts) {
+    assert.ok(contract.source, `${contract.path} source must be loaded`)
+
+    for (const token of contract.tokens) {
+      assert.ok(
+        contract.source.includes(token),
+        `${contract.path} must keep ${contract.label} display token: ${token}`
+      )
+    }
   }
 }
 
