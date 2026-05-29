@@ -16,6 +16,8 @@ const requestedProvider = getArgValue('--provider') || 'auto'
 const skipDatabaseMigration = process.argv.includes('--skip-db-migrate') || process.env.GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE === 'true'
 const skipDeployedHealthSmoke = process.argv.includes('--skip-deployed-health-smoke') || process.env.GOODS_COMM_DEPLOY_SKIP_DEPLOYED_HEALTH_SMOKE === 'true'
 const runDeployedMainSmoke = process.argv.includes('--run-main-smoke') || process.env.GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE === 'true'
+const deployedHealthAttempts = parsePositiveInteger(getArgValue('--health-attempts') || process.env.GOODS_COMM_DEPLOY_HEALTH_ATTEMPTS || '12', 'GOODS_COMM_DEPLOY_HEALTH_ATTEMPTS')
+const deployedHealthIntervalMs = parsePositiveInteger(getArgValue('--health-interval-ms') || process.env.GOODS_COMM_DEPLOY_HEALTH_INTERVAL_MS || '10000', 'GOODS_COMM_DEPLOY_HEALTH_INTERVAL_MS')
 const values = await readEnvironmentFile(environment)
 const cloudbaseCommand = firstAvailableCommand(['cloudbase', 'tcb'])
 const dockerCommand = firstAvailableCommand(['docker'])
@@ -105,7 +107,15 @@ if (provider === 'cloudbase') {
 }
 
 if (!skipDeployedHealthSmoke) {
-  run(process.execPath, ['scripts/deployed-health-smoke.mjs', '--env', environment])
+  run(process.execPath, [
+    'scripts/deployed-health-smoke.mjs',
+    '--env',
+    environment,
+    '--attempts',
+    String(deployedHealthAttempts),
+    '--interval-ms',
+    String(deployedHealthIntervalMs)
+  ])
 }
 
 if (runDeployedMainSmoke) {
@@ -135,7 +145,7 @@ function createPlan(targetProvider) {
   if (skipDeployedHealthSmoke) {
     lines.push('8. Skip deployed health smoke because --skip-deployed-health-smoke or GOODS_COMM_DEPLOY_SKIP_DEPLOYED_HEALTH_SMOKE=true was provided.')
   } else {
-    lines.push(`8. Run deployed health smoke with node scripts/deployed-health-smoke.mjs --env ${environment}.`)
+    lines.push(`8. Run deployed health smoke with node scripts/deployed-health-smoke.mjs --env ${environment} --attempts ${deployedHealthAttempts} --interval-ms ${deployedHealthIntervalMs}.`)
   }
 
   if (runDeployedMainSmoke) {
@@ -296,6 +306,16 @@ function getEnvironmentArg() {
 function getArgValue(name) {
   const index = process.argv.findIndex((arg) => arg === name)
   return index >= 0 ? process.argv[index + 1] : ''
+}
+
+function parsePositiveInteger(value = '', label) {
+  const parsed = Number(value)
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer, got ${value}`)
+  }
+
+  return parsed
 }
 
 function firstAvailableCommand(commands) {

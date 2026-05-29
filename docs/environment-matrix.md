@@ -131,7 +131,7 @@ npm run db:migrate:plan -- --env pre
 npm run deploy:backend:pre:plan
 ```
 
-执行真实迁移或部署时必须额外提供确认变量，例如 `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre` 和 `GOODS_COMM_DEPLOY_CONFIRM=deploy-pre`，并替换 `.env.pre/.env.prod` 中的占位云资源、密钥和数据库连接串。pre/prod 后端启动前必须先执行对应环境的数据库迁移；真实后端部署脚本默认会先构建并验证 `dist/backend`，再跑迁移、部署新版本，并立即执行部署后 health smoke，只有确认同版本 schema 已迁移时才允许用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过。如果缺表，`/health/ready` 会返回依赖未就绪，而不是自动创建表。需要把主链路 smoke 合并到直接部署命令时，可额外传 `--run-main-smoke` 或设置 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`。
+执行真实迁移或部署时必须额外提供确认变量，例如 `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre` 和 `GOODS_COMM_DEPLOY_CONFIRM=deploy-pre`，并替换 `.env.pre/.env.prod` 中的占位云资源、密钥和数据库连接串。pre/prod 后端启动前必须先执行对应环境的数据库迁移；真实后端部署脚本默认会先构建并验证 `dist/backend`，再跑迁移、部署新版本，并立即执行部署后 health smoke，默认等待 12 次、每次间隔 10 秒，只有确认同版本 schema 已迁移时才允许用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过。如果缺表，`/health/ready` 会返回依赖未就绪，而不是自动创建表。需要把主链路 smoke 合并到直接部署命令时，可额外传 `--run-main-smoke` 或设置 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`；需要调整 health 等待窗口时，可传 `--health-attempts` / `--health-interval-ms`。
 
 部署完成后运行：
 

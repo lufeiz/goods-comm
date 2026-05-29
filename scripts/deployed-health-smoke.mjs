@@ -7,9 +7,37 @@ import {
 const environment = getEnvironmentArg()
 const values = await readEnvironmentFile(environment)
 const apiBaseUrl = normalizeBaseUrl(process.env.GOODS_COMM_SMOKE_API_BASE_URL || values.VITE_API_BASE_URL)
+const attempts = parsePositiveInteger(getArgValue('--attempts') || process.env.GOODS_COMM_SMOKE_HEALTH_ATTEMPTS || '1', 'GOODS_COMM_SMOKE_HEALTH_ATTEMPTS')
+const intervalMs = parsePositiveInteger(getArgValue('--interval-ms') || process.env.GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS || '5000', 'GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS')
 
 validateInputs()
+await waitForHealthy()
 
+console.log(`Deployed backend health smoke passed for ${environment}: ${apiBaseUrl}`)
+
+async function waitForHealthy() {
+  let lastError
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await assertHealthy()
+      return
+    } catch (error) {
+      lastError = error
+
+      if (attempt >= attempts) {
+        break
+      }
+
+      console.warn(`Deployed health smoke attempt ${attempt}/${attempts} failed: ${error.message}; retrying in ${intervalMs}ms`)
+      await sleep(intervalMs)
+    }
+  }
+
+  throw lastError
+}
+
+async function assertHealthy() {
 const health = await getJson('/health')
 assertEqual(health.environment, environment, 'health.environment')
 
@@ -33,8 +61,7 @@ if (['pre', 'prod'].includes(environment)) {
   assertEqual(ready.platformNotify, 'wechat', 'ready.platformNotify')
   assertPostgresReadiness(ready.readiness)
 }
-
-console.log(`Deployed backend health smoke passed for ${environment}: ${apiBaseUrl}`)
+}
 
 function validateInputs() {
   if (!apiBaseUrl) {
@@ -117,9 +144,28 @@ function normalizeBaseUrl(value = '') {
   return String(value || '').trim().replace(/\/+$/, '')
 }
 
+function parsePositiveInteger(value = '', label) {
+  const parsed = Number(value)
+
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer, got ${value}`)
+  }
+
+  return parsed
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function getEnvironmentArg() {
   const envIndex = process.argv.findIndex((arg) => arg === '--env')
   const value = envIndex >= 0 ? process.argv[envIndex + 1] : process.argv[2]
 
   return normalizeEnvironmentName(value || process.env.GOODS_COMM_ENV || 'pre')
+}
+
+function getArgValue(name) {
+  const index = process.argv.findIndex((arg) => arg === name)
+  return index >= 0 ? process.argv[index + 1] : ''
 }

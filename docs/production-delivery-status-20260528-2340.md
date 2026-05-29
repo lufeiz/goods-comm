@@ -107,6 +107,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，后端新增 `GOODS_COMM_TRUSTED_PROXY_IPS`：只有直连来源命中可信代理 IP / CIDR 白名单时，才读取 `x-forwarded-for` 作为限流客户端标识；否则忽略该头，避免公网客户端伪造来源绕过基础限流。
 - 2026-05-29 续做后，后端部署 plan 的缺失前置项已与生产审计口径对齐：会列出真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，避免真实部署前遗漏运营后台或代理安全配置。
 - 2026-05-29 续做后，真实后端部署脚本在 deploy execute 成功后会默认执行 deployed health smoke；如需把写入型主链路验证绑定到同一次部署命令，可用 `--run-main-smoke` / `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会提前校验 seller/buyer code、经纬度和 prod 写入 opt-in。
+- 2026-05-29 续做后，`scripts/deployed-health-smoke.mjs` 支持 `--attempts` / `--interval-ms`，真实部署脚本默认用 12 次、10 秒间隔等待 `/health` 和 `/health/ready`，避免云托管冷启动或滚动发布延迟导致刚部署即误判失败。
 - 2026-05-29 续做后，后端 JSON、OPTIONS 和资产响应统一补充基础安全响应头：`x-content-type-options: nosniff`、`x-frame-options: DENY`、`referrer-policy: no-referrer`、`permissions-policy: geolocation=(), camera=(), microphone=()`；pre/prod 运行环境额外返回 HSTS。
 - 已提供 CloudBase 配置、Dockerfile、腾讯云部署说明。
 - 已新增发布候选门禁 `npm run verify:release`。
