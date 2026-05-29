@@ -23,6 +23,7 @@ const itemTitle = `部署主链路烟测-${smokeRunId}`
 const idempotencyKeys = {
   itemCreate: `deployed:${smokeRunId}:item:create`,
   tradeCreate: `deployed:${smokeRunId}:trade:create`,
+  tradeCreateAfterSold: `deployed:${smokeRunId}:trade:create-after-sold`,
   tradeConfirm: `deployed:${smokeRunId}:trade:confirm`,
   tradeComplete: `deployed:${smokeRunId}:trade:complete`,
   tradeReview: `deployed:${smokeRunId}:trade:review`
@@ -127,6 +128,12 @@ const replayedCompleted = await patch(`/trades/${trade.id}/status`, completePayl
 
 assertEqual(completed.status, 'completed', 'completed trade status')
 assertEqual(replayedCompleted.id, completed.id, 'replayed completed trade id')
+const soldItem = await get(`/items/${encodeURIComponent(item.id)}`)
+assertEqual(soldItem.status, 'sold', 'completed trade item status')
+const postSoldTradeError = await postExpectError('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreateAfterSold))
+assertEqual(postSoldTradeError.status, 409, 'post-sale trade rejection status')
+assertEqual(postSoldTradeError.code, 'CONFLICT', 'post-sale trade rejection code')
+assert(/已完成交易/.test(postSoldTradeError.message || ''), 'post-sale trade rejection message')
 const reviewPayload = {
   rating: 5,
   content: `部署后交易评价烟测 ${environment}`,
@@ -145,6 +152,10 @@ assert(!toArray(soldList.items).some((candidate) => candidate.id === item.id), '
 
 const logout = await post('/auth/logout', {}, buyer.token)
 assertEqual(logout.ok, true, 'buyer logout')
+const revokedAuth = await getExpectError('/items/mine', buyer.token)
+assertEqual(revokedAuth.status, 401, 'revoked buyer token status')
+assertEqual(revokedAuth.code, 'UNAUTHENTICATED', 'revoked buyer token code')
+assert(/登录态无效/.test(revokedAuth.message || ''), 'revoked buyer token message')
 
 console.log(`Deployed main-flow smoke passed for ${environment}: ${apiBaseUrl}`)
 
@@ -240,8 +251,24 @@ async function get(path, token = '') {
   })
 }
 
+async function getExpectError(path, token = '') {
+  return requestExpectError(path, {
+    method: 'GET',
+    token
+  })
+}
+
 async function post(path, data, token = '', options = {}) {
   return request(path, {
+    method: 'POST',
+    token,
+    data,
+    ...options
+  })
+}
+
+async function postExpectError(path, data, token = '', options = {}) {
+  return requestExpectError(path, {
     method: 'POST',
     token,
     data,
@@ -259,6 +286,29 @@ async function patch(path, data, token = '', options = {}) {
 }
 
 async function request(path, options = {}) {
+  const { response, payload } = await requestEnvelope(path, options)
+
+  if (!response.ok) {
+    throw new Error(`${options.method || 'GET'} ${path} returned HTTP ${response.status}: ${payload.message || payload.code || 'unknown error'}`)
+  }
+
+  return payload.data
+}
+
+async function requestExpectError(path, options = {}) {
+  const { response, payload } = await requestEnvelope(path, options)
+
+  if (response.ok) {
+    throw new Error(`${options.method || 'GET'} ${path} unexpectedly succeeded`)
+  }
+
+  return {
+    ...payload,
+    status: response.status
+  }
+}
+
+async function requestEnvelope(path, options = {}) {
   const headers = {
     Accept: 'application/json',
     ...(options.header || {}),
@@ -278,11 +328,10 @@ async function request(path, options = {}) {
   })
   const payload = await parseResponse(response)
 
-  if (!response.ok) {
-    throw new Error(`${options.method || 'GET'} ${path} returned HTTP ${response.status}: ${payload.message || payload.code || 'unknown error'}`)
+  return {
+    response,
+    payload
   }
-
-  return payload.data
 }
 
 async function parseResponse(response) {
