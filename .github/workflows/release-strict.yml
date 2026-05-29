@@ -17,6 +17,16 @@ on:
         required: true
         default: true
         type: boolean
+      health_attempts:
+        description: Deployed health smoke retry attempts
+        required: true
+        default: '12'
+        type: string
+      health_interval_ms:
+        description: Deployed health smoke retry interval in milliseconds
+        required: true
+        default: '10000'
+        type: string
       run_backend_deploy:
         description: Deploy backend after strict gate and before deployed smoke
         required: true
@@ -59,6 +69,8 @@ jobs:
       GOODS_COMM_SMOKE_LONGITUDE: ${{ secrets.GOODS_COMM_SMOKE_LONGITUDE }}
       GOODS_COMM_SMOKE_APPROVED_IMAGE_URL: ${{ secrets.GOODS_COMM_SMOKE_APPROVED_IMAGE_URL }}
       GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION: ${{ inputs.allow_prod_mutation }}
+      GOODS_COMM_SMOKE_HEALTH_ATTEMPTS: ${{ inputs.health_attempts }}
+      GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS: ${{ inputs.health_interval_ms }}
       TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
       TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
       TENCENTCLOUD_SESSION_TOKEN: ${{ secrets.TENCENTCLOUD_SESSION_TOKEN }}

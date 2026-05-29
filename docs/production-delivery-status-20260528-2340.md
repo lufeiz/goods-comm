@@ -108,6 +108,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，后端部署 plan 的缺失前置项已与生产审计口径对齐：会列出真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，避免真实部署前遗漏运营后台或代理安全配置。
 - 2026-05-29 续做后，真实后端部署脚本在 deploy execute 成功后会默认执行 deployed health smoke；如需把写入型主链路验证绑定到同一次部署命令，可用 `--run-main-smoke` / `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会提前校验 seller/buyer code、经纬度和 prod 写入 opt-in。
 - 2026-05-29 续做后，`scripts/deployed-health-smoke.mjs` 支持 `--attempts` / `--interval-ms`，真实部署脚本默认用 12 次、10 秒间隔等待 `/health` 和 `/health/ready`，避免云托管冷启动或滚动发布延迟导致刚部署即误判失败。
+- 2026-05-29 续做后，GitHub `release-strict` workflow 的独立 deployed health smoke 也支持手动调等待窗口：默认 12 次、10 秒间隔，可用 workflow 输入 `health_attempts` / `health_interval_ms` 透传到 `GOODS_COMM_SMOKE_HEALTH_ATTEMPTS` / `GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS`。
 - 2026-05-29 续做后，prod 到 pre 同步脚本的同步后 pre health smoke 也接入同一套重试等待：默认 12 次、10 秒间隔，可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整。
 - 2026-05-29 续做后，GitHub `prod-to-pre-sync` workflow 已透传同步后 pre health smoke 的重试等待：手动执行用 `health_attempts` / `health_interval_ms`，定时执行用仓库变量 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS`。
 - 2026-05-29 续做后，后端 JSON、OPTIONS 和资产响应统一补充基础安全响应头：`x-content-type-options: nosniff`、`x-frame-options: DENY`、`referrer-policy: no-referrer`、`permissions-policy: geolocation=(), camera=(), microphone=()`；pre/prod 运行环境额外返回 HSTS。
