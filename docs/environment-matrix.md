@@ -143,13 +143,14 @@ npm run smoke:deployed:prod
 
 `smoke:deployed:*` 会检查 `/health` 和 `/health/ready`，并确认 pre/prod 实际使用 `postgres`、`cos`、内容安全 `wechat`、地图 `tencent` 和平台通知 `wechat`。
 
-`smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、买家完成、售出后拒绝二次交易、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度：
+`smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、买家完成、售出后拒绝二次交易、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度；如果要把账号注销也纳入真实部署后验收，可额外提供独立一次性测试账号 `GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`，不要复用 seller/buyer 主烟测账号：
 
 ```bash
 GOODS_COMM_SMOKE_SELLER_CODE=...
 GOODS_COMM_SMOKE_BUYER_CODE=...
 GOODS_COMM_SMOKE_LATITUDE=31.22945
 GOODS_COMM_SMOKE_LONGITUDE=121.45494
+GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE=... # optional disposable account
 npm run smoke:deployed:pre:main
 ```
 

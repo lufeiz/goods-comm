@@ -16,6 +16,9 @@ const sellerProvider = process.env.GOODS_COMM_SMOKE_SELLER_PROVIDER || 'weixin'
 const buyerProvider = process.env.GOODS_COMM_SMOKE_BUYER_PROVIDER || sellerProvider
 const sellerCode = process.env.GOODS_COMM_SMOKE_SELLER_CODE || ''
 const buyerCode = process.env.GOODS_COMM_SMOKE_BUYER_CODE || ''
+const accountDeleteProvider = process.env.GOODS_COMM_SMOKE_ACCOUNT_DELETE_PROVIDER || sellerProvider
+const accountDeleteCode = process.env.GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE || ''
+const shouldRunAccountDeleteSmoke = Boolean(accountDeleteCode)
 const scopeType = process.env.GOODS_COMM_SMOKE_SCOPE_TYPE || 'community'
 const radiusMeters = parseOptionalNumber('GOODS_COMM_SMOKE_RADIUS_METERS', scopeType === 'street' ? 4000 : 1200)
 const smokeRunId = normalizeSmokeRunId(process.env.GOODS_COMM_SMOKE_RUN_ID || `${environment}-${Date.now()}`)
@@ -26,7 +29,8 @@ const idempotencyKeys = {
   tradeCreateAfterSold: `deployed:${smokeRunId}:trade:create-after-sold`,
   tradeConfirm: `deployed:${smokeRunId}:trade:confirm`,
   tradeComplete: `deployed:${smokeRunId}:trade:complete`,
-  tradeReview: `deployed:${smokeRunId}:trade:review`
+  tradeReview: `deployed:${smokeRunId}:trade:review`,
+  accountDeleteItem: `deployed:${smokeRunId}:account-delete:item:create`
 }
 
 validateInputs()
@@ -176,6 +180,10 @@ findNotification(sellerNotificationsAfterReview, 'trade_reviewed', trade.id, 'se
 const soldList = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}`)
 assert(!toArray(soldList.items).some((candidate) => candidate.id === item.id), 'sold item still appears in public list')
 
+if (shouldRunAccountDeleteSmoke) {
+  await runAccountDeletionSmoke()
+}
+
 const logout = await post('/auth/logout', {}, buyer.token)
 assertEqual(logout.ok, true, 'buyer logout')
 const revokedAuth = await getExpectError('/items/mine', buyer.token)
@@ -222,9 +230,75 @@ function validateInputs() {
     missing.push('GOODS_COMM_SMOKE_SCOPE_TYPE must be community or street')
   }
 
+  if (
+    accountDeleteCode &&
+    accountDeleteProvider === sellerProvider &&
+    accountDeleteCode === sellerCode
+  ) {
+    missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE must use a disposable account different from GOODS_COMM_SMOKE_SELLER_CODE')
+  }
+
+  if (
+    accountDeleteCode &&
+    accountDeleteProvider === buyerProvider &&
+    accountDeleteCode === buyerCode
+  ) {
+    missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE must use a disposable account different from GOODS_COMM_SMOKE_BUYER_CODE')
+  }
+
   if (missing.length) {
     throw new Error(`Deployed main-flow smoke preconditions are missing:\n- ${missing.join('\n- ')}`)
   }
+}
+
+async function runAccountDeletionSmoke() {
+  const account = await post('/auth/login', {
+    provider: accountDeleteProvider,
+    code: accountDeleteCode,
+    agreement: createAgreement('deployed-main-flow:account-delete'),
+    userInfo: {
+      nickname: `部署烟测注销账号-${environment}`,
+      avatarUrl: ''
+    }
+  })
+  assert(Boolean(account.token), 'account deletion login did not return token')
+
+  const uploadedDeleteImage = await uploadSmokeImage(account.token)
+  const deleteItemImage = selectPublishImage(uploadedDeleteImage)
+  const deleteItemPayload = {
+    title: `部署注销烟测-${smokeRunId}`,
+    price: 1,
+    category: 'home',
+    condition: 'good',
+    description: `部署后账号注销烟测 ${environment}`,
+    images: [deleteItemImage],
+    tradeScope: {
+      type: scopeType,
+      label: scopeType === 'street' ? '同街道' : '同社区',
+      radiusMeters: radiusMeters.value
+    },
+    location: {
+      ...location,
+      scopeType,
+      radiusMeters: radiusMeters.value
+    }
+  }
+  const deleteItem = await post('/items', deleteItemPayload, account.token, idempotencyOptions(idempotencyKeys.accountDeleteItem))
+  assertEqual(deleteItem.status, 'online', 'account deletion smoke item status')
+
+  const deletion = await post('/auth/delete-account', {
+    reason: 'deployed_main_flow_smoke'
+  }, account.token)
+  assertEqual(deletion.ok, true, 'account deletion result')
+  assert(Boolean(deletion.deletedAt), 'account deletion deletedAt')
+
+  const revokedDeletedToken = await getExpectError('/items/mine', account.token)
+  assertEqual(revokedDeletedToken.status, 401, 'account deletion revoked token status')
+  assertEqual(revokedDeletedToken.code, 'UNAUTHENTICATED', 'account deletion revoked token code')
+
+  const hiddenDeletedItem = await getExpectError(`/items/${encodeURIComponent(deleteItem.id)}`)
+  assertEqual(hiddenDeletedItem.status, 404, 'account deletion hidden item status')
+  assertEqual(hiddenDeletedItem.code, 'NOT_FOUND', 'account deletion hidden item code')
 }
 
 function selectPublishImage(uploadedImage) {
