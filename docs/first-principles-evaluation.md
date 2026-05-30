@@ -1,10 +1,10 @@
 # goods-comm 第一性原理评估报告
 
-评估日期：2026-05-28  
+评估日期：2026-05-30  
 项目路径：`/Users/lufeiz/Downloads/项目/codexProject/goods-comm`  
 评估方法：不先按“功能清单”判断，而是先拆解一个社区二手交易小程序必须成立的底层条件，再逐项映射到当前代码证据。
 
-生产化补充：逐项解决方案与本轮落地状态见 `docs/production-hardening-plan.md`；BFF / 云函数接口契约见 `docs/api-contract.md`。
+生产化补充：逐项解决方案与本轮落地状态见 `docs/production-hardening-plan.md`；BFF / 云函数接口契约见 `docs/api-contract.md`；更完整的当前客观评分见 `docs/objective-project-assessment-20260529.md`。
 
 ## 1. 总结论
 
@@ -189,10 +189,10 @@ Backend artifact built at dist/backend
 本次执行 `npm run env:check` 可以完成 dev/test/pre/prod 四套环境检查，但输出了大量占位配置警告；执行 `npm run audit:production-readiness` 后生成 `docs/deployment-readiness-audit.md`，当前结果为：
 
 ```text
-Production readiness audit: BLOCKED (44 blockers, 9 warnings)
+Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 ```
 
-阻断项集中在三个底层事实：本机缺部署和数据库同步工具链及非交互云部署凭据，pre/prod 仍是占位 API / 数据库 / COS / 地图 / 平台密钥，且部署后 smoke 因没有真实 API 域名无法执行。当前审计还会把占位数据库连接串和占位 COS bucket 的隔离证明标成 warning，而不是 pass；`GOODS_COMM_MAP_REGION_DATASET` 的格式阻塞已解除，pre/prod 现在都是后端可解析的非空 JSON 网格数组，但真实生产社区 / 街道网格数据仍需替换占位内容。这个审计结果支持本文的核心判断：项目代码已经具备较完整的 MVP 和后端边界，但还没有进入真实生产可上线状态。
+阻断项集中在三个底层事实：本机缺部署和数据库同步工具链及非交互云部署凭据，pre/prod 仍是占位 API / 数据库 / COS / 地图 / 平台密钥，且部署后 smoke 因没有真实 API 域名无法执行。严格审计当前为 `BLOCKED (48 blockers, 7 warnings)`，会额外要求真实部署后 health / 主链路 smoke 输入。当前审计还会把占位数据库连接串和占位 COS bucket 的隔离证明标成 warning，而不是 pass；`GOODS_COMM_MAP_REGION_DATASET` 的格式阻塞已解除，pre/prod 现在都是后端可解析的非空 JSON 网格数组，但真实生产社区 / 街道网格数据仍需替换占位内容。这个审计结果支持本文的核心判断：项目代码已经具备较完整的 MVP 和后端边界，但还没有进入真实生产可上线状态。
 
 ## 4. 分项评分
 
@@ -204,7 +204,7 @@ Production readiness audit: BLOCKED (44 blockers, 9 warnings)
 | 数据持久化 | 3.4/5 | 已补 HTTP 后端文件 store、数据库 DDL、PostgreSQL 规范化表 store、幂等记录持久化和部署产物；仍缺真实云数据库实例与连接验证 |
 | 隐私与风控 | 3.9/5 | 联系码延迟展示、商品响应脱敏、用户协议 / 隐私政策页面、关键动作协议门禁、服务端协议审计、举报/审核/注销/封禁路径、运营队列和举报处理结果已补；仍缺 IM、真实内容安全和完整后台 UI |
 | 工程结构 | 4.2/5 | 页面、服务、领域、BFF、HTTP 后端、契约文档边界更清楚 |
-| 测试与交付 | 4.2/5 | smoke、BFF smoke、Fetch smoke、PostgreSQL store smoke、HTTP 后端 smoke、页面契约 smoke、一次 H5 Browser 渲染 QA、CI 发布候选门禁和微信/支付宝/H5/后端构建覆盖主路径；核心页面、交易售卖动作和运营台关键操作已有稳定锚点及动态选择器属性并纳入三端产物检查；生产审计仍被 blocker 阻断，且仍缺可纳入 CI 的渲染级页面 E2E 和真机矩阵 |
+| 测试与交付 | 4.25/5 | smoke、BFF smoke、Fetch smoke、PostgreSQL store smoke、HTTP 后端 smoke、页面契约 smoke、主流程证据矩阵 smoke、一次 H5 Browser 渲染 QA、CI 发布候选门禁和微信/支付宝/H5/后端构建覆盖主路径；核心页面、交易售卖动作和运营台关键操作已有稳定锚点及动态选择器属性并纳入三端产物检查；生产审计仍被 blocker 阻断，且仍缺可纳入 CI 的渲染级页面 E2E 和真机矩阵 |
 
 综合判断：经过本轮补强后约 `4.3/5`。它已经不是单纯页面 Demo，而是“端侧生产化边界 + BFF 契约 + 可运行 HTTP 后端 + PostgreSQL 规范化表存储 + 可验证核心状态机 + 生产环境依赖保护 + 写请求幂等 + 平台通知 outbox + 端侧协议门禁 + 服务端协议审计 + 基础用户风控”的项目。作为可展示 MVP 可到 `8.5/10` 左右；作为真实上线系统仍只有 `6.5/10` 左右，因为关键外部事实还没有落到真实云部署、真实云数据库、真实地图 Key/网格数据、对象存储、微信订阅消息模板和平台合规审核。
 
