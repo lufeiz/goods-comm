@@ -21,6 +21,10 @@ const requiredKeys = [
   'GOODS_COMM_MAX_REQUEST_BYTES',
   'GOODS_COMM_RATE_LIMIT_MAX_REQUESTS',
   'GOODS_COMM_RATE_LIMIT_WINDOW_MS',
+  'GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS',
+  'GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS',
+  'GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS',
+  'GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS',
   'GOODS_COMM_TRUSTED_PROXY_IPS',
   'GOODS_COMM_OBJECT_STORE',
   'GOODS_COMM_DATABASE_URL',
@@ -117,7 +121,14 @@ for (const environment of environments) {
     errors.push(`[${environment}] GOODS_COMM_MAX_REQUEST_BYTES must be a positive integer`)
   }
 
-  for (const key of ['GOODS_COMM_RATE_LIMIT_MAX_REQUESTS', 'GOODS_COMM_RATE_LIMIT_WINDOW_MS']) {
+  for (const key of [
+    'GOODS_COMM_RATE_LIMIT_MAX_REQUESTS',
+    'GOODS_COMM_RATE_LIMIT_WINDOW_MS',
+    'GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS',
+    'GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS',
+    'GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS',
+    'GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS'
+  ]) {
     if (!isPositiveInteger(values[key])) {
       errors.push(`[${environment}] ${key} must be a positive integer`)
     }

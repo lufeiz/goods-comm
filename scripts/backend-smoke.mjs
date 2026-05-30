@@ -20,6 +20,7 @@ const mockContentSafety = createContentSafetyClient({
 
 await assertHttpRateLimit()
 await assertTrustedProxyForwardedRateLimit()
+await assertRouteAndUserRateLimits()
 await assertProtectedSecurityHeaders()
 
 await rm(statePath, {
@@ -1268,6 +1269,144 @@ async function assertTrustedProxyForwardedRateLimit() {
       force: true
     })
     await rm(trustedProxyObjectRootDir, {
+      recursive: true,
+      force: true
+    })
+  }
+}
+
+async function assertRouteAndUserRateLimits() {
+  const routeStatePath = resolve('/private/tmp/goods-comm-backend-route-rate-limit-smoke.json')
+  const routeObjectRootDir = resolve('/private/tmp/goods-comm-backend-route-rate-limit-object-store-smoke')
+
+  await rm(routeStatePath, {
+    force: true
+  })
+  await rm(routeObjectRootDir, {
+    recursive: true,
+    force: true
+  })
+
+  const routeRuntime = await startGoodsCommServer({
+    port: 0,
+    environment: 'test',
+    statePath: routeStatePath,
+    objectRootDir: routeObjectRootDir,
+    allowedOrigins: [allowedOrigin],
+    rateLimitMaxRequests: 100,
+    rateLimitWindowMs: 60_000,
+    routeRateLimitMaxRequests: 1,
+    routeRateLimitWindowMs: 60_000,
+    userRateLimitMaxRequests: 100,
+    userRateLimitWindowMs: 60_000
+  })
+
+  try {
+    const health = await getEnvelope(`${routeRuntime.url}/health`, {
+      origin: allowedOrigin
+    })
+    assert.equal(health.status, 200)
+    assert.equal(health.payload.data.rateLimit.routeMaxRequests, 1)
+    assert.equal(health.payload.data.rateLimit.routeWindowMs, 60_000)
+    assert.equal(health.payload.data.rateLimit.userMaxRequests, 100)
+
+    const firstRouteHit = await getEnvelope(`${routeRuntime.url}/items`, {
+      origin: allowedOrigin
+    })
+    assert.equal(firstRouteHit.status, 200)
+
+    const limitedRoute = await requestExpectError(`${routeRuntime.url}/items`, {
+      method: 'GET',
+      origin: allowedOrigin
+    })
+    assert.equal(limitedRoute.status, 429)
+    assert.equal(limitedRoute.code, 'TOO_MANY_REQUESTS')
+  } finally {
+    await new Promise((resolveClose) => routeRuntime.server.close(resolveClose))
+    await rm(routeStatePath, {
+      force: true
+    })
+    await rm(routeObjectRootDir, {
+      recursive: true,
+      force: true
+    })
+  }
+
+  const userStatePath = resolve('/private/tmp/goods-comm-backend-user-rate-limit-smoke.json')
+  const userObjectRootDir = resolve('/private/tmp/goods-comm-backend-user-rate-limit-object-store-smoke')
+
+  await rm(userStatePath, {
+    force: true
+  })
+  await rm(userObjectRootDir, {
+    recursive: true,
+    force: true
+  })
+
+  const userRuntime = await startGoodsCommServer({
+    port: 0,
+    environment: 'test',
+    statePath: userStatePath,
+    objectRootDir: userObjectRootDir,
+    allowedOrigins: [allowedOrigin],
+    rateLimitMaxRequests: 100,
+    rateLimitWindowMs: 60_000,
+    routeRateLimitMaxRequests: 100,
+    routeRateLimitWindowMs: 60_000,
+    userRateLimitMaxRequests: 1,
+    userRateLimitWindowMs: 60_000
+  })
+
+  try {
+    const health = await getEnvelope(`${userRuntime.url}/health`, {
+      origin: allowedOrigin
+    })
+    assert.equal(health.status, 200)
+    assert.equal(health.payload.data.rateLimit.userMaxRequests, 1)
+    assert.equal(health.payload.data.rateLimit.userWindowMs, 60_000)
+
+    const seller = await post(`${userRuntime.url}/auth/login`, {
+      provider: 'weixin',
+      code: 'backend-user-rate-limit-seller',
+      userInfo: {
+        nickname: '用户限流卖家',
+        avatarUrl: ''
+      }
+    })
+
+    const invalidPublish = await postExpectError(`${userRuntime.url}/items`, {
+      title: '',
+      price: 0,
+      category: '',
+      condition: '',
+      images: [],
+      tradeScope: {},
+      location: {}
+    }, seller.token)
+    assert.equal(invalidPublish.status, 422)
+
+    const limitedUser = await requestExpectError(`${userRuntime.url}/items`, {
+      method: 'POST',
+      origin: allowedOrigin,
+      token: seller.token,
+      data: {
+        title: '',
+        price: 0,
+        category: '',
+        condition: '',
+        images: [],
+        tradeScope: {},
+        location: {}
+      }
+    })
+    assert.equal(limitedUser.status, 429)
+    assert.equal(limitedUser.code, 'TOO_MANY_REQUESTS')
+  } finally {
+    await new Promise((resolveClose) => userRuntime.server.close(resolveClose))
+    await rm(userStatePath, {
+      force: true
+    })
+    await rm(userObjectRootDir, {
       recursive: true,
       force: true
     })

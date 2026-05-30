@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import { isIP } from 'node:net'
@@ -19,6 +19,10 @@ const DEFAULT_CORS_HEADERS = 'content-type,authorization,x-trace-id,idempotency-
 const DEFAULT_MAX_REQUEST_BYTES = 6 * 1024 * 1024
 const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 300
 const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000
+const DEFAULT_ROUTE_RATE_LIMIT_MAX_REQUESTS = 120
+const DEFAULT_ROUTE_RATE_LIMIT_WINDOW_MS = 60 * 1000
+const DEFAULT_USER_RATE_LIMIT_MAX_REQUESTS = 80
+const DEFAULT_USER_RATE_LIMIT_WINDOW_MS = 60 * 1000
 const PROTECTED_ENVIRONMENTS = ['pre', 'prod']
 
 export function createGoodsCommServer(options = {}) {
@@ -37,6 +41,10 @@ export function createGoodsCommServer(options = {}) {
   const rateLimiter = createRateLimiter({
     maxRequests: options.rateLimitMaxRequests ?? process.env.GOODS_COMM_RATE_LIMIT_MAX_REQUESTS,
     windowMs: options.rateLimitWindowMs ?? process.env.GOODS_COMM_RATE_LIMIT_WINDOW_MS,
+    routeMaxRequests: options.routeRateLimitMaxRequests ?? process.env.GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS,
+    routeWindowMs: options.routeRateLimitWindowMs ?? process.env.GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS,
+    userMaxRequests: options.userRateLimitMaxRequests ?? process.env.GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS,
+    userWindowMs: options.userRateLimitWindowMs ?? process.env.GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS,
     trustedProxyIps: options.trustedProxyIps ?? process.env.GOODS_COMM_TRUSTED_PROXY_IPS,
     now: options.now
   })
@@ -1212,15 +1220,34 @@ function createRateLimiter(options = {}) {
     options.windowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS,
     'GOODS_COMM_RATE_LIMIT_WINDOW_MS'
   )
+  const routeMaxRequests = normalizePositiveInteger(
+    options.routeMaxRequests ?? DEFAULT_ROUTE_RATE_LIMIT_MAX_REQUESTS,
+    'GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS'
+  )
+  const routeWindowMs = normalizePositiveInteger(
+    options.routeWindowMs ?? DEFAULT_ROUTE_RATE_LIMIT_WINDOW_MS,
+    'GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS'
+  )
+  const userMaxRequests = normalizePositiveInteger(
+    options.userMaxRequests ?? DEFAULT_USER_RATE_LIMIT_MAX_REQUESTS,
+    'GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS'
+  )
+  const userWindowMs = normalizePositiveInteger(
+    options.userWindowMs ?? DEFAULT_USER_RATE_LIMIT_WINDOW_MS,
+    'GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS'
+  )
   const trustedProxyRules = parseTrustedProxyRules(options.trustedProxyIps)
   const now = typeof options.now === 'function' ? options.now : () => Date.now()
   const clients = new Map()
+  const routes = new Map()
+  const principals = new Map()
 
   return {
     check(request) {
       if (isRateLimitExemptRequest(request)) {
         return {
           allowed: true,
+          scope: 'client',
           maxRequests,
           windowMs,
           remaining: maxRequests,
@@ -1230,48 +1257,110 @@ function createRateLimiter(options = {}) {
 
       const currentTime = now()
       const clientId = getRateLimitClientId(request, trustedProxyRules)
-      const existing = clients.get(clientId)
-      const entry = existing && existing.resetAt > currentTime
-        ? existing
-        : {
-            count: 0,
-            resetAt: currentTime + windowMs
-          }
+      const clientLimit = checkRateLimitBucket(clients, `client:${clientId}`, {
+        scope: 'client',
+        maxRequests,
+        windowMs,
+        currentTime
+      })
 
-      if (entry.count >= maxRequests) {
-        clients.set(clientId, entry)
-        return {
-          allowed: false,
-          clientId,
-          maxRequests,
-          windowMs,
-          remaining: 0,
-          resetAt: entry.resetAt,
-          retryAfterMs: Math.max(entry.resetAt - currentTime, 0)
+      if (!clientLimit.allowed) {
+        return clientLimit
+      }
+
+      const routeId = getRateLimitRouteId(request)
+      const routeLimit = checkRateLimitBucket(routes, `route:${clientId}:${routeId}`, {
+        scope: 'route',
+        maxRequests: routeMaxRequests,
+        windowMs: routeWindowMs,
+        currentTime
+      })
+
+      if (!routeLimit.allowed) {
+        return routeLimit
+      }
+
+      const principalId = getRateLimitPrincipalId(request)
+      let principalLimit = null
+
+      if (principalId && isPrincipalRateLimitedRequest(request)) {
+        principalLimit = checkRateLimitBucket(principals, `principal:${routeId}:${principalId}`, {
+          scope: 'user',
+          maxRequests: userMaxRequests,
+          windowMs: userWindowMs,
+          currentTime
+        })
+
+        if (!principalLimit.allowed) {
+          return principalLimit
         }
       }
 
-      entry.count += 1
-      clients.set(clientId, entry)
       cleanupExpiredRateLimitEntries(clients, currentTime)
+      cleanupExpiredRateLimitEntries(routes, currentTime)
+      cleanupExpiredRateLimitEntries(principals, currentTime)
 
       return {
         allowed: true,
+        scope: principalLimit?.scope || routeLimit.scope || clientLimit.scope,
         clientId,
-        maxRequests,
-        windowMs,
-        remaining: Math.max(maxRequests - entry.count, 0),
-        resetAt: entry.resetAt,
-        retryAfterMs: Math.max(entry.resetAt - currentTime, 0)
+        routeId,
+        principalId,
+        maxRequests: Math.min(clientLimit.maxRequests, routeLimit.maxRequests, principalLimit?.maxRequests ?? Number.POSITIVE_INFINITY),
+        windowMs: Math.min(clientLimit.windowMs, routeLimit.windowMs, principalLimit?.windowMs ?? Number.POSITIVE_INFINITY),
+        remaining: Math.min(clientLimit.remaining, routeLimit.remaining, principalLimit?.remaining ?? Number.POSITIVE_INFINITY),
+        resetAt: Math.min(clientLimit.resetAt, routeLimit.resetAt, principalLimit?.resetAt ?? Number.POSITIVE_INFINITY),
+        retryAfterMs: Math.max(clientLimit.retryAfterMs, routeLimit.retryAfterMs, principalLimit?.retryAfterMs ?? 0)
       }
     },
     describe() {
       return {
         maxRequests,
         windowMs,
+        routeMaxRequests,
+        routeWindowMs,
+        userMaxRequests,
+        userWindowMs,
         trustedProxyCount: trustedProxyRules.length
       }
     }
+  }
+}
+
+function checkRateLimitBucket(entries, key, options = {}) {
+  const currentTime = options.currentTime ?? Date.now()
+  const existing = entries.get(key)
+  const entry = existing && existing.resetAt > currentTime
+    ? existing
+    : {
+        count: 0,
+        resetAt: currentTime + options.windowMs
+      }
+
+  if (entry.count >= options.maxRequests) {
+    entries.set(key, entry)
+    return {
+      allowed: false,
+      scope: options.scope,
+      maxRequests: options.maxRequests,
+      windowMs: options.windowMs,
+      remaining: 0,
+      resetAt: entry.resetAt,
+      retryAfterMs: Math.max(entry.resetAt - currentTime, 0)
+    }
+  }
+
+  entry.count += 1
+  entries.set(key, entry)
+
+  return {
+    allowed: true,
+    scope: options.scope,
+    maxRequests: options.maxRequests,
+    windowMs: options.windowMs,
+    remaining: Math.max(options.maxRequests - entry.count, 0),
+    resetAt: entry.resetAt,
+    retryAfterMs: Math.max(entry.resetAt - currentTime, 0)
   }
 }
 
@@ -1294,6 +1383,69 @@ function isRateLimitExemptRequest(request = {}) {
 
   const pathname = String(request.url || '').split('?')[0]
   return pathname === '/health' || pathname === '/health/ready'
+}
+
+function getRateLimitRouteId(request = {}) {
+  const method = routeMethod(request)
+  const pathname = String(request.url || '').split('?')[0] || '/'
+
+  return `${method}:${normalizeRateLimitPath(pathname)}`
+}
+
+function normalizeRateLimitPath(pathname = '/') {
+  if (/^\/items\/[^/]+$/.test(pathname)) {
+    return '/items/:id'
+  }
+
+  if (/^\/trades\/[^/]+\/status$/.test(pathname)) {
+    return '/trades/:id/status'
+  }
+
+  if (/^\/trades\/[^/]+\/review$/.test(pathname)) {
+    return '/trades/:id/review'
+  }
+
+  if (/^\/ops\/reports\/[^/]+\/resolve$/.test(pathname)) {
+    return '/ops/reports/:id/resolve'
+  }
+
+  if (/^\/ops\/users\/[^/]+\/status$/.test(pathname)) {
+    return '/ops/users/:id/status'
+  }
+
+  if (/^\/moderation\/items\/[^/]+\/review$/.test(pathname)) {
+    return '/moderation/items/:id/review'
+  }
+
+  if (/^\/moderation\/media\/[^/]+\/review$/.test(pathname)) {
+    return '/moderation/media/:id/review'
+  }
+
+  return pathname
+}
+
+function getRateLimitPrincipalId(request = {}) {
+  const headers = request.headers || {}
+  const authorization = Array.isArray(headers.authorization) ? headers.authorization[0] : headers.authorization
+  const opsSessionToken = Array.isArray(headers['x-ops-session-token'])
+    ? headers['x-ops-session-token'][0]
+    : headers['x-ops-session-token']
+  const moderationSecret = Array.isArray(headers['x-moderation-secret'])
+    ? headers['x-moderation-secret'][0]
+    : headers['x-moderation-secret']
+  const credential = authorization || opsSessionToken || moderationSecret
+
+  if (!credential) {
+    return ''
+  }
+
+  return createHash('sha256').update(String(credential)).digest('hex')
+}
+
+function isPrincipalRateLimitedRequest(request = {}) {
+  const method = routeMethod(request)
+
+  return !['GET', 'OPTIONS'].includes(method)
 }
 
 function getRateLimitClientId(request = {}, trustedProxyRules = []) {

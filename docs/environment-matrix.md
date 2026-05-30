@@ -47,7 +47,9 @@
 | `GOODS_COMM_COS_REGION` / `GOODS_COMM_COS_SECRET_ID` / `GOODS_COMM_COS_SECRET_KEY` | 腾讯 COS 上传凭据 |
 | `GOODS_COMM_COS_BASE_URL` / `GOODS_COMM_CDN_BASE_URL` | COS 源站和 CDN 图片访问域名 |
 | `GOODS_COMM_MAX_REQUEST_BYTES` | 后端 HTTP 请求体大小上限，应略高于图片上限并在 pre/prod 保持一致 |
-| `GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS` | 后端进程内客户端请求限流窗口；pre/prod 应保持一致，真实公网仍应叠加云网关 / WAF 限流 |
+| `GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS` | 后端进程内客户端 IP 请求限流窗口；pre/prod 应保持一致，真实公网仍应叠加云网关 / WAF 限流 |
+| `GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS` | 后端进程内接口级请求配额，按客户端和归一化接口路径计数 |
+| `GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS` | 后端进程内认证主体写请求配额，按 Authorization / 运营 token / 审核密钥的哈希计数，不保存明文 token |
 | `GOODS_COMM_TRUSTED_PROXY_IPS` | 可信代理 IP / IPv4 CIDR 列表，或 `none`；只有直连来源命中该列表时，后端才会信任 `x-forwarded-for` 作为限流客户端标识 |
 | `GOODS_COMM_MAP_PROVIDER` | 地图 / 社区网格服务提供方；dev/test 可为 `mock`，pre/prod 必须为 `tencent` |
 | `GOODS_COMM_MAP_REGION_DATASET` | 内部社区 / 街道网格映射，供后端把腾讯地图结果转换为稳定业务编码；pre/prod 必须是非空 JSON 数组，不能只是数据集标签 |
@@ -76,7 +78,7 @@ npm run audit:production-readiness
 npm run verify:release
 ```
 
-校验脚本会阻断缺失变量、非 HTTPS 的 test/pre/prod API、dev/test/pre/prod 数据库连接串、状态文件路径、对象目录和 COS bucket 互相复用，pre/prod 误用同一数据库或对象存储 bucket，以及 pre/prod 误用 mock 地图服务。`GOODS_COMM_MAX_REQUEST_BYTES` 必须是正整数，后端会在解析 JSON 或 multipart 前拒绝超过该上限的请求体，避免异常请求把运行时内存打满；`GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS` 也必须是正整数，后端会按客户端 IP 做基础请求限流；`GOODS_COMM_TRUSTED_PROXY_IPS` 必须是 `none` 或可信代理 IP / IPv4 CIDR 列表，后端只在直连来源命中该列表时读取 `x-forwarded-for`。`GOODS_COMM_ALLOWED_ORIGINS` 在 pre/prod 必须配置真实 HTTPS Origin，后端启动时会拒绝空值或 `*`。占位值会以 warning 形式输出，不阻塞开发；生产就绪审计不会把 pre/prod 占位连接串、占位 bucket 或占位可信代理列表计为真实上线条件满足。
+校验脚本会阻断缺失变量、非 HTTPS 的 test/pre/prod API、dev/test/pre/prod 数据库连接串、状态文件路径、对象目录和 COS bucket 互相复用，pre/prod 误用同一数据库或对象存储 bucket，以及 pre/prod 误用 mock 地图服务。`GOODS_COMM_MAX_REQUEST_BYTES` 必须是正整数，后端会在解析 JSON 或 multipart 前拒绝超过该上限的请求体，避免异常请求把运行时内存打满；`GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS`、`GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS`、`GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS` 也必须是正整数，后端会分别按客户端 IP、接口路径和认证主体写请求做基础限流；`GOODS_COMM_TRUSTED_PROXY_IPS` 必须是 `none` 或可信代理 IP / IPv4 CIDR 列表，后端只在直连来源命中该列表时读取 `x-forwarded-for`。`GOODS_COMM_ALLOWED_ORIGINS` 在 pre/prod 必须配置真实 HTTPS Origin，后端启动时会拒绝空值或 `*`。占位值会以 warning 形式输出，不阻塞开发；生产就绪审计不会把 pre/prod 占位连接串、占位 bucket 或占位可信代理列表计为真实上线条件满足。
 
 上线前审计脚本会额外检查本机是否具备 `cloudbase/tcb` 或 `docker+tccli` 部署链路、`TENCENTCLOUD_SECRET_ID` / `TENCENTCLOUD_SECRET_KEY` 非交互部署凭据、`psql/pg_dump/pg_restore` 数据库工具、pre/prod 生产依赖模式、pre/prod 拓扑变量一致性、可解析的社区 / 街道网格 JSON、构建产物目录、H5 / 微信 / 支付宝产物内嵌环境与 API Base URL，以及部署后主链路 smoke 所需的临时登录 code / 经纬度输入。默认生成 `docs/deployment-readiness-audit.md` 和 `docs/deployment-readiness-audit.json`；JSON 会把 blockers / warnings / passes 拆成带 `id`、`area`、`severity` 和 `message` 的条目，便于 CI、发布看板或部署脚本逐项消费。使用 `npm run audit:production-readiness -- --check-only` 时，如果仍存在上线 blocker，会返回非 0 退出码；使用 `npm run audit:production-readiness:strict` 会额外生成 strict 审计产物，并把部署后主链路 smoke 输入缺失升级为 blocker。
 

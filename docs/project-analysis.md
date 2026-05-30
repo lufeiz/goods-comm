@@ -401,7 +401,7 @@ wx17450fc9a94221e4
 
 ### 5. 发布身份仍未接真实平台身份
 
-当前发布页已经通过 `requireStoredAuthUser()` 强制登录，且要求发布位置能解析到社区/街道；BFF 发布接口也会从未过期、未吊销的 session token hash 绑定卖家，不接受客户端伪造 seller，并要求发布定位未过期、带精度、满足精度阈值，再重算发布位置归属。Node HTTP 层在图片上传和文本审核前也会先解析服务端 session，微信内容安全 `openid` 来自 session 绑定用户，客户端传入的 `sellerOpenid` / `platformId` 等审核身份字段会被忽略并从商品入库字段里剥离。session token 已改为服务端随机生成，服务端只持久化基于 `GOODS_COMM_SESSION_SECRET` 的 HMAC-SHA256 `tokenHash`，pre/prod 缺真实会话密钥时会拒绝签发 session。运营侧已补用户封禁 / 解封，封禁会吊销 session、下架活跃发布并把相关活跃交易转入争议。但本地环境仍没有真实平台 AppID/AppSecret、云端 openid/unionid 验证和真实数据库连接验证。正式环境下，发布记录仍必须绑定服务端用户 ID，并经过服务端审核和归属校验。
+当前发布页已经通过 `requireStoredAuthUser()` 强制登录，且要求发布位置能解析到社区/街道；BFF 发布接口也会从未过期、未吊销的 session token hash 绑定卖家，不接受客户端伪造 seller，并要求发布定位未过期、带精度、满足精度阈值，再重算发布位置归属。Node HTTP 层在图片上传和文本审核前也会先解析服务端 session，微信内容安全 `openid` 来自 session 绑定用户，客户端传入的 `sellerOpenid` / `platformId` 等审核身份字段会被忽略并从商品入库字段里剥离。session token 已改为服务端随机生成，服务端只持久化基于 `GOODS_COMM_SESSION_SECRET` 的 HMAC-SHA256 `tokenHash`，pre/prod 缺真实会话密钥时会拒绝签发 session。运营侧已补用户封禁 / 解封，封禁会吊销 session、下架活跃发布并把相关活跃交易转入争议。HTTP 层还补了客户端 IP、接口级和认证主体写请求三层进程内限流，认证主体只保存 Authorization / 运营 token / 审核密钥哈希，不保存明文。正式生产仍需要真实平台 AppID/AppSecret、云端 openid/unionid 验证、真实数据库连接验证，以及云网关 / WAF / 分布式限流。
 
 发布后的展示也已经和审核状态对齐：接口返回 `pending_review` 时，发布页提示“已提交审核”并引导到“我的发布”；只有公开上架的商品才提示“已发布”并回到集市，避免待审商品在公开列表不可见造成误解。
 
