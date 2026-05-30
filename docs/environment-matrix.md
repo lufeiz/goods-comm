@@ -79,7 +79,7 @@ npm run verify:release
 
 上线前审计脚本会额外检查本机是否具备 `cloudbase/tcb` 或 `docker+tccli` 部署链路、`TENCENTCLOUD_SECRET_ID` / `TENCENTCLOUD_SECRET_KEY` 非交互部署凭据、`psql/pg_dump/pg_restore` 数据库工具、pre/prod 生产依赖模式、pre/prod 拓扑变量一致性、可解析的社区 / 街道网格 JSON、构建产物目录、H5 / 微信 / 支付宝产物内嵌环境与 API Base URL，以及部署后主链路 smoke 所需的临时登录 code / 经纬度输入。默认生成 `docs/deployment-readiness-audit.md` 和 `docs/deployment-readiness-audit.json`；JSON 会把 blockers / warnings / passes 拆成带 `id`、`area`、`severity` 和 `message` 的条目，便于 CI、发布看板或部署脚本逐项消费。使用 `npm run audit:production-readiness -- --check-only` 时，如果仍存在上线 blocker，会返回非 0 退出码；使用 `npm run audit:production-readiness:strict` 会额外生成 strict 审计产物，并把部署后主链路 smoke 输入缺失升级为 blocker。
 
-`npm run verify:release` 是 CI / 发布候选门禁，会串行执行语法检查、核心 smoke、workflow smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；quick/full profile 结束时会明确提示它们不是生产放行口径。`npm run verify:release:strict` 只适合真实上线前使用，会先刷新 strict 审计 Markdown / JSON，再把生产就绪审计作为强制 gate；当前占位配置下会因真实云资源、工具链和部署后 smoke 输入缺失失败。
+`npm run verify:release` 是 CI / 发布候选门禁，会串行执行语法检查、核心 smoke、页面契约 smoke、主链路证据矩阵 smoke、workflow smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；quick/full profile 结束时会明确提示它们不是生产放行口径。`npm run verify:release:strict` 只适合真实上线前使用，会先刷新 strict 审计 Markdown / JSON，再把生产就绪审计作为强制 gate；当前占位配置下会因真实云资源、工具链和部署后 smoke 输入缺失失败。
 
 部署后主链路 smoke 会对商品发布、交易创建、卖家确认、交易列表联系码、交易通知、通知已读、完成售出、售出后详情状态、售出后拒绝再次交易、交易评价、退出登录和退出后 token 拒绝访问带稳定 `Idempotency-Key` 或明确错误码断言。默认每次运行生成新的 `GOODS_COMM_SMOKE_RUN_ID`；如果 CI 需要跨进程复跑同一次写入链路，应同时固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`，且时间戳仍需在定位有效期内。
 

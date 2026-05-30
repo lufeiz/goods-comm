@@ -144,7 +144,7 @@ src/pages/ops/ops.vue                  947
 
 当前 smoke 覆盖面很广，这是优点；但还缺正式测试分层、覆盖率、页面渲染级 E2E、微信 / 支付宝开发者工具自动化、真机定位权限矩阵、真实平台登录 code、真实图片审核回调、真实订阅消息送达和真实 PostgreSQL 连接主链路。
 
-本轮实际执行 `npm run smoke:pages` 通过，证明页面注册、tabBar 和关键页面 service 接入的静态契约仍成立；同时刷新 `npm run audit:production-readiness`，当前仍是 `BLOCKED (46 blockers, 9 warnings)`。
+本轮实际执行 `npm run smoke:pages` 通过，证明页面注册、tabBar 和关键页面 service 接入的静态契约仍成立；2026-05-30 续做后新增 `npm run smoke:main-flow-contract`，把登录协议与账号生命周期、定位解析与显示可信边界、发布与图片上传、交易售卖生命周期、部署后 smoke 和 release gate 串成 5 条主链路证据矩阵；同时刷新 `npm run audit:production-readiness`，当前仍是 `BLOCKED (46 blockers, 9 warnings)`。
 
 ### 6.7 发布门禁口径容易被误读
 
@@ -166,7 +166,7 @@ src/pages/ops/ops.vue                  947
 
 本轮已修复 `src/pages/ops/ops.vue:452-479` 的通知投递 fallback 作用域问题：运营队列结果提升为外层 `moderationQueue`，通知投递接口失败时可回退到队列里的 `notificationDeliveries`，或安全返回空数组。`scripts/page-contract-smoke.mjs:134-173` 增加了静态契约，防止再次引用作用域外 `queue.notificationDeliveries`。核心 H5 / 小程序页面也已补 `data-testid` 渲染测试锚点，覆盖首页、发布、详情、交易、我的、定位组件和商品卡片；交易页继续补充通知已读、交易状态、联系码、争议、售卖动作、评价评分、评价标签、评价输入和提交评价锚点，并为重复动态元素补充交易 id、状态、评分、标签等选择器属性；运营台继续补充登录、用户风控、商品审核、举报、争议、通知重试、端侧事件和操作审计锚点，并带用户 / 商品 / 举报 / 争议 / 通知 / 审计 id 选择器。`smoke:pages` 会阻断这些主流程测试锚点被误删，`smoke:artifacts` 会继续确认这些锚点和选择器属性在 H5 / 微信 / 支付宝编译产物中真实保留。
 
-这个修复降低了运营台异常路径风险，也为渲染级自动化提供了稳定定位元素。页面层仍需要把这些锚点接入 Playwright / 开发者工具 / 真机矩阵 E2E，并补接口失败模拟，而不能只依赖主路径 smoke。
+这个修复降低了运营台异常路径风险，也为渲染级自动化提供了稳定定位元素。`smoke:main-flow-contract` 已经进一步降低页面、service、BFF、部署后 smoke 各自通过但主链路证据断裂的风险；页面层仍需要把这些锚点接入 Playwright / 开发者工具 / 真机矩阵 E2E，并补接口失败模拟，而不能只依赖主路径 smoke。
 
 ### 6.12 发布幂等已前置到内容安全前
 

@@ -85,6 +85,7 @@ function addCoreSmokes() {
     'smoke:prod-sync',
     'smoke:workflows',
     'smoke:pages',
+    'smoke:main-flow-contract',
     'smoke:backend:env',
     'smoke',
     'smoke:bff',
