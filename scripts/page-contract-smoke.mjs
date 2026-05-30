@@ -251,9 +251,22 @@ function verifyRenderedTestIdContracts() {
         'orders-page',
         'orders-summary',
         'orders-notification-list',
+        'orders-notification-read',
         'orders-login-required',
         'orders-login-entry',
         'orders-trade-list',
+        'orders-trade-card',
+        'orders-trade-status',
+        'orders-trade-contact',
+        'orders-trade-dispute',
+        'orders-trade-audit',
+        'orders-trade-action',
+        'orders-review-panel',
+        'orders-review-rating',
+        'orders-review-tag',
+        'orders-review-content',
+        'orders-review-submit',
+        'orders-reviewed-label',
         'orders-empty-state'
       ]
     },
@@ -393,7 +406,11 @@ function verifyDisplayStateContracts() {
         'disputeText(trade)',
         'auditText(trade)',
         '交易评价',
-        '已评价'
+        '已评价',
+        ':data-trade-id="trade.id"',
+        ':data-status="action.status"',
+        ':data-rating="rating"',
+        ':data-tag="tag"'
       ]
     },
     {

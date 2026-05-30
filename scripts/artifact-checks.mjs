@@ -18,7 +18,8 @@ export async function createArtifactChecks(options = {}) {
     expectedTabLabels,
     expectedEnvironmentConfigs,
     requiredComponents: ['GoodCard', 'LocationGuard', 'EligibilityTag'],
-    requiredRenderedTestIds: createRequiredRenderedTestIds()
+    requiredRenderedTestIds: createRequiredRenderedTestIds(),
+    requiredRenderedAttributes: createRequiredRenderedAttributes()
   }
   const targets = profile === 'quick'
     ? quickTargets(root)
@@ -194,9 +195,23 @@ function createRequiredRenderedTestIds() {
       'pages/orders/orders': [
         'orders-page',
         'orders-summary',
+        'orders-notification-list',
+        'orders-notification-read',
         'orders-login-required',
         'orders-login-entry',
         'orders-trade-list',
+        'orders-trade-card',
+        'orders-trade-status',
+        'orders-trade-contact',
+        'orders-trade-dispute',
+        'orders-trade-audit',
+        'orders-trade-action',
+        'orders-review-panel',
+        'orders-review-rating',
+        'orders-review-tag',
+        'orders-review-content',
+        'orders-review-submit',
+        'orders-reviewed-label',
         'orders-empty-state'
       ],
       'pages/mine/mine': [
@@ -222,6 +237,20 @@ function createRequiredRenderedTestIds() {
   }
 }
 
+function createRequiredRenderedAttributes() {
+  return {
+    pages: {
+      'pages/orders/orders': [
+        'data-notification-id',
+        'data-trade-id',
+        'data-status',
+        'data-rating',
+        'data-tag'
+      ]
+    }
+  }
+}
+
 async function verifyH5RenderedTestIds(target, context, assetNames) {
   const jsAssetNames = assetNames.filter((name) => name.endsWith('.js'))
   let jsBundleText = ''
@@ -237,6 +266,13 @@ async function verifyH5RenderedTestIds(target, context, assetNames) {
       `${target.label}: H5 artifact is missing rendered test id ${testId}`
     )
   }
+
+  for (const attribute of allRequiredRenderedAttributes(context)) {
+    assertCondition(
+      jsBundleText.includes(attribute),
+      `${target.label}: H5 artifact is missing rendered selector attribute ${attribute}`
+    )
+  }
 }
 
 async function verifyMiniProgramRenderedTestIds(target, context, markupExtension) {
@@ -247,6 +283,13 @@ async function verifyMiniProgramRenderedTestIds(target, context, markupExtension
       assertCondition(
         markup.includes(`data-testid="${testId}"`),
         `${target.label}: ${page}.${markupExtension} is missing rendered test id ${testId}`
+      )
+    }
+
+    for (const attribute of context.requiredRenderedAttributes.pages[page] || []) {
+      assertCondition(
+        markup.includes(attribute),
+        `${target.label}: ${page}.${markupExtension} is missing rendered selector attribute ${attribute}`
       )
     }
   }
@@ -267,6 +310,12 @@ function allRequiredRenderedTestIds(context) {
   return [
     ...Object.values(context.requiredRenderedTestIds.pages).flat(),
     ...Object.values(context.requiredRenderedTestIds.components).flat()
+  ]
+}
+
+function allRequiredRenderedAttributes(context) {
+  return [
+    ...Object.values(context.requiredRenderedAttributes.pages).flat()
   ]
 }
 

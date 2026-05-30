@@ -160,7 +160,7 @@ npm run smoke:backend
 Backend HTTP smoke checks passed
 ```
 
-这说明核心逻辑、服务契约、Fetch Runtime 适配、PostgreSQL store 映射和 HTTP 后端主链路目前可用。CI / 发布候选门禁已经补上：`verify:release` 会串行执行语法检查、完整 smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan、页面契约 smoke 和生产审计报告。2026-05-29 续做时还完成了一次本地 H5 Browser 渲染 QA，覆盖桌面首屏、搜索交互和移动视口。但它仍不是完整测试体系，因为还没有可纳入 CI 的渲染级页面 E2E、真机定位权限分支和微信/支付宝开发者工具导入。
+这说明核心逻辑、服务契约、Fetch Runtime 适配、PostgreSQL store 映射和 HTTP 后端主链路目前可用。CI / 发布候选门禁已经补上：`verify:release` 会串行执行语法检查、完整 smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan、页面契约 smoke 和生产审计报告。2026-05-29 续做时还完成了一次本地 H5 Browser 渲染 QA，覆盖桌面首屏、搜索交互和移动视口；交易页的售卖动作、通知已读和评价控件也已补稳定测试锚点和动态选择器属性，并由源码契约和三端编译产物契约校验。但它仍不是完整测试体系，因为还没有可纳入 CI 的渲染级页面 E2E、真机定位权限分支和微信/支付宝开发者工具导入。
 
 ### 3.12 构建验证通过
 
@@ -204,7 +204,7 @@ Production readiness audit: BLOCKED (44 blockers, 9 warnings)
 | 数据持久化 | 3.4/5 | 已补 HTTP 后端文件 store、数据库 DDL、PostgreSQL 规范化表 store、幂等记录持久化和部署产物；仍缺真实云数据库实例与连接验证 |
 | 隐私与风控 | 3.9/5 | 联系码延迟展示、商品响应脱敏、用户协议 / 隐私政策页面、关键动作协议门禁、服务端协议审计、举报/审核/注销/封禁路径、运营队列和举报处理结果已补；仍缺 IM、真实内容安全和完整后台 UI |
 | 工程结构 | 4.2/5 | 页面、服务、领域、BFF、HTTP 后端、契约文档边界更清楚 |
-| 测试与交付 | 4.2/5 | smoke、BFF smoke、Fetch smoke、PostgreSQL store smoke、HTTP 后端 smoke、页面契约 smoke、一次 H5 Browser 渲染 QA、CI 发布候选门禁和微信/支付宝/H5/后端构建覆盖主路径；生产审计仍被 blocker 阻断，且仍缺可纳入 CI 的渲染级页面 E2E 和真机矩阵 |
+| 测试与交付 | 4.2/5 | smoke、BFF smoke、Fetch smoke、PostgreSQL store smoke、HTTP 后端 smoke、页面契约 smoke、一次 H5 Browser 渲染 QA、CI 发布候选门禁和微信/支付宝/H5/后端构建覆盖主路径；核心页面和交易售卖动作已有稳定锚点及动态选择器属性并纳入三端产物检查；生产审计仍被 blocker 阻断，且仍缺可纳入 CI 的渲染级页面 E2E 和真机矩阵 |
 
 综合判断：经过本轮补强后约 `4.3/5`。它已经不是单纯页面 Demo，而是“端侧生产化边界 + BFF 契约 + 可运行 HTTP 后端 + PostgreSQL 规范化表存储 + 可验证核心状态机 + 生产环境依赖保护 + 写请求幂等 + 平台通知 outbox + 端侧协议门禁 + 服务端协议审计 + 基础用户风控”的项目。作为可展示 MVP 可到 `8.5/10` 左右；作为真实上线系统仍只有 `6.5/10` 左右，因为关键外部事实还没有落到真实云部署、真实云数据库、真实地图 Key/网格数据、对象存储、微信订阅消息模板和平台合规审核。
 

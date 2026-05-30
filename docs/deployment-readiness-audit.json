@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-30T01:47:52.278Z",
+  "generatedAt": "2026-05-30T02:02:54.797Z",
   "scope": [
     "pre",
     "prod"
@@ -554,37 +554,37 @@
           "id": "build_artifacts.pass.9.pre-h5-artifact-includes-core-pages-tabbar-key-components-rendered-test-anchors-",
           "area": "build_artifacts",
           "severity": "pass",
-          "message": "pre h5 artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+          "message": "pre h5 artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
         },
         {
           "id": "build_artifacts.pass.10.pre-mp-weixin-artifact-includes-core-pages-tabbar-key-components-rendered-test-a",
           "area": "build_artifacts",
           "severity": "pass",
-          "message": "pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+          "message": "pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
         },
         {
           "id": "build_artifacts.pass.11.pre-mp-alipay-artifact-includes-core-pages-tabbar-key-components-rendered-test-a",
           "area": "build_artifacts",
           "severity": "pass",
-          "message": "pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+          "message": "pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
         },
         {
           "id": "build_artifacts.pass.12.prod-h5-artifact-includes-core-pages-tabbar-key-components-rendered-test-anchors",
           "area": "build_artifacts",
           "severity": "pass",
-          "message": "prod h5 artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+          "message": "prod h5 artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
         },
         {
           "id": "build_artifacts.pass.13.prod-mp-weixin-artifact-includes-core-pages-tabbar-key-components-rendered-test-",
           "area": "build_artifacts",
           "severity": "pass",
-          "message": "prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+          "message": "prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
         },
         {
           "id": "build_artifacts.pass.14.prod-mp-alipay-artifact-includes-core-pages-tabbar-key-components-rendered-test-",
           "area": "build_artifacts",
           "severity": "pass",
-          "message": "prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+          "message": "prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
         }
       ]
     },
@@ -1128,37 +1128,37 @@
       "id": "build_artifacts.pass.9.pre-h5-artifact-includes-core-pages-tabbar-key-components-rendered-test-anchors-",
       "area": "build_artifacts",
       "severity": "pass",
-      "message": "pre h5 artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+      "message": "pre h5 artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
     },
     {
       "id": "build_artifacts.pass.10.pre-mp-weixin-artifact-includes-core-pages-tabbar-key-components-rendered-test-a",
       "area": "build_artifacts",
       "severity": "pass",
-      "message": "pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+      "message": "pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
     },
     {
       "id": "build_artifacts.pass.11.pre-mp-alipay-artifact-includes-core-pages-tabbar-key-components-rendered-test-a",
       "area": "build_artifacts",
       "severity": "pass",
-      "message": "pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+      "message": "pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
     },
     {
       "id": "build_artifacts.pass.12.prod-h5-artifact-includes-core-pages-tabbar-key-components-rendered-test-anchors",
       "area": "build_artifacts",
       "severity": "pass",
-      "message": "prod h5 artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+      "message": "prod h5 artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
     },
     {
       "id": "build_artifacts.pass.13.prod-mp-weixin-artifact-includes-core-pages-tabbar-key-components-rendered-test-",
       "area": "build_artifacts",
       "severity": "pass",
-      "message": "prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+      "message": "prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
     },
     {
       "id": "build_artifacts.pass.14.prod-mp-alipay-artifact-includes-core-pages-tabbar-key-components-rendered-test-",
       "area": "build_artifacts",
       "severity": "pass",
-      "message": "prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config"
+      "message": "prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config"
     }
   ]
 }

@@ -18,6 +18,8 @@
         <button
           v-if="!notification.readAt"
           class="notification-action"
+          data-testid="orders-notification-read"
+          :data-notification-id="notification.id"
           @tap="readNotification(notification)"
         >
           已读
@@ -32,16 +34,22 @@
     </view>
 
     <view v-else-if="trades.length" class="trade-list" data-testid="orders-trade-list">
-      <view v-for="trade in trades" :key="trade.id" class="trade-card">
+      <view
+        v-for="trade in trades"
+        :key="trade.id"
+        class="trade-card"
+        data-testid="orders-trade-card"
+        :data-trade-id="trade.id"
+      >
         <view class="trade-head">
           <text class="trade-title">{{ trade.itemTitle }}</text>
           <text class="trade-price">¥{{ trade.price }}</text>
         </view>
-        <text class="trade-status">{{ tradeStatusText(trade.status) }}</text>
+        <text class="trade-status" data-testid="orders-trade-status" :data-status="trade.status">{{ tradeStatusText(trade.status) }}</text>
         <text class="trade-desc">{{ trade.eligibilityMessage }}</text>
-        <text v-if="contactText(trade)" class="trade-contact">{{ contactText(trade) }}</text>
-        <text v-if="disputeText(trade)" class="trade-dispute">{{ disputeText(trade) }}</text>
-        <text v-if="auditText(trade)" class="trade-audit">{{ auditText(trade) }}</text>
+        <text v-if="contactText(trade)" class="trade-contact" data-testid="orders-trade-contact" :data-trade-id="trade.id">{{ contactText(trade) }}</text>
+        <text v-if="disputeText(trade)" class="trade-dispute" data-testid="orders-trade-dispute" :data-trade-id="trade.id">{{ disputeText(trade) }}</text>
+        <text v-if="auditText(trade)" class="trade-audit" data-testid="orders-trade-audit" :data-trade-id="trade.id">{{ auditText(trade) }}</text>
         <view class="seller-line">
           <text>卖家：{{ trade.seller.nickname }}</text>
           <text v-if="trade.buyer?.nickname">买家：{{ trade.buyer.nickname }}</text>
@@ -52,18 +60,24 @@
             v-for="action in availableActions(trade)"
             :key="action.status"
             :class="['trade-action', action.primary ? 'primary' : '']"
+            data-testid="orders-trade-action"
+            :data-trade-id="trade.id"
+            :data-status="action.status"
             @tap="updateStatus(trade, action.status)"
           >
             {{ action.label }}
           </button>
         </view>
-        <view v-if="canReview(trade)" class="review-panel">
+        <view v-if="canReview(trade)" class="review-panel" data-testid="orders-review-panel" :data-trade-id="trade.id">
           <text class="review-title">交易评价</text>
           <view class="rating-row">
             <button
               v-for="rating in ratingOptions"
               :key="rating"
               :class="['rating-action', reviewRating(trade.id) === rating ? 'selected' : '']"
+              data-testid="orders-review-rating"
+              :data-trade-id="trade.id"
+              :data-rating="rating"
               @tap="setReviewRating(trade.id, rating)"
             >
               {{ rating }}星
@@ -74,6 +88,9 @@
               v-for="tag in reviewTagOptions"
               :key="tag"
               :class="['tag-action', reviewTags(trade.id).includes(tag) ? 'selected' : '']"
+              data-testid="orders-review-tag"
+              :data-trade-id="trade.id"
+              :data-tag="tag"
               @tap="toggleReviewTag(trade.id, tag)"
             >
               {{ tag }}
@@ -81,14 +98,23 @@
           </view>
           <textarea
             class="review-input"
+            data-testid="orders-review-content"
+            :data-trade-id="trade.id"
             maxlength="200"
             :value="reviewContent(trade.id)"
             placeholder="补充评价（选填）"
             @input="updateReviewContent(trade.id, $event)"
           />
-          <button class="review-submit" @tap="submitReview(trade)">提交评价</button>
+          <button
+            class="review-submit"
+            data-testid="orders-review-submit"
+            :data-trade-id="trade.id"
+            @tap="submitReview(trade)"
+          >
+            提交评价
+          </button>
         </view>
-        <text v-else-if="hasReviewed(trade)" class="reviewed-label">已评价</text>
+        <text v-else-if="hasReviewed(trade)" class="reviewed-label" data-testid="orders-reviewed-label">已评价</text>
       </view>
     </view>
 
