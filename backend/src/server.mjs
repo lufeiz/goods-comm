@@ -12,6 +12,7 @@ import { createRegionResolver } from './region-resolver.mjs'
 import { createPlatformNotifier } from './platform-notifier.mjs'
 import { createOpsAuth } from './ops-auth.mjs'
 import { createRateLimiter, rateLimitHeaders } from './rate-limiter.mjs'
+import { createOpsAlertClient } from './ops-alerts.mjs'
 
 const DEFAULT_PORT = 8787
 const DEFAULT_CORS_METHODS = 'GET,POST,PATCH,OPTIONS'
@@ -60,6 +61,10 @@ export function createGoodsCommServer(options = {}) {
     environment: deploymentEnv
   })
   const platformNotifier = options.platformNotifier || createPlatformNotifier({
+    ...options,
+    environment: deploymentEnv
+  })
+  const opsAlerts = options.opsAlerts || createOpsAlertClient({
     ...options,
     environment: deploymentEnv
   })
@@ -125,6 +130,10 @@ export function createGoodsCommServer(options = {}) {
             contentSafety: contentSafety.provider,
             mapProvider: regionResolver.provider,
             platformNotify: platformNotifier.provider,
+            opsAlert: opsAlerts.provider,
+            opsAlertConfig: typeof opsAlerts.describe === 'function'
+              ? opsAlerts.describe()
+              : { provider: opsAlerts.provider },
             rateLimit: rateLimiter.describe(),
             uptimeSeconds: Math.round(process.uptime())
           },
@@ -144,6 +153,9 @@ export function createGoodsCommServer(options = {}) {
           const platformNotifyReadiness = typeof platformNotifier.check === 'function'
             ? await platformNotifier.check()
             : { ok: true, provider: platformNotifier.provider }
+          const opsAlertReadiness = typeof opsAlerts.check === 'function'
+            ? await opsAlerts.check()
+            : { ok: true, provider: opsAlerts.provider }
 
           sendResponse(response, 200, {
             data: {
@@ -155,9 +167,11 @@ export function createGoodsCommServer(options = {}) {
               contentSafety: contentSafety.provider,
               mapProvider: regionResolver.provider,
               platformNotify: platformNotifier.provider,
+              opsAlert: opsAlerts.provider,
               rateLimit: rateLimiter.describe(),
               readiness,
-              platformNotifyReadiness
+              platformNotifyReadiness,
+              opsAlertReadiness
             },
             trace: {
               traceId,
@@ -202,7 +216,8 @@ export function createGoodsCommServer(options = {}) {
           const retryData = await parseRequestData(request, url, objectStore, contentSafety, maxRequestBytes)
           const result = await retryPlatformNotificationDeliveries(store, platformNotifier, retryData, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           await appendOpsAuditEventToStore(store, createOpsAuditEventData(opsActor, {
             action: 'ops.notification.retry',
@@ -216,7 +231,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }), {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -238,7 +254,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -260,7 +277,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -282,7 +300,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -304,7 +323,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -326,7 +346,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -359,7 +380,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -393,7 +415,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }, {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
           sendResponse(response, 200, {
             data: result,
@@ -421,7 +444,8 @@ export function createGoodsCommServer(options = {}) {
             }
           }), {
             traceId,
-            environment: deploymentEnv
+            environment: deploymentEnv,
+            opsAlerts
           })
 
           sendResponse(response, 200, {
@@ -545,7 +569,8 @@ export function createGoodsCommServer(options = {}) {
         }
       }, {
         traceId,
-        environment: deploymentEnv
+        environment: deploymentEnv,
+        opsAlerts
       })
 
       sendResponse(response, 200, {
@@ -650,8 +675,8 @@ function dispatchPlatformNotifications(platformNotifier, store, deliveryRecords 
   }
 
   Promise.resolve()
-    .then(() => dispatchAndRecordPlatformNotifications(platformNotifier, store, deliveryRecords, pendingNotifications, users, context))
-    .then((deliveries = []) => {
+    .then(async () => {
+      const deliveries = await dispatchAndRecordPlatformNotifications(platformNotifier, store, deliveryRecords, pendingNotifications, users, context)
       const failed = deliveries.filter((delivery) => delivery.status === 'failed')
 
       if (failed.length) {
@@ -661,15 +686,26 @@ function dispatchPlatformNotifications(platformNotifier, store, deliveryRecords 
           traceId: context.traceId,
           failed
         }))
+        await emitPlatformNotificationFailureAlert(context.opsAlerts, failed, {
+          ...context,
+          event: 'platform_notification_failed'
+        })
       }
     })
-    .catch((error) => {
+    .catch(async (error) => {
       console.warn(JSON.stringify({
         level: 'warn',
         event: 'platform_notification_dispatch_error',
         traceId: context.traceId,
         message: error?.message || '平台通知投递失败'
       }))
+      await emitOpsAlert(context.opsAlerts, {
+        level: 'warn',
+        type: 'platform_notification_dispatch_error',
+        traceId: context.traceId,
+        environment: context.environment,
+        message: error?.message || '平台通知投递失败'
+      })
     })
 }
 
@@ -718,10 +754,63 @@ async function retryPlatformNotificationDeliveries(store, platformNotifier, data
     ...context,
     retry: true
   })
+  const failed = deliveries.filter((delivery) => delivery.status === 'failed')
+
+  if (failed.length) {
+    await emitPlatformNotificationFailureAlert(context.opsAlerts, failed, {
+      ...context,
+      event: 'platform_notification_retry_failed'
+    })
+  }
 
   return {
     retried: deliveryRecords.length,
     deliveries
+  }
+}
+
+async function emitPlatformNotificationFailureAlert(opsAlerts, failedDeliveries = [], context = {}) {
+  await emitOpsAlert(opsAlerts, {
+    level: 'warn',
+    type: context.event || 'platform_notification_failed',
+    traceId: context.traceId,
+    environment: context.environment,
+    failedCount: failedDeliveries.length,
+    deliveries: failedDeliveries.map(sanitizeNotificationDeliveryForAlert)
+  })
+}
+
+async function emitOpsAlert(opsAlerts, payload = {}) {
+  if (!opsAlerts || typeof opsAlerts.alert !== 'function') {
+    return
+  }
+
+  try {
+    await opsAlerts.alert(payload)
+  } catch (error) {
+    console.warn(JSON.stringify({
+      level: 'warn',
+      event: 'ops_alert_failed',
+      traceId: payload.traceId,
+      alertType: payload.type,
+      message: error?.message || '生产告警发送失败'
+    }))
+  }
+}
+
+function sanitizeNotificationDeliveryForAlert(delivery = {}) {
+  return {
+    id: delivery.id || '',
+    notificationId: delivery.notificationId || '',
+    userId: delivery.userId || '',
+    type: delivery.type || '',
+    provider: delivery.provider || '',
+    status: delivery.status || '',
+    message: delivery.message || '',
+    targetType: delivery.targetType || '',
+    targetId: delivery.targetId || '',
+    attemptCount: Number(delivery.attemptCount || 0),
+    nextRetryAt: delivery.nextRetryAt || null
   }
 }
 

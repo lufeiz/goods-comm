@@ -1,6 +1,6 @@
 # goods-comm 部署前置信息清单
 
-更新日期：2026-05-29
+更新日期：2026-05-30
 
 本文件记录真实部署仍缺少的信息。缺失项不阻塞工程开发：当前 `.env.dev/test/pre/prod` 已使用占位值，后端、数据库 schema、环境校验、构建产物和 prod 到 pre 同步脚本都可以先行开发和验证。
 
@@ -31,6 +31,7 @@
 | 会话签名密钥 | 服务端签发登录 token 后，只持久化 HMAC-SHA256 hash；pre/prod 必须独立配置 | `GOODS_COMM_SESSION_SECRET` |
 | 运营后台账号与会话密钥 | 内部运营控制台登录、短期 token 签发、操作人注入和审计 | `GOODS_COMM_OPS_ACCOUNTS` / `GOODS_COMM_OPS_SESSION_SECRET` |
 | 微信订阅消息模板 | 交易创建、确认、完成、取消、争议、争议处理、评价等平台模板消息 | `GOODS_COMM_PLATFORM_NOTIFY_PROVIDER=wechat`、`GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS`、`GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS` |
+| 生产告警 Webhook | 平台通知投递失败、通知重试失败等后端异常事件外发到值班/监控系统；pre/prod 必须使用 HTTPS 且配置鉴权 token | `GOODS_COMM_ALERT_PROVIDER=webhook`、`GOODS_COMM_ALERT_WEBHOOK_URL`、`GOODS_COMM_ALERT_WEBHOOK_TOKEN`、`GOODS_COMM_ALERT_TIMEOUT_MS` |
 
 ## 3. 部署执行凭据
 
@@ -57,6 +58,7 @@
 - `npm run verify:release:strict`：真实上线门禁，在 full 门禁基础上先刷新 `docs/deployment-readiness-audit-strict.md` / `docs/deployment-readiness-audit-strict.json`，再把生产就绪审计改为强制 `--check-only --require-deployed-smoke-inputs`；pre/prod 真实资源、密钥、工具链和部署后 smoke 输入未补齐时会失败。
 - `npm run smoke:pages`：静态检查 `src/pages.json`、tabBar、页面文件、模板事件处理器、页面跳转路径，以及登录、定位、发布、交易、运营、协议等关键页面必须接入的 service 和关键显示状态；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:main-flow-contract`：检查登录协议与账号生命周期、定位解析与显示可信边界、发布与图片上传、交易售卖生命周期，以及 release gate 是否串联页面、BFF、HTTP 后端和部署后主链路 smoke 证据；`verify:release` / `verify:release:strict` 已接入该检查。
+- `npm run smoke:ops-alerts`：检查生产告警适配器的关闭态、Webhook 投递、鉴权头、敏感字段脱敏、占位 URL 拒绝、pre/prod HTTPS 要求和失败响应处理；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:h5:render`：启动本地 H5 构建产物和 headless Chrome，用真实渲染页面验证 H5 登录、浏览器定位显示、发布表单、图片预览、商品发布、买家发起交易、卖家确认和完成售卖主链路；脚本不引入 Playwright 依赖，可用 `GOODS_COMM_CHROME_PATH` 指定 Chrome/Chromium，可用 `--dist` 指向 dev/test/pre/prod H5 产物；`verify:release` / `verify:release:strict` 已在 H5 构建后接入该检查。
 - `npm run smoke:backend:artifact`：检查 `dist/backend` 后端部署包包含 `package.json`、`package-lock.json`、Node HTTP server、BFF、PostgreSQL store、数据库 schema、容器 Dockerfile 和关键业务依赖，并验证 Dockerfile 会用 `npm ci` 按 artifact lockfile 安装生产依赖，避免真实 PostgreSQL store 部署时缺少或漂移 `pg`；`verify:release` / `verify:release:strict` 已在 `build:backend` 后接入该检查。
 - `npm run smoke:artifacts`：检查默认 H5 / 微信 / 支付宝构建产物是否包含 `src/pages.json` 中的核心页面、tabBar、关键组件和 H5 页面 chunk；`verify:release` / `verify:release:strict` 会用同一脚本检查 dev/test/pre/prod 四环境三端产物。
@@ -64,9 +66,9 @@
 - `.github/workflows/release-strict.yml`：真实上线前手动 GitHub Actions 门禁。工作流会先安装 PostgreSQL client、CloudBase CLI 和 Tencent `tccli`，但仍需要配置 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 覆盖 `.env.pre` / `.env.prod` 占位值，配置 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 做非交互部署认证，并配置部署后 smoke 所需的 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 和可选 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL`；工作流会同时上传普通审计和严格审计产物，避免 strict gate 失败时只留下普通 warning 口径；如果启用 `run_backend_deploy=true`，工作流会先迁移目标数据库并部署后端，且强制 `run_deployed_smoke=true`，避免部署后跳过 health / main-flow smoke；独立 deployed health smoke 默认等待 12 次、每次 10 秒，可用 `health_attempts` / `health_interval_ms` 调整；生产部署还需要手动输入 `allow_prod_deploy=true`，并传入脚本级 `GOODS_COMM_DEPLOY_ALLOW_PROD=true` / `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`；生产主链路 smoke 需要手动输入 `allow_prod_mutation=true`。
 - `npm run db:migrate:plan -- --env pre`：输出 pre 数据库 schema 初始化计划。
 - `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre`：真实执行 pre 数据库 schema 初始化，要求真实连接串和 `psql`；生产迁移还必须额外设置 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`。
-- `npm run deploy:backend:pre:plan`：输出微信优先、腾讯 fallback 的后端部署计划和缺失前置条件；计划包含真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，也包含 `build:backend` 后的 `smoke:backend:artifact`，确保真实部署前先验证后端部署包。
+- `npm run deploy:backend:pre:plan`：输出微信优先、腾讯 fallback 的后端部署计划和缺失前置条件；计划包含真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知、生产告警和平台登录等运行时配置，也包含 `build:backend` 后的 `smoke:backend:artifact`，确保真实部署前先验证后端部署包。
 - `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre`：真实执行后端部署，默认先构建并验证后端部署包，再跑 pre 数据库迁移，部署新后端后立即执行 deployed health smoke；health smoke 默认等待 12 次、每次间隔 10 秒，可用 `--health-attempts` / `--health-interval-ms` 或 `GOODS_COMM_DEPLOY_HEALTH_ATTEMPTS` / `GOODS_COMM_DEPLOY_HEALTH_INTERVAL_MS` 调整，用于覆盖云托管冷启动和滚动发布延迟；要求真实云配置、CLI、`psql` 和部署凭据；生产部署必须额外设置 `GOODS_COMM_DEPLOY_ALLOW_PROD=true`，如果同时执行生产数据库迁移还必须设置 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`；只有确认同版本 schema 已迁移时才使用 `--skip-db-migrate` 跳过迁移。需要把部署和主链路验证绑定到同一个直接命令时，可加 `--run-main-smoke` 或 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会要求 seller/buyer code、经纬度，prod 还要求 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true`。
-- `npm run smoke:deployed:pre`：部署后检查 health/ready、生产依赖模式和安全响应头；pre/prod 会断言 HSTS，避免云网关 / CDN 把后端安全头剥掉。
+- `npm run smoke:deployed:pre`：部署后检查 health/ready、生产依赖模式、`opsAlert=webhook` 和安全响应头；pre/prod 会断言 HSTS，避免云网关 / CDN 把后端安全头剥掉。
 - `npm run smoke:deployed:local-health`：启动本地 Node HTTP 后端，并用同一套 `scripts/deployed-health-smoke.mjs` 黑盒验证 `/health`、`/health/ready` 和基础安全响应头；该本地自测通过 `GOODS_COMM_SMOKE_API_BASE_URL` 指向临时后端，真实 pre/prod 仍使用 `.env.pre/.env.prod` 的 HTTPS API 域名。
 - `npm run smoke:deployed:pre:main`：部署后检查登录、定位、未登录上传拒绝、上传、发布、交易、卖家确认、交易列表一次性联系码格式与过期时间、交易通知、通知已读、完成售出、完成后联系码清空、售出后详情状态、售出后拒绝再次交易、评价、公开商品响应不暴露卖家联系码、精确经纬度或客户端伪造的审核身份字段、退出登录和退出后 token 拒绝访问；需要短期平台登录 code、网格覆盖坐标，以及必要时的已审核测试图片 URL。写请求会带幂等键并立即验证回放；跨进程重试同一次 smoke 时可固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`。如需把账号注销也纳入真实部署后验收，可额外提供一次性测试账号 `GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`，脚本会发布一件独立烟测商品、注销该账号、验证 token 失效和商品下架；该 code 必须不同于 seller/buyer 主烟测账号。
 - `npm run smoke:deployed:local-main`：启动本地 Node HTTP 后端，并用同一套 `scripts/deployed-main-flow-smoke.mjs` 黑盒验证登录、定位、未登录上传拒绝、上传、发布、交易、卖家确认、交易列表一次性联系码生命周期、交易通知、通知已读、完成售出、完成后联系码清空、售出后详情状态、售出后拒绝再次交易、评价、公开商品隐私脱敏、客户端伪造审核身份字段不外泄、可选账号注销、退出登录和退出后 token 拒绝访问，避免部署后主链路 smoke 脚本只做语法检查。该本地自测通过 `GOODS_COMM_SMOKE_API_BASE_URL` 指向临时后端，并默认注入独立注销测试账号；真实 pre/prod 仍使用 `.env.pre/.env.prod` 的 HTTPS API 域名。
@@ -86,6 +88,7 @@
 - pre/prod 后端通过 `GOODS_COMM_CONTENT_SECURITY_PROVIDER=wechat` 做文本和图片内容安全；mock 审核会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_MAP_PROVIDER=tencent` 做服务端区域解析；样例区域解析会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_PLATFORM_NOTIFY_PROVIDER=wechat` 投递微信订阅消息；mock 平台通知会被运行时拒绝。
+- pre/prod 后端通过 `GOODS_COMM_ALERT_PROVIDER=webhook` 将平台通知失败和通知重试失败外发到告警系统；`/health/ready` 会检查 Webhook URL、HTTPS 和 token 配置，`smoke:deployed:*` 会断言真实环境不是关闭态。
 - pre/prod 后端通过 `GOODS_COMM_OPS_ACCOUNTS` 和 `GOODS_COMM_OPS_SESSION_SECRET` 签发运营控制台短期会话；账号角色至少应覆盖 `moderation`、`support`、`notifications`、`telemetry`、`risk`；共享审核密钥仍保留给微信回调和内部任务。`GOODS_COMM_OPS_LOGIN_MAX_FAILURES`、`GOODS_COMM_OPS_LOGIN_WINDOW_MS`、`GOODS_COMM_OPS_LOGIN_LOCK_MS` 已提供账号级失败登录锁定；`GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS` 已提供后端进程内 IP 级基础限流；`GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS` 已提供接口级配额；`GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS` 已提供认证主体写请求配额；`GOODS_COMM_TRUSTED_PROXY_IPS` 会限制只有可信代理才能提供 `x-forwarded-for` 客户端地址。真实部署还需在云网关 / WAF 补更稳定的边缘和分布式限流策略，并把实际 CloudBase / CDN / 负载均衡出口 IP 或网段写入 `.env.pre.local` / `.env.prod.local`。
 - 数据库先使用 `backend/db/schema.sql` 固化 schema，`backend/src/postgres-state-store.mjs` 已接规范化表；pre/prod 后端默认 `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`，真实连接串后续替换占位值后必须先执行显式迁移，再在真实库上补跑连接级主链路 smoke。
 - 对象存储已提供 COS adapter，真实部署时替换 `.env.pre/.env.prod` 中的占位 COS 凭据。

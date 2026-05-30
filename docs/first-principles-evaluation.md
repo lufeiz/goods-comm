@@ -189,10 +189,10 @@ Backend artifact built at dist/backend
 本次执行 `npm run env:check` 可以完成 dev/test/pre/prod 四套环境检查，但输出了大量占位配置警告；执行 `npm run audit:production-readiness` 后生成 `docs/deployment-readiness-audit.md`，当前结果为：
 
 ```text
-Production readiness audit: BLOCKED (46 blockers, 9 warnings)
+Production readiness audit: BLOCKED (50 blockers, 9 warnings)
 ```
 
-阻断项集中在三个底层事实：本机缺部署和数据库同步工具链及非交互云部署凭据，pre/prod 仍是占位 API / 数据库 / COS / 地图 / 平台密钥，且部署后 smoke 因没有真实 API 域名无法执行。严格审计当前为 `BLOCKED (48 blockers, 7 warnings)`，会额外要求真实部署后 health / 主链路 smoke 输入。当前审计还会把占位数据库连接串和占位 COS bucket 的隔离证明标成 warning，而不是 pass；`GOODS_COMM_MAP_REGION_DATASET` 的格式阻塞已解除，pre/prod 现在都是后端可解析的非空 JSON 网格数组，但真实生产社区 / 街道网格数据仍需替换占位内容。这个审计结果支持本文的核心判断：项目代码已经具备较完整的 MVP 和后端边界，但还没有进入真实生产可上线状态。
+阻断项集中在三个底层事实：本机缺部署和数据库同步工具链及非交互云部署凭据，pre/prod 仍是占位 API / 数据库 / COS / 地图 / 平台密钥 / 生产告警 Webhook，且部署后 smoke 因没有真实 API 域名无法执行。严格审计当前为 `BLOCKED (52 blockers, 7 warnings)`，会额外要求真实部署后 health / 主链路 smoke 输入。当前审计还会把占位数据库连接串、占位 COS bucket、占位可信代理和占位告警 Webhook 的隔离证明标成 warning 或 blocker，而不是 pass；`GOODS_COMM_MAP_REGION_DATASET` 的格式阻塞已解除，pre/prod 现在都是后端可解析的非空 JSON 网格数组，但真实生产社区 / 街道网格数据仍需替换占位内容。这个审计结果支持本文的核心判断：项目代码已经具备较完整的 MVP 和后端边界，但还没有进入真实生产可上线状态。
 
 ## 4. 分项评分
 

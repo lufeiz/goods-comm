@@ -719,6 +719,7 @@ usage: item_image
 - 微信订阅消息模板通过 `GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS` 配置，例如 `trade_created:tmpl1,trade_confirmed:tmpl2`。
 - 模板字段通过 `GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS` 配置，默认兼容 `title:thing1,body:thing2,time:time3`。
 - 平台通知投递失败不回滚已提交的交易状态和站内通知；后端会先写 `notification_deliveries` outbox，再投递并回写 `sent` / `mock_sent` / `failed` / `skipped` 状态。
+- 生产告警通过 `GOODS_COMM_ALERT_PROVIDER=webhook`、`GOODS_COMM_ALERT_WEBHOOK_URL`、`GOODS_COMM_ALERT_WEBHOOK_TOKEN` 配置；通知投递失败和重试失败会发送脱敏告警，`/health/ready` 会校验 Webhook 可用配置。
 
 ### `GET /notifications`
 
@@ -941,7 +942,7 @@ npm run smoke:backend:artifact
 生产要求：
 
 - 文件状态存储只用于本地 smoke；`pre/prod` 必须使用 PostgreSQL / TencentDB 事务存储，并在真实数据库上验证主链路。
-- `/health` 用于进程存活检查；`/health/ready` 会检查状态存储依赖，生产网关和发布平台应使用 readiness 判断是否可接流量。
+- `/health` 用于进程存活检查；`/health/ready` 会检查状态存储依赖、平台通知依赖和生产告警 Webhook 配置，生产网关和发布平台应使用 readiness 判断是否可接流量。
 - 本地对象存储和样例区域只用于本地 smoke；`pre/prod` 后端已禁止本地对象存储、mock 内容安全和 mock 区域解析，部署环境必须配置 COS、微信内容安全、腾讯地图 Key 和社区 / 街道网格数据。
 - 小程序端 `VITE_API_BASE_URL` 必须指向 HTTPS 后端域名，并在微信 / 支付宝平台配置合法 request/upload 域名。
 - 浏览器 / H5 调用时必须配置 `GOODS_COMM_ALLOWED_ORIGINS`，并与平台合法域名保持一致；小程序原生请求或服务端请求无 `Origin` 时不会被 CORS 拦截。

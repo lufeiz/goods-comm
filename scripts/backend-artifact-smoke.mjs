@@ -14,6 +14,7 @@ const requiredFiles = [
   'backend/src/postgres-state-store.mjs',
   'backend/src/platform-auth.mjs',
   'backend/src/platform-notifier.mjs',
+  'backend/src/ops-alerts.mjs',
   'backend/src/content-safety.mjs',
   'backend/src/region-resolver.mjs',
   'backend/src/object-store.mjs',
@@ -96,6 +97,7 @@ for (const table of [
 
 for (const file of [
   'backend/src/server.mjs',
+  'backend/src/ops-alerts.mjs',
   'backend/src/rate-limiter.mjs',
   'backend/src/postgres-state-store.mjs',
   'src/bff/handler.js'

@@ -51,6 +51,10 @@ const requiredKeys = [
   'GOODS_COMM_OPS_LOGIN_MAX_FAILURES',
   'GOODS_COMM_OPS_LOGIN_WINDOW_MS',
   'GOODS_COMM_OPS_LOGIN_LOCK_MS',
+  'GOODS_COMM_ALERT_PROVIDER',
+  'GOODS_COMM_ALERT_WEBHOOK_URL',
+  'GOODS_COMM_ALERT_WEBHOOK_TOKEN',
+  'GOODS_COMM_ALERT_TIMEOUT_MS',
   'GOODS_COMM_PLATFORM_AUTH_MODE',
   'GOODS_COMM_PLATFORM_NOTIFY_PROVIDER',
   'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
@@ -141,6 +145,26 @@ for (const environment of environments) {
   for (const key of ['GOODS_COMM_OPS_LOGIN_MAX_FAILURES', 'GOODS_COMM_OPS_LOGIN_WINDOW_MS', 'GOODS_COMM_OPS_LOGIN_LOCK_MS']) {
     if (!isPositiveInteger(values[key])) {
       errors.push(`[${environment}] ${key} must be a positive integer`)
+    }
+  }
+
+  if (!['none', 'webhook'].includes(values.GOODS_COMM_ALERT_PROVIDER)) {
+    errors.push(`[${environment}] GOODS_COMM_ALERT_PROVIDER must be none or webhook`)
+  }
+
+  if (!isPositiveInteger(values.GOODS_COMM_ALERT_TIMEOUT_MS)) {
+    errors.push(`[${environment}] GOODS_COMM_ALERT_TIMEOUT_MS must be a positive integer`)
+  }
+
+  if (['pre', 'prod'].includes(environment) && values.GOODS_COMM_ALERT_PROVIDER !== 'webhook') {
+    errors.push(`[${environment}] GOODS_COMM_ALERT_PROVIDER must be webhook`)
+  }
+
+  if (values.GOODS_COMM_ALERT_PROVIDER === 'webhook') {
+    if (!isValidUrl(values.GOODS_COMM_ALERT_WEBHOOK_URL)) {
+      errors.push(`[${environment}] GOODS_COMM_ALERT_WEBHOOK_URL must be a valid URL`)
+    } else if (['pre', 'prod'].includes(environment) && !values.GOODS_COMM_ALERT_WEBHOOK_URL.startsWith('https://')) {
+      errors.push(`[${environment}] GOODS_COMM_ALERT_WEBHOOK_URL must use HTTPS`)
     }
   }
 
@@ -285,6 +309,15 @@ function isValidPostgresAdvisoryLockKey(value = '') {
 
 function isPositiveInteger(value = '') {
   return /^[1-9]\d*$/.test(String(value || '').trim())
+}
+
+function isValidUrl(value = '') {
+  try {
+    new URL(String(value || '').trim())
+    return true
+  } catch {
+    return false
+  }
 }
 
 function isTrustedProxyListValue(value = '') {

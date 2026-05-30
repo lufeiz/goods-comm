@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-30T08:27:10.901Z",
+  "generatedAt": "2026-05-30T10:05:12.413Z",
   "scope": [
     "pre",
     "prod"
   ],
   "status": "BLOCKED",
-  "blockerCount": 48,
+  "blockerCount": 52,
   "warningCount": 7,
   "toolchain": [
     {
@@ -179,37 +179,49 @@
             "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+            "id": "environment.pre.blocker.15.goods-comm-alert-webhook-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALERT_WEBHOOK_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.16.goods-comm-alert-webhook-token-must-be-replaced-with-a-real-production-value",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALERT_WEBHOOK_TOKEN must be replaced with a real production value"
+          },
+          {
+            "id": "environment.pre.blocker.17.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+            "id": "environment.pre.blocker.18.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+            "id": "environment.pre.blocker.19.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+            "id": "environment.pre.blocker.20.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+            "id": "environment.pre.blocker.21.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+            "id": "environment.pre.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -220,7 +232,7 @@
             "id": "environment.pre.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
             "area": "environment.pre",
             "severity": "warning",
-            "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+            "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_ALERT_WEBHOOK_URL, GOODS_COMM_ALERT_WEBHOOK_TOKEN, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
           }
         ],
         "passes": [
@@ -261,43 +273,55 @@
             "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
           },
           {
-            "id": "environment.pre.pass.7.goods-comm-rate-limit-max-requests-is-300",
+            "id": "environment.pre.pass.7.goods-comm-alert-provider-is-webhook",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_ALERT_PROVIDER is webhook"
+          },
+          {
+            "id": "environment.pre.pass.8.goods-comm-alert-timeout-ms-is-3000",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
+          },
+          {
+            "id": "environment.pre.pass.9.goods-comm-rate-limit-max-requests-is-300",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
           },
           {
-            "id": "environment.pre.pass.8.goods-comm-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.10.goods-comm-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.9.goods-comm-route-rate-limit-max-requests-is-120",
+            "id": "environment.pre.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
           },
           {
-            "id": "environment.pre.pass.10.goods-comm-route-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.11.goods-comm-user-rate-limit-max-requests-is-80",
+            "id": "environment.pre.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
           },
           {
-            "id": "environment.pre.pass.12.goods-comm-user-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.13.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "id": "environment.pre.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -393,37 +417,49 @@
             "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+            "id": "environment.prod.blocker.15.goods-comm-alert-webhook-url-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALERT_WEBHOOK_URL must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.16.goods-comm-alert-webhook-token-must-be-replaced-with-a-real-production-value",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_ALERT_WEBHOOK_TOKEN must be replaced with a real production value"
+          },
+          {
+            "id": "environment.prod.blocker.17.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+            "id": "environment.prod.blocker.18.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+            "id": "environment.prod.blocker.19.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+            "id": "environment.prod.blocker.20.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+            "id": "environment.prod.blocker.21.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+            "id": "environment.prod.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -434,7 +470,7 @@
             "id": "environment.prod.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
             "area": "environment.prod",
             "severity": "warning",
-            "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+            "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_ALERT_WEBHOOK_URL, GOODS_COMM_ALERT_WEBHOOK_TOKEN, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
           }
         ],
         "passes": [
@@ -475,43 +511,55 @@
             "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
           },
           {
-            "id": "environment.prod.pass.7.goods-comm-rate-limit-max-requests-is-300",
+            "id": "environment.prod.pass.7.goods-comm-alert-provider-is-webhook",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_ALERT_PROVIDER is webhook"
+          },
+          {
+            "id": "environment.prod.pass.8.goods-comm-alert-timeout-ms-is-3000",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
+          },
+          {
+            "id": "environment.prod.pass.9.goods-comm-rate-limit-max-requests-is-300",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
           },
           {
-            "id": "environment.prod.pass.8.goods-comm-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.10.goods-comm-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.9.goods-comm-route-rate-limit-max-requests-is-120",
+            "id": "environment.prod.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
           },
           {
-            "id": "environment.prod.pass.10.goods-comm-route-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.11.goods-comm-user-rate-limit-max-requests-is-80",
+            "id": "environment.prod.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
           },
           {
-            "id": "environment.prod.pass.12.goods-comm-user-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.13.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "id": "environment.prod.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -541,7 +589,7 @@
           "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
           "area": "cross_environment",
           "severity": "pass",
-          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_ALERT_PROVIDER, GOODS_COMM_ALERT_TIMEOUT_MS, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
         },
         {
           "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",
@@ -797,37 +845,49 @@
       "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+      "id": "environment.pre.blocker.15.goods-comm-alert-webhook-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALERT_WEBHOOK_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.16.goods-comm-alert-webhook-token-must-be-replaced-with-a-real-production-value",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALERT_WEBHOOK_TOKEN must be replaced with a real production value"
+    },
+    {
+      "id": "environment.pre.blocker.17.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+      "id": "environment.pre.blocker.18.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+      "id": "environment.pre.blocker.19.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+      "id": "environment.pre.blocker.20.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+      "id": "environment.pre.blocker.21.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+      "id": "environment.pre.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -917,37 +977,49 @@
       "message": "GOODS_COMM_TRUSTED_PROXY_IPS must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.15.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
+      "id": "environment.prod.blocker.15.goods-comm-alert-webhook-url-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALERT_WEBHOOK_URL must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.16.goods-comm-alert-webhook-token-must-be-replaced-with-a-real-production-value",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_ALERT_WEBHOOK_TOKEN must be replaced with a real production value"
+    },
+    {
+      "id": "environment.prod.blocker.17.goods-comm-wechat-subscribe-template-ids-must-be-replaced-with-a-real-production",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.16.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
+      "id": "environment.prod.blocker.18.goods-comm-wechat-app-id-must-be-replaced-with-a-real-production-value",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "GOODS_COMM_WECHAT_APP_ID must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.17.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
+      "id": "environment.prod.blocker.19.goods-comm-wechat-app-secret-must-be-replaced-with-a-real-production-value",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.18.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
+      "id": "environment.prod.blocker.20.goods-comm-alipay-app-id-must-be-replaced-with-a-real-production-value",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.19.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
+      "id": "environment.prod.blocker.21.goods-comm-alipay-private-key-must-be-replaced-with-a-real-production-value",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.20.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+      "id": "environment.prod.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -994,13 +1066,13 @@
       "id": "environment.pre.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
       "area": "environment.pre",
       "severity": "warning",
-      "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+      "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_ALERT_WEBHOOK_URL, GOODS_COMM_ALERT_WEBHOOK_TOKEN, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
     },
     {
       "id": "environment.prod.warning.1.placeholder-like-values-remain-vite-api-base-url-goods-comm-cloudbase-env-id-goo",
       "area": "environment.prod",
       "severity": "warning",
-      "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
+      "message": "Placeholder-like values remain: VITE_API_BASE_URL, GOODS_COMM_CLOUDBASE_ENV_ID, GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE, GOODS_COMM_ALLOWED_ORIGINS, GOODS_COMM_PUBLIC_ASSET_BASE_URL, GOODS_COMM_TRUSTED_PROXY_IPS, GOODS_COMM_DATABASE_URL, GOODS_COMM_COS_BUCKET, GOODS_COMM_COS_SECRET_ID, GOODS_COMM_COS_SECRET_KEY, GOODS_COMM_COS_BASE_URL, GOODS_COMM_CDN_BASE_URL, GOODS_COMM_TENCENT_MAP_KEY, GOODS_COMM_MODERATION_WEBHOOK_SECRET, GOODS_COMM_SESSION_SECRET, GOODS_COMM_OPS_SESSION_SECRET, GOODS_COMM_OPS_ACCOUNTS, GOODS_COMM_ALERT_WEBHOOK_URL, GOODS_COMM_ALERT_WEBHOOK_TOKEN, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS, GOODS_COMM_WECHAT_APP_ID, GOODS_COMM_WECHAT_APP_SECRET, GOODS_COMM_ALIPAY_APP_ID, GOODS_COMM_ALIPAY_PRIVATE_KEY"
     },
     {
       "id": "cross_environment.warning.1.pre-prod-database-urls-are-configured-as-different-placeholders-isolation-is-not",
@@ -1059,43 +1131,55 @@
       "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
     },
     {
-      "id": "environment.pre.pass.7.goods-comm-rate-limit-max-requests-is-300",
+      "id": "environment.pre.pass.7.goods-comm-alert-provider-is-webhook",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_ALERT_PROVIDER is webhook"
+    },
+    {
+      "id": "environment.pre.pass.8.goods-comm-alert-timeout-ms-is-3000",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
+    },
+    {
+      "id": "environment.pre.pass.9.goods-comm-rate-limit-max-requests-is-300",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
     },
     {
-      "id": "environment.pre.pass.8.goods-comm-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.10.goods-comm-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.9.goods-comm-route-rate-limit-max-requests-is-120",
+      "id": "environment.pre.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
     },
     {
-      "id": "environment.pre.pass.10.goods-comm-route-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.11.goods-comm-user-rate-limit-max-requests-is-80",
+      "id": "environment.pre.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
     },
     {
-      "id": "environment.pre.pass.12.goods-comm-user-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.13.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "id": "environment.pre.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -1137,43 +1221,55 @@
       "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
     },
     {
-      "id": "environment.prod.pass.7.goods-comm-rate-limit-max-requests-is-300",
+      "id": "environment.prod.pass.7.goods-comm-alert-provider-is-webhook",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_ALERT_PROVIDER is webhook"
+    },
+    {
+      "id": "environment.prod.pass.8.goods-comm-alert-timeout-ms-is-3000",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
+    },
+    {
+      "id": "environment.prod.pass.9.goods-comm-rate-limit-max-requests-is-300",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
     },
     {
-      "id": "environment.prod.pass.8.goods-comm-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.10.goods-comm-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.9.goods-comm-route-rate-limit-max-requests-is-120",
+      "id": "environment.prod.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
     },
     {
-      "id": "environment.prod.pass.10.goods-comm-route-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.11.goods-comm-user-rate-limit-max-requests-is-80",
+      "id": "environment.prod.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
     },
     {
-      "id": "environment.prod.pass.12.goods-comm-user-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.13.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "id": "environment.prod.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -1182,7 +1278,7 @@
       "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
       "area": "cross_environment",
       "severity": "pass",
-      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_ALERT_PROVIDER, GOODS_COMM_ALERT_TIMEOUT_MS, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
     },
     {
       "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",

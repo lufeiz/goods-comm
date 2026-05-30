@@ -77,6 +77,7 @@ function addCoreSmokes() {
   for (const script of [
     'env:check',
     'smoke:ops-auth',
+    'smoke:ops-alerts',
     'smoke:platform-auth',
     'smoke:platform-notifier',
     'smoke:storage-content',

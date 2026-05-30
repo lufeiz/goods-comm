@@ -13,10 +13,10 @@
 但项目还不能宣称真实生产上线完成。最新生产就绪审计仍为：
 
 ```text
-Production readiness audit: BLOCKED (46 blockers, 9 warnings)
+Production readiness audit: BLOCKED (50 blockers, 9 warnings)
 ```
 
-阻塞原因不是当前代码主链路失败，而是缺真实云资源、真实密钥、真实数据库 / 对象存储 / 地图服务 / 平台账号和部署工具链。2026-05-29 续做后，`GOODS_COMM_MAP_REGION_DATASET` 已从数据集标签改为后端可解析的 JSON 数组占位，pre/prod 拓扑一致性仍通过；正式上线仍要替换为真实社区 / 街道网格数据。
+阻塞原因不是当前代码主链路失败，而是缺真实云资源、真实密钥、真实数据库 / 对象存储 / 地图服务 / 平台账号、生产告警 Webhook 和部署工具链。2026-05-29 续做后，`GOODS_COMM_MAP_REGION_DATASET` 已从数据集标签改为后端可解析的 JSON 数组占位，pre/prod 拓扑一致性仍通过；正式上线仍要替换为真实社区 / 街道网格数据。
 
 2026-05-29 续做后，当前项目已初始化 Git 仓库，源码、占位环境配置、后端、数据库 DDL、脚本、文档和 CI workflow 已纳入首个版本快照；`node_modules/`、`dist/`、`.env.*.local`、`.DS_Store` 等依赖、产物和本地敏感覆盖文件已通过 `.gitignore` 排除。
 
@@ -111,6 +111,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，真实后端部署脚本在 deploy execute 成功后会默认执行 deployed health smoke；如需把写入型主链路验证绑定到同一次部署命令，可用 `--run-main-smoke` / `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会提前校验 seller/buyer code、经纬度和 prod 写入 opt-in。
 - 2026-05-29 续做后，`scripts/deployed-health-smoke.mjs` 支持 `--attempts` / `--interval-ms`，真实部署脚本默认用 12 次、10 秒间隔等待 `/health` 和 `/health/ready`，避免云托管冷启动或滚动发布延迟导致刚部署即误判失败。
 - 2026-05-30 续做后，`scripts/deployed-health-smoke.mjs` 会同时断言 `/health` 和 `/health/ready` 的安全响应头；pre/prod 还会要求 HSTS，避免真实网关 / CDN 覆盖后端安全头时仍误判部署健康。
+- 2026-05-30 续做后，后端新增 `GOODS_COMM_ALERT_PROVIDER=webhook` 生产告警适配器；平台通知失败和通知重试失败会发送脱敏告警，`/health` / `/health/ready` 会暴露并校验 `opsAlert`，部署后 health smoke 在 pre/prod 会断言 `opsAlert=webhook`。
 - 2026-05-29 续做后，GitHub `release-strict` workflow 的独立 deployed health smoke 也支持手动调等待窗口：默认 12 次、10 秒间隔，可用 workflow 输入 `health_attempts` / `health_interval_ms` 透传到 `GOODS_COMM_SMOKE_HEALTH_ATTEMPTS` / `GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS`。
 - 2026-05-29 续做后，prod 到 pre 同步脚本的同步后 pre health smoke 也接入同一套重试等待：默认 12 次、10 秒间隔，可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整。
 - 2026-05-29 续做后，GitHub `prod-to-pre-sync` workflow 已透传同步后 pre health smoke 的重试等待：手动执行用 `health_attempts` / `health_interval_ms`，定时执行用仓库变量 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS`。
@@ -167,9 +168,10 @@ npm run verify:release
 - 2026-05-29 续做后，`npm run smoke:bff` 和 `npm run smoke:backend` 已覆盖“发布违禁商品返回 422、商品不落库、审核拒绝事件落库、同一幂等键重试不重复追加审核事件”的链路。
 - 2026-05-29 续做后，`npm run smoke`、`npm run smoke:bff`、`npm run smoke:backend` 和 `npm run smoke:deployed:local-main` 已覆盖商品列表展示的 LBS 准入：无当前位置或超出同社区 / 同街道半径时不展示，当前位置可交易时才进入列表和主链路交易。
 - 2026-05-29 续做后，`npm run smoke:ops-auth` 和 `npm run smoke:backend` 已覆盖运营登录失败锁定；`npm run smoke:backend` 已覆盖超限请求 `413 PAYLOAD_TOO_LARGE`、客户端基础限流 `429 TOO_MANY_REQUESTS`、接口级配额、认证主体写请求配额、不信任伪造 `x-forwarded-for`、可信代理 forwarded 客户端限流、JSON / OPTIONS / 资产响应安全头和 pre/prod HSTS；`npm run smoke:rate-limiter` 已覆盖限流模块的路由归一化、可信代理、认证主体哈希、窗口重置和配置错误；`npm run smoke:postgres-store` 已覆盖 PostgreSQL schema readiness 的缺表和缺列失败分支；`npm run smoke:backend:artifact` 已覆盖后端部署包完整性、artifact lockfile 和容器 `npm ci` 生产依赖安装步骤；`verify:release:quick -- --skip-http-backend` 已通过。
+- 2026-05-30 续做后，新增 `npm run smoke:ops-alerts` 并接入 `verify:release` / `verify:release:quick` / `verify:release:strict`，覆盖生产告警关闭态、Webhook 投递、鉴权头、敏感字段脱敏、占位 URL 拒绝、pre/prod HTTPS 要求和失败响应处理；`npm run smoke:backend` 已覆盖平台通知失败触发告警事件。
 - 2026-05-29 续做后，运营台通知投递 fallback 修复已通过 `node --check scripts/page-contract-smoke.mjs`、`npm run smoke:pages`、`npm run smoke:bff` 和 `npm run verify:release:quick -- --skip-http-backend` 验证；quick release gate 84/84 通过并重建 backend、H5、微信、支付宝默认产物。
 - 2026-05-29 续做后，生产就绪审计的 Build artifacts 区域也会运行后端 artifact smoke，把后端部署包完整性和容器生产依赖安装步骤纳入权威审计报告。
-- 最新生产就绪审计仍是 `BLOCKED (46 blockers, 9 warnings)`，严格审计仍是 `BLOCKED (48 blockers, 7 warnings)`；2026-05-29 续做后，区域网格配置格式阻塞已解除，并新增可信代理配置缺失项作为上线前真实环境输入，剩余阻塞仍来自真实云资源、密钥、工具链、可信代理 IP / 网段和部署后验证。
+- 最新生产就绪审计仍是 `BLOCKED (50 blockers, 9 warnings)`，严格审计仍是 `BLOCKED (52 blockers, 7 warnings)`；2026-05-29 续做后，区域网格配置格式阻塞已解除，并新增可信代理配置缺失项作为上线前真实环境输入；2026-05-30 续做后，生产告警 Webhook URL/token 也纳入上线前置和部署后 health smoke，剩余阻塞仍来自真实云资源、密钥、工具链、可信代理 IP / 网段、生产告警和部署后验证。
 
 ## 未完成任务
 

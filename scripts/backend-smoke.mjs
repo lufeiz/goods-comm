@@ -10,6 +10,7 @@ const statePath = resolve('/private/tmp/goods-comm-backend-smoke.json')
 const objectRootDir = resolve('/private/tmp/goods-comm-object-store-smoke')
 const allowedOrigin = 'https://mini.example.com'
 const deliveredPlatformNotifications = []
+const emittedOpsAlerts = []
 const failedPlatformNotificationTypes = new Set(['trade_reviewed'])
 const reviewedItemPayloads = []
 const reviewedUploadedImages = []
@@ -84,6 +85,29 @@ const runtime = await startGoodsCommServer({
         createdAt: Date.now()
       }))
     }
+  },
+  opsAlerts: {
+    provider: 'webhook',
+    describe: () => ({
+      provider: 'webhook',
+      configured: true,
+      timeoutMs: 500
+    }),
+    check: async () => ({
+      ok: true,
+      provider: 'webhook',
+      configured: true,
+      timeoutMs: 500
+    }),
+    alert: async (event = {}) => {
+      emittedOpsAlerts.push(event)
+      return {
+        sent: true,
+        provider: 'webhook',
+        status: 'sent',
+        statusCode: 202
+      }
+    }
   }
 })
 
@@ -101,6 +125,8 @@ try {
   assert.equal(health.payload.data.contentSafety, 'mock')
   assert.equal(health.payload.data.mapProvider, 'mock')
   assert.equal(health.payload.data.platformNotify, 'mock')
+  assert.equal(health.payload.data.opsAlert, 'webhook')
+  assert.equal(health.payload.data.opsAlertConfig.configured, true)
   assert.equal(health.payload.trace.traceId, 'trace_backend_smoke')
   assert.equal(health.traceId, 'trace_backend_smoke')
   assert.equal(health.corsOrigin, allowedOrigin)
@@ -121,6 +147,8 @@ try {
   assert.equal(ready.payload.data.contentSafety, 'mock')
   assert.equal(ready.payload.data.mapProvider, 'mock')
   assert.equal(ready.payload.data.platformNotify, 'mock')
+  assert.equal(ready.payload.data.opsAlert, 'webhook')
+  assert.equal(ready.payload.data.opsAlertReadiness.ok, true)
   assert.equal(ready.payload.data.readiness.type, 'file')
 
   const allowedPreflight = await optionsEnvelope(`${baseUrl}/items`, allowedOrigin)
@@ -928,6 +956,16 @@ try {
     notification.type === 'trade_reviewed' &&
     notification.targetId === trade.id &&
     notification.status === 'failed'
+  ))
+  await waitFor(() => emittedOpsAlerts.some((alert) =>
+    alert.type === 'platform_notification_failed' &&
+    alert.traceId &&
+    alert.failedCount === 1 &&
+    alert.deliveries?.some((delivery) =>
+      delivery.type === 'trade_reviewed' &&
+      delivery.status === 'failed' &&
+      delivery.targetId === trade.id
+    )
   ))
   const failedDeliveryList = await request(`${baseUrl}/ops/notification-deliveries?status=failed`, {
     method: 'GET',

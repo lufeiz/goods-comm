@@ -79,6 +79,8 @@ Useful environment variables:
 - `GOODS_COMM_SESSION_SECRET`: server-side secret used to HMAC session tokens before persisting `tokenHash`; required in `pre/prod`.
 - `GOODS_COMM_OPS_LOGIN_MAX_FAILURES`, `GOODS_COMM_OPS_LOGIN_WINDOW_MS`, `GOODS_COMM_OPS_LOGIN_LOCK_MS`: per-account ops-console failed-login lockout settings.
 - `GOODS_COMM_PLATFORM_NOTIFY_PROVIDER`: `mock` or `wechat`. Defaults to `mock` in `dev/test` and `wechat` in `pre/prod`.
+- `GOODS_COMM_ALERT_PROVIDER`: `none` or `webhook`. `pre/prod` should use `webhook` so notification delivery failures reach the on-call/monitoring system.
+- `GOODS_COMM_ALERT_WEBHOOK_URL`, `GOODS_COMM_ALERT_WEBHOOK_TOKEN`, `GOODS_COMM_ALERT_TIMEOUT_MS`: alert webhook endpoint, bearer token, and timeout. `pre/prod` require a real HTTPS URL and token.
 - `GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS`: comma-separated WeChat subscribe-message templates, for example `trade_created:tmpl1,trade_confirmed:tmpl2`.
 - `GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS`: template field mapping, default-compatible format `title:thing1,body:thing2,time:time3`.
 - `GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL`: WeChat subscribe-message send endpoint.
@@ -117,11 +119,11 @@ Deployment and database operations are executable plans:
 
 Run `npm run smoke:postgres-store` to verify the state-to-table mapping without requiring a live database. A live deployment must still validate the same path against a real TencentDB / PostgreSQL instance.
 
-Use `/health/ready` as the cloud run readiness probe. It returns `503 SERVICE_UNAVAILABLE` when the configured state store is not reachable, the PostgreSQL runtime dependency is missing, the normalized schema was not migrated before startup, or a required normalized column is missing. For PostgreSQL it also reports `mode: normalized_snapshot_rewrite`, `autoSchema`, `currentRowCount`, `snapshotRowLimit`, and table-level `rowCounts` so operators can see when the bridge implementation is approaching its configured safety ceiling.
+Use `/health/ready` as the cloud run readiness probe. It returns `503 SERVICE_UNAVAILABLE` when the configured state store is not reachable, the PostgreSQL runtime dependency is missing, the normalized schema was not migrated before startup, a required normalized column is missing, or a configured production alert webhook is invalid. For PostgreSQL it also reports `mode: normalized_snapshot_rewrite`, `autoSchema`, `currentRowCount`, `snapshotRowLimit`, and table-level `rowCounts` so operators can see when the bridge implementation is approaching its configured safety ceiling.
 
 `backend/src/platform-auth.mjs` performs server-side platform identity exchange before `/auth/login` reaches the BFF handler. In `pre/prod`, demo login is rejected unless explicitly overridden for emergency debugging; login must exchange the client code for a platform `openid` / `user_id` first.
 
-`backend/src/platform-notifier.mjs` dispatches newly created trade notifications after the state transaction commits. `dev/test` use a deterministic mock provider; `pre/prod` must use the WeChat subscribe-message adapter and real template IDs. Each notification creates a durable `notification_deliveries` outbox record before delivery starts. Delivery failure does not roll back the trade transaction; operators can inspect failures with `GET /ops/notification-deliveries?status=failed` and retry with `POST /ops/notification-deliveries/retry` using an ops session or `x-moderation-secret`.
+`backend/src/platform-notifier.mjs` dispatches newly created trade notifications after the state transaction commits. `dev/test` use a deterministic mock provider; `pre/prod` must use the WeChat subscribe-message adapter and real template IDs. Each notification creates a durable `notification_deliveries` outbox record before delivery starts. Delivery failure does not roll back the trade transaction; operators can inspect failures with `GET /ops/notification-deliveries?status=failed` and retry with `POST /ops/notification-deliveries/retry` using an ops session or `x-moderation-secret`. `backend/src/ops-alerts.mjs` can also send a sanitized webhook alert for notification delivery and retry failures; `/health` exposes `opsAlert` and `/health/ready` validates the configured webhook.
 
 Platform auth references:
 

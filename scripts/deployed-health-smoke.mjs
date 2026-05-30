@@ -48,6 +48,7 @@ async function assertHealthy() {
     assertEqual(health.data.contentSafety, 'wechat', 'health.contentSafety')
     assertEqual(health.data.mapProvider, 'tencent', 'health.mapProvider')
     assertEqual(health.data.platformNotify, 'wechat', 'health.platformNotify')
+    assertEqual(health.data.opsAlert, 'webhook', 'health.opsAlert')
   }
 
   const ready = await getJson('/health/ready')
@@ -61,6 +62,9 @@ async function assertHealthy() {
     assertEqual(ready.data.contentSafety, 'wechat', 'ready.contentSafety')
     assertEqual(ready.data.mapProvider, 'tencent', 'ready.mapProvider')
     assertEqual(ready.data.platformNotify, 'wechat', 'ready.platformNotify')
+    assertEqual(ready.data.opsAlert, 'webhook', 'ready.opsAlert')
+    assertEqual(ready.data.opsAlertReadiness?.ok, true, 'ready.opsAlertReadiness.ok')
+    assertEqual(ready.data.opsAlertReadiness?.provider, 'webhook', 'ready.opsAlertReadiness.provider')
     assertPostgresReadiness(ready.data.readiness)
   }
 }

@@ -58,6 +58,7 @@
     "sync:prod-to-pre:auto": "node scripts/sync-prod-to-pre.mjs --auto",
     "smoke:platform-auth": "node scripts/platform-auth-smoke.mjs",
     "smoke:ops-auth": "node scripts/ops-auth-smoke.mjs",
+    "smoke:ops-alerts": "node scripts/ops-alerts-smoke.mjs",
     "smoke:platform-notifier": "node scripts/platform-notifier-smoke.mjs",
     "smoke:storage-content": "node scripts/storage-content-smoke.mjs",
     "smoke:rate-limiter": "node scripts/rate-limiter-smoke.mjs",

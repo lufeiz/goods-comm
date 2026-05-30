@@ -61,6 +61,10 @@ const REQUIRED_KEYS = [
   'GOODS_COMM_OPS_LOGIN_MAX_FAILURES',
   'GOODS_COMM_OPS_LOGIN_WINDOW_MS',
   'GOODS_COMM_OPS_LOGIN_LOCK_MS',
+  'GOODS_COMM_ALERT_PROVIDER',
+  'GOODS_COMM_ALERT_WEBHOOK_URL',
+  'GOODS_COMM_ALERT_WEBHOOK_TOKEN',
+  'GOODS_COMM_ALERT_TIMEOUT_MS',
   'GOODS_COMM_PLATFORM_AUTH_MODE',
   'GOODS_COMM_PLATFORM_NOTIFY_PROVIDER',
   'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
@@ -79,7 +83,8 @@ const PRODUCTION_MODE_EXPECTATIONS = {
   GOODS_COMM_MAP_PROVIDER: 'tencent',
   GOODS_COMM_CONTENT_SECURITY_PROVIDER: 'wechat',
   GOODS_COMM_PLATFORM_AUTH_MODE: 'platform',
-  GOODS_COMM_PLATFORM_NOTIFY_PROVIDER: 'wechat'
+  GOODS_COMM_PLATFORM_NOTIFY_PROVIDER: 'wechat',
+  GOODS_COMM_ALERT_PROVIDER: 'webhook'
 }
 
 const POSTGRES_SNAPSHOT_LIMIT_KEY = 'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS'
@@ -102,6 +107,8 @@ const REAL_VALUE_KEYS = [
   'GOODS_COMM_OPS_SESSION_SECRET',
   'GOODS_COMM_OPS_ACCOUNTS',
   'GOODS_COMM_TRUSTED_PROXY_IPS',
+  'GOODS_COMM_ALERT_WEBHOOK_URL',
+  'GOODS_COMM_ALERT_WEBHOOK_TOKEN',
   'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
   'GOODS_COMM_WECHAT_APP_ID',
   'GOODS_COMM_WECHAT_APP_SECRET',
@@ -256,6 +263,22 @@ async function auditEnvironment(environment, values) {
     }
   }
 
+  if (values.GOODS_COMM_ALERT_PROVIDER && !['none', 'webhook'].includes(values.GOODS_COMM_ALERT_PROVIDER)) {
+    blockers.push('GOODS_COMM_ALERT_PROVIDER must be none or webhook')
+  } else if (values.GOODS_COMM_ALERT_PROVIDER) {
+    passes.push(`GOODS_COMM_ALERT_PROVIDER is ${values.GOODS_COMM_ALERT_PROVIDER}`)
+  }
+
+  if (values.GOODS_COMM_ALERT_TIMEOUT_MS) {
+    const alertTimeout = parseNonNegativeInteger(values.GOODS_COMM_ALERT_TIMEOUT_MS)
+
+    if (!alertTimeout.valid || alertTimeout.value <= 0) {
+      blockers.push('GOODS_COMM_ALERT_TIMEOUT_MS must be a positive integer')
+    } else {
+      passes.push(`GOODS_COMM_ALERT_TIMEOUT_MS is ${alertTimeout.value}`)
+    }
+  }
+
   for (const key of [
     'GOODS_COMM_RATE_LIMIT_MAX_REQUESTS',
     'GOODS_COMM_RATE_LIMIT_WINDOW_MS',
@@ -306,6 +329,10 @@ async function auditEnvironment(environment, values) {
 
     if (!startsWithHttps(values.GOODS_COMM_CDN_BASE_URL)) {
       blockers.push('GOODS_COMM_CDN_BASE_URL must be HTTPS')
+    }
+
+    if (values.GOODS_COMM_ALERT_PROVIDER === 'webhook' && !startsWithHttps(values.GOODS_COMM_ALERT_WEBHOOK_URL)) {
+      blockers.push('GOODS_COMM_ALERT_WEBHOOK_URL must be HTTPS for pre/prod alerting')
     }
 
     if (!allOriginsAreHttps(values.GOODS_COMM_ALLOWED_ORIGINS)) {
