@@ -1,5 +1,5 @@
 <template>
-  <view class="good-card" @tap="$emit('open', item)">
+  <view class="good-card" data-testid="good-card" @tap="$emit('open', item)">
     <image v-if="coverImage" class="cover image-cover" :src="coverImage" mode="aspectFill" />
     <view v-else :class="['cover', coverClass]">
       <text class="cover-text">{{ coverText }}</text>

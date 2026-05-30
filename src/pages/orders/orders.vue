@@ -1,11 +1,11 @@
 <template>
-  <view class="page">
-    <view class="summary">
+  <view class="page" data-testid="orders-page">
+    <view class="summary" data-testid="orders-summary">
       <text class="summary-title">我的交易</text>
       <text class="summary-desc">{{ summaryText }}</text>
     </view>
 
-    <view v-if="user && notifications.length" class="notification-list">
+    <view v-if="user && notifications.length" class="notification-list" data-testid="orders-notification-list">
       <view
         v-for="notification in notifications"
         :key="notification.id"
@@ -25,13 +25,13 @@
       </view>
     </view>
 
-    <view v-if="!user" class="empty-state">
+    <view v-if="!user" class="empty-state" data-testid="orders-login-required">
       <text class="empty-title">请先登录</text>
       <text class="empty-desc">登录后可查看买入、卖出和待确认交易。</text>
-      <button class="primary-action" @tap="goLogin">去登录</button>
+      <button class="primary-action" data-testid="orders-login-entry" @tap="goLogin">去登录</button>
     </view>
 
-    <view v-else-if="trades.length" class="trade-list">
+    <view v-else-if="trades.length" class="trade-list" data-testid="orders-trade-list">
       <view v-for="trade in trades" :key="trade.id" class="trade-card">
         <view class="trade-head">
           <text class="trade-title">{{ trade.itemTitle }}</text>
@@ -92,7 +92,7 @@
       </view>
     </view>
 
-    <view v-else class="empty-state">
+    <view v-else class="empty-state" data-testid="orders-empty-state">
       <text class="empty-title">还没有交易意向</text>
       <text class="empty-desc">在物品详情页通过位置校验后，可以发起交易。</text>
     </view>

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" data-testid="publish-page">
     <LocationGuard
       :profile="locationProfile"
       :loading="locating"
@@ -8,18 +8,18 @@
       @choose-location="chooseLocation"
     />
 
-    <view class="form">
-      <label class="field">
+    <view class="form" data-testid="publish-form">
+      <label class="field" data-testid="publish-title-field">
         <text class="label">物品名称</text>
-        <input class="input" v-model="form.title" maxlength="28" placeholder="例如：九成新折叠椅" />
+        <input class="input" data-testid="publish-title-input" v-model="form.title" maxlength="28" placeholder="例如：九成新折叠椅" />
       </label>
 
-      <label class="field">
+      <label class="field" data-testid="publish-price-field">
         <text class="label">价格</text>
-        <input class="input" v-model="form.price" type="digit" placeholder="填写转让价" />
+        <input class="input" data-testid="publish-price-input" v-model="form.price" type="digit" placeholder="填写转让价" />
       </label>
 
-      <view class="field">
+      <view class="field" data-testid="publish-scope-field">
         <text class="label">分类</text>
         <picker :range="publishCategories" range-key="label" :value="categoryIndex" @change="onCategoryChange">
           <view class="picker-value">{{ selectedCategory.label }}</view>
@@ -62,36 +62,37 @@
         />
       </view>
 
-      <label class="field">
+      <label class="field" data-testid="publish-description-field">
         <text class="label">描述</text>
         <textarea
           class="textarea"
+          data-testid="publish-description-input"
           v-model="form.description"
           maxlength="160"
           placeholder="说明新旧程度、取货方式、是否可议价"
         />
       </label>
 
-      <view class="field">
+      <view class="field" data-testid="publish-images-field">
         <text class="label">物品照片</text>
         <view class="image-grid">
           <view v-for="(image, index) in form.images" :key="image.url || image" class="image-cell">
             <image class="item-image" :src="image.url || image" mode="aspectFill" />
             <button class="image-remove" @tap="removeImage(index)">删除</button>
           </view>
-          <button v-if="form.images.length < 6" class="image-add" @tap="chooseImages">
+          <button v-if="form.images.length < 6" class="image-add" data-testid="publish-image-add" @tap="chooseImages">
             添加照片
           </button>
         </view>
         <text class="hint">至少 1 张，最多 6 张；正式上线后应上传到服务端并进入内容审核。</text>
       </view>
 
-      <view class="location-summary">
+      <view class="location-summary" data-testid="publish-location-summary">
         <text class="summary-title">发布位置</text>
         <text class="summary-text">{{ regionLabel }}</text>
       </view>
 
-      <button class="submit-button" :disabled="submitting" @tap="submit">
+      <button class="submit-button" data-testid="publish-submit" :disabled="submitting" @tap="submit">
         {{ submitting ? '发布中' : '发布到邻里集市' }}
       </button>
     </view>

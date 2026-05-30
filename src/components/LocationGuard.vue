@@ -1,5 +1,5 @@
 <template>
-  <view class="location-wrap">
+  <view class="location-wrap" data-testid="location-guard">
     <view class="location-guard">
       <view class="location-main">
         <text class="location-title">{{ title }}</text>
@@ -7,15 +7,15 @@
         <text v-if="qualityText" class="location-meta">{{ qualityText }}</text>
       </view>
       <view class="location-actions">
-        <button class="location-action" :disabled="loading" @tap="$emit('refresh')">
+        <button class="location-action" data-testid="location-refresh" :disabled="loading" @tap="$emit('refresh')">
           {{ loading ? '定位中' : '刷新' }}
         </button>
-        <button class="location-action secondary" :disabled="loading" @tap="$emit('choose-location')">
+        <button class="location-action secondary" data-testid="location-choose" :disabled="loading" @tap="$emit('choose-location')">
           选择
         </button>
       </view>
     </view>
-    <view v-if="profile?.error" class="location-error">
+    <view v-if="profile?.error" class="location-error" data-testid="location-error">
       <text>{{ profile.error.message }}</text>
       <button v-if="canOpenSetting" class="link-button" @tap="$emit('open-setting')">{{ errorView.actionText }}</button>
     </view>

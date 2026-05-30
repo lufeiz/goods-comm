@@ -1,12 +1,12 @@
 <template>
   <view>
-    <view v-if="item" class="page">
+    <view v-if="item" class="page" data-testid="detail-page">
       <image v-if="coverImage" class="hero-cover image-cover" :src="coverImage" mode="aspectFill" />
       <view v-else :class="['hero-cover', coverClass]">
         <text class="hero-text">{{ item.title.slice(0, 2) }}</text>
       </view>
 
-      <view class="title-block">
+      <view class="title-block" data-testid="detail-title-block">
         <view class="title-row">
           <text class="title">{{ item.title }}</text>
           <text class="price">¥{{ item.price }}</text>
@@ -19,7 +19,7 @@
         </view>
       </view>
 
-      <view class="panel">
+      <view class="panel" data-testid="detail-eligibility-panel">
         <view class="panel-head">
           <text class="panel-title">交易资格</text>
           <EligibilityTag :result="eligibility" />
@@ -29,21 +29,21 @@
           <text>要求：{{ item.tradeScope?.label || '同社区' }}，{{ radiusText }} 内</text>
           <text>位置：{{ locationText }}</text>
         </view>
-        <button class="outline-button" :disabled="checking" @tap="refreshEligibility">
+        <button class="outline-button" data-testid="detail-refresh-eligibility" :disabled="checking" @tap="refreshEligibility">
           {{ checking ? '校验中' : '刷新定位校验' }}
         </button>
-        <button class="outline-button choose-button" :disabled="checking" @tap="chooseEligibilityLocation">
+        <button class="outline-button choose-button" data-testid="detail-choose-location" :disabled="checking" @tap="chooseEligibilityLocation">
           选择位置预估
         </button>
         <text class="trade-note">发起交易会重新使用实时 GPS 定位做最终校验，手动选择位置只用于预估。</text>
       </view>
 
-      <view class="panel">
+      <view class="panel" data-testid="detail-description-panel">
         <text class="panel-title">物品说明</text>
         <text class="description">{{ item.description }}</text>
       </view>
 
-      <view class="panel">
+      <view class="panel" data-testid="detail-seller-panel">
         <text class="panel-title">卖家</text>
         <view class="seller-row">
           <view class="avatar">{{ item.seller.nickname.slice(0, 1) }}</view>
@@ -54,13 +54,13 @@
         </view>
       </view>
 
-      <view class="bottom-bar">
-        <button class="danger-button" @tap="reportItem">举报</button>
-        <button class="primary-button" :disabled="!canStartTrade" @tap="startTrade">{{ tradeButtonText }}</button>
+      <view class="bottom-bar" data-testid="detail-bottom-bar">
+        <button class="danger-button" data-testid="detail-report-button" @tap="reportItem">举报</button>
+        <button class="primary-button" data-testid="detail-start-trade" :disabled="!canStartTrade" @tap="startTrade">{{ tradeButtonText }}</button>
       </view>
     </view>
 
-    <view v-else class="not-found">
+    <view v-else class="not-found" data-testid="detail-not-found">
       <text>物品不存在或已下架</text>
     </view>
   </view>

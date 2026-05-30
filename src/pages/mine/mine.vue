@@ -1,6 +1,6 @@
 <template>
-  <view class="page">
-    <view class="profile">
+  <view class="page" data-testid="mine-page">
+    <view class="profile" data-testid="mine-profile">
       <image v-if="user?.avatarUrl" class="avatar image-avatar" :src="user.avatarUrl" mode="aspectFill" />
       <view v-else class="avatar">{{ avatarText }}</view>
       <view>
@@ -9,22 +9,22 @@
       </view>
     </view>
 
-    <view class="auth-actions">
+    <view class="auth-actions" data-testid="mine-auth-actions">
       <!-- #ifdef MP-WEIXIN -->
-      <button class="auth-button primary" open-type="chooseAvatar" @chooseavatar="loginWithWeixinAvatar">
+      <button class="auth-button primary" data-testid="mine-login-button" open-type="chooseAvatar" @chooseavatar="loginWithWeixinAvatar">
         {{ loginButtonText }}
       </button>
       <!-- #endif -->
       <!-- #ifndef MP-WEIXIN -->
-      <button class="auth-button primary" @tap="login">
+      <button class="auth-button primary" data-testid="mine-login-button" @tap="login">
         {{ loginButtonText }}
       </button>
       <!-- #endif -->
-      <button v-if="user" class="auth-button" @tap="logout">退出登录</button>
+      <button v-if="user" class="auth-button" data-testid="mine-logout-button" @tap="logout">退出登录</button>
     </view>
 
-    <view class="agreement-panel">
-      <label class="agreement-check" @tap="toggleAgreement">
+    <view class="agreement-panel" data-testid="mine-agreement-panel">
+      <label class="agreement-check" data-testid="mine-agreement-toggle" @tap="toggleAgreement">
         <checkbox :checked="agreementAccepted" color="#1f7a4d" />
         <text>我已阅读并同意</text>
       </label>
@@ -57,7 +57,7 @@
 
     <view class="panel">
       <text class="panel-title">我的发布</text>
-      <view v-if="user && myGoods.length" class="goods-list">
+      <view v-if="user && myGoods.length" class="goods-list" data-testid="mine-goods-list">
         <view v-for="item in myGoods" :key="item.id" class="goods-row">
           <view class="goods-main">
             <text class="goods-title">{{ item.title }}</text>
@@ -69,7 +69,7 @@
           </view>
         </view>
       </view>
-      <view v-else class="rule-list">
+      <view v-else class="rule-list" data-testid="mine-goods-empty">
         <text>{{ user ? '还没有发布物品。' : '登录后可管理自己发布的物品。' }}</text>
       </view>
     </view>
@@ -96,7 +96,7 @@
       </view>
     </view>
 
-    <view v-if="canShowOpsEntry" class="panel">
+    <view v-if="canShowOpsEntry" class="panel" data-testid="mine-ops-entry-panel">
       <text class="panel-title">内部运营</text>
       <view class="rule-list">
         <text>处理待审商品、举报、争议和平台通知重试。</text>
@@ -104,7 +104,7 @@
       <button class="auth-button primary" @tap="goOpsConsole">进入运营控制台</button>
     </view>
 
-    <view v-if="user" class="panel danger-panel">
+    <view v-if="user" class="panel danger-panel" data-testid="mine-account-danger-panel">
       <text class="panel-title">账号与数据</text>
       <view class="rule-list">
         <text>注销后会清除当前登录态，并下架你仍在售或审核中的物品。</text>

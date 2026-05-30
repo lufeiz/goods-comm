@@ -1,11 +1,11 @@
 <template>
-  <view class="page">
-    <view class="topbar">
+  <view class="page" data-testid="home-page">
+    <view class="topbar" data-testid="home-topbar">
       <view>
         <text class="app-name">邻里旧货</text>
         <text class="subline">同社区 / 同街道二手流转</text>
       </view>
-      <button class="publish-button" @tap="goPublish">发布</button>
+      <button class="publish-button" data-testid="home-publish-entry" @tap="goPublish">发布</button>
     </view>
 
     <LocationGuard
@@ -16,15 +16,16 @@
       @choose-location="chooseLocation"
     />
 
-    <view class="search-row">
+    <view class="search-row" data-testid="home-search">
       <input
         class="search-input"
+        data-testid="home-search-input"
         v-model="keyword"
         confirm-type="search"
         placeholder="搜索闲置物品"
         @confirm="loadItems"
       />
-      <button class="search-button" @tap="loadItems">搜索</button>
+      <button class="search-button" data-testid="home-search-button" @tap="loadItems">搜索</button>
     </view>
 
     <scroll-view class="category-strip" scroll-x>
@@ -45,7 +46,7 @@
       <text class="section-count">{{ items.length }} 件</text>
     </view>
 
-    <view v-if="items.length" class="good-list">
+    <view v-if="items.length" class="good-list" data-testid="home-good-list">
       <GoodCard
         v-for="item in items"
         :key="item.id"
@@ -54,7 +55,7 @@
       />
     </view>
 
-    <view v-else class="empty-state">
+    <view v-else class="empty-state" data-testid="home-empty-state">
       <text class="empty-title">暂无匹配物品</text>
       <text class="empty-desc">换个关键词，或发布一件邻里可自提的闲置物品。</text>
     </view>

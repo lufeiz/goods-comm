@@ -178,6 +178,7 @@ function verifyPageContracts() {
   )
 
   verifyDisplayStateContracts()
+  verifyRenderedTestIdContracts()
 
   for (const [path, source] of [
     ['src/components/GoodCard.vue', componentSources.get('components/GoodCard.vue')],
@@ -191,6 +192,116 @@ function verifyPageContracts() {
       !source.includes('images?.[0]?.url || this.item') && !source.includes('images?.[0]?.url || this.item?.images?.[0]'),
       `${path} must not use the first image object itself as an image src`
     )
+  }
+}
+
+function verifyRenderedTestIdContracts() {
+  const renderedContracts = [
+    {
+      path: 'src/pages/home/home.vue',
+      source: pageSources.get('pages/home/home'),
+      testIds: [
+        'home-page',
+        'home-topbar',
+        'home-publish-entry',
+        'home-search',
+        'home-search-input',
+        'home-search-button',
+        'home-good-list',
+        'home-empty-state'
+      ]
+    },
+    {
+      path: 'src/pages/publish/publish.vue',
+      source: pageSources.get('pages/publish/publish'),
+      testIds: [
+        'publish-page',
+        'publish-form',
+        'publish-title-input',
+        'publish-price-input',
+        'publish-scope-field',
+        'publish-description-input',
+        'publish-images-field',
+        'publish-image-add',
+        'publish-location-summary',
+        'publish-submit'
+      ]
+    },
+    {
+      path: 'src/pages/detail/detail.vue',
+      source: pageSources.get('pages/detail/detail'),
+      testIds: [
+        'detail-page',
+        'detail-title-block',
+        'detail-eligibility-panel',
+        'detail-refresh-eligibility',
+        'detail-choose-location',
+        'detail-description-panel',
+        'detail-seller-panel',
+        'detail-bottom-bar',
+        'detail-report-button',
+        'detail-start-trade',
+        'detail-not-found'
+      ]
+    },
+    {
+      path: 'src/pages/orders/orders.vue',
+      source: pageSources.get('pages/orders/orders'),
+      testIds: [
+        'orders-page',
+        'orders-summary',
+        'orders-notification-list',
+        'orders-login-required',
+        'orders-login-entry',
+        'orders-trade-list',
+        'orders-empty-state'
+      ]
+    },
+    {
+      path: 'src/pages/mine/mine.vue',
+      source: pageSources.get('pages/mine/mine'),
+      testIds: [
+        'mine-page',
+        'mine-profile',
+        'mine-auth-actions',
+        'mine-login-button',
+        'mine-logout-button',
+        'mine-agreement-panel',
+        'mine-agreement-toggle',
+        'mine-goods-list',
+        'mine-goods-empty',
+        'mine-ops-entry-panel',
+        'mine-account-danger-panel'
+      ]
+    },
+    {
+      path: 'src/components/LocationGuard.vue',
+      source: componentSources.get('components/LocationGuard.vue'),
+      testIds: [
+        'location-guard',
+        'location-refresh',
+        'location-choose',
+        'location-error'
+      ]
+    },
+    {
+      path: 'src/components/GoodCard.vue',
+      source: componentSources.get('components/GoodCard.vue'),
+      testIds: [
+        'good-card'
+      ]
+    }
+  ]
+
+  for (const contract of renderedContracts) {
+    assert.ok(contract.source, `${contract.path} source must be loaded`)
+
+    for (const testId of contract.testIds) {
+      assert.ok(
+        contract.source.includes(`data-testid="${testId}"`),
+        `${contract.path} must expose stable rendered test id: ${testId}`
+      )
+    }
   }
 }
 
