@@ -180,7 +180,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 - 有 `REPLACE_WITH` 或 placeholder 数据库连接串时拒绝执行真实同步。
 - 需要本机或云任务环境存在 `pg_dump`、`pg_restore`、`psql`。
 - 真实执行时会写同步锁，默认路径为 `/private/tmp/goods-comm-prod-to-pre.lock`，避免定时任务重入。
-- 执行结果会追加到审计日志，默认路径为 `/private/tmp/goods-comm-prod-to-pre-audit.jsonl`；审计记录包含 `acquire_lock`、`verify_toolchain`、`dump_prod`、`reset_pre`、`restore_pre`、`anonymize_pre` 和可选 smoke 阶段的状态、时间戳、耗时与失败原因，便于定时任务排障。
+- 执行结果会追加到审计日志，默认路径为 `/private/tmp/goods-comm-prod-to-pre-audit.jsonl`；审计记录包含 `acquire_lock`、`verify_toolchain`、`dump_prod`、`reset_pre`、`restore_pre`、`anonymize_pre`、`remove_prod_dump` 和可选 smoke 阶段的状态、时间戳、耗时与失败原因，便于定时任务排障。
 - 同步后执行 `backend/db/pre-sync-anonymize.sql`：吊销 session、清空交易联系码、删除旧版 `bff_state_snapshots` JSON 快照、脱敏平台 openid/unionid、用户昵称/头像/联系码、商品标题/描述/精确坐标、交易标题、位置审计坐标、图片 URL / COS key / checksum / 审核 trace、举报/争议/评价/运营日志内容。
 
 推荐自动同步方式：
@@ -189,7 +189,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 - 执行前注入真实 prod/pre 数据库连接串和 `GOODS_COMM_SYNC_AUTO_ENABLED=true`；自动模式不读取手动确认变量，便于放入定时任务。
 - 如需同步后自动检查 pre 健康状态，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true`，脚本会执行 `node scripts/deployed-health-smoke.mjs --env pre`，默认等待 12 次、每次间隔 10 秒；可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整等待窗口。
 - 如需同步后自动验证 pre 主链路，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，脚本会执行 `node scripts/deployed-main-flow-smoke.mjs --env pre`；这需要同时配置 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 和必要时的 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL`。
-- 可按任务环境设置 `GOODS_COMM_SYNC_LOCK_PATH`、`GOODS_COMM_SYNC_AUDIT_PATH` 和 `GOODS_COMM_SYNC_DUMP_PATH`，保证锁、审计日志和 dump 文件落在可持久化目录。
+- 可按任务环境设置 `GOODS_COMM_SYNC_LOCK_PATH`、`GOODS_COMM_SYNC_AUDIT_PATH` 和 `GOODS_COMM_SYNC_DUMP_PATH`；锁和审计日志应落在可追踪位置，dump 路径应使用执行机临时目录，脚本会在成功或失败后删除本地生产 dump。
 - GitHub Actions 已提供 `.github/workflows/prod-to-pre-sync.yml`：`workflow_dispatch` 支持手动 `plan` / `execute`，`schedule` 支持每天低峰自动运行；只有仓库变量 `GOODS_COMM_SYNC_AUTO_ENABLED=true` 时，定时任务才会真正执行同步。手动执行可选择 `run_pre_main_smoke`，并可用 `health_attempts` / `health_interval_ms` 调整同步后 pre health smoke 等待窗口；定时任务可用仓库变量 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` 打开同步后 pre 主链路 smoke，也可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整健康检查重试。工作流从 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入 `.env.pre.local` / `.env.prod.local`，dump 和锁文件落在 runner 临时目录，只上传脱敏同步审计日志，不上传生产 dump。
 
 推荐手动同步方式：

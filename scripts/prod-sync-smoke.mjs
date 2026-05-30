@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmod, mkdtemp, readFile, rm, unlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 
 const lockPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.lock`
 const auditPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.jsonl`
+const dumpPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.dump`
 const syncScriptPath = resolve(process.cwd(), 'scripts/sync-prod-to-pre.mjs')
 const anonymizeSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-anonymize.sql')
 const resetSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-reset.sql')
@@ -131,10 +132,12 @@ try {
     'dump_prod',
     'reset_pre',
     'restore_pre',
-    'anonymize_pre'
+    'anonymize_pre',
+    'remove_prod_dump'
   ])
   assert.ok(audit.stages.every((stage) => stage.status === 'completed'))
   assert.ok(audit.stages.every((stage) => Number.isSafeInteger(stage.durationMs) && stage.durationMs >= 0))
+  await assertPathMissing(dumpPath)
 
   const toolLog = await readFile(fakeTools.logPath, 'utf8')
   assert.match(toolLog, /pg_dump --format=custom --no-owner --no-privileges --file/)
@@ -159,9 +162,12 @@ try {
 
   const failedAudit = await readLatestAuditRecord()
   assert.equal(failedAudit.status, 'failed')
-  assert.equal(failedAudit.stages.at(-1).name, 'restore_pre')
-  assert.equal(failedAudit.stages.at(-1).status, 'failed')
-  assert.match(failedAudit.stages.at(-1).error, /pg_restore failed/)
+  const failedRestoreStage = failedAudit.stages.find((stage) => stage.name === 'restore_pre')
+  assert.equal(failedRestoreStage.status, 'failed')
+  assert.match(failedRestoreStage.error, /pg_restore failed/)
+  assert.equal(failedAudit.stages.at(-1).name, 'remove_prod_dump')
+  assert.equal(failedAudit.stages.at(-1).status, 'completed')
+  await assertPathMissing(dumpPath)
 } finally {
   await rm(fakeTools.directory, {
     recursive: true,
@@ -184,6 +190,7 @@ function runSyncScript(args, env = {}) {
       ...process.env,
       GOODS_COMM_SYNC_LOCK_PATH: lockPath,
       GOODS_COMM_SYNC_AUDIT_PATH: auditPath,
+      GOODS_COMM_SYNC_DUMP_PATH: dumpPath,
       ...env
     }
   })
@@ -206,6 +213,7 @@ async function runSyncScriptWithTemporaryEnv(args, overrides = {}, env = {}) {
         ...process.env,
         GOODS_COMM_SYNC_LOCK_PATH: lockPath,
         GOODS_COMM_SYNC_AUDIT_PATH: auditPath,
+        GOODS_COMM_SYNC_DUMP_PATH: dumpPath,
         ...env
       }
     })
@@ -248,6 +256,20 @@ fi
 printf "%s %s\\n" "$name" "$*" >> "$GOODS_COMM_SYNC_FAKE_TOOL_LOG"
 if [ "$GOODS_COMM_SYNC_FAKE_FAIL_COMMAND" = "$name" ]; then
   exit 23
+fi
+if [ "$name" = "pg_dump" ]; then
+  dump_file=""
+  while [ "$#" -gt 0 ]; do
+    if [ "$1" = "--file" ]; then
+      shift
+      dump_file="$1"
+      break
+    fi
+    shift
+  done
+  if [ -n "$dump_file" ]; then
+    printf "fake production dump\\n" > "$dump_file"
+  fi
 fi
 exit 0
 `
@@ -296,7 +318,7 @@ async function readLatestAuditRecord() {
 }
 
 async function cleanup() {
-  for (const path of [lockPath, auditPath]) {
+  for (const path of [lockPath, auditPath, dumpPath]) {
     try {
       await unlink(path)
     } catch (error) {
@@ -305,4 +327,18 @@ async function cleanup() {
       }
     }
   }
+}
+
+async function assertPathMissing(path) {
+  try {
+    await stat(path)
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return
+    }
+
+    throw error
+  }
+
+  throw new Error(`${path} should not exist`)
 }

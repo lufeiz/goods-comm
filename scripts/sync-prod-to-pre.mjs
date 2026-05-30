@@ -28,9 +28,10 @@ const plan = [
   '2. Truncate pre database business tables.',
   '3. Restore prod data into pre.',
   '4. Run pre anonymization SQL to revoke sessions and remove direct contact data.',
-  '5. Write a sync audit record with per-stage timing and failure details for operational traceability.',
-  '6. Run deployed pre health smoke when GOODS_COMM_SYNC_RUN_PRE_SMOKE=true.',
-  '7. Run deployed pre main-flow smoke when GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true.'
+  '5. Remove the local prod dump after sync completion or failure.',
+  '6. Write a sync audit record with per-stage timing and failure details for operational traceability.',
+  '7. Run deployed pre health smoke when GOODS_COMM_SYNC_RUN_PRE_SMOKE=true.',
+  '8. Run deployed pre main-flow smoke when GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true.'
 ]
 
 if (!execute) {
@@ -67,6 +68,7 @@ validateSyncInputs({
 
 const startedAt = new Date().toISOString()
 let lockAcquired = false
+let executionError = null
 
 try {
   await runStage('acquire_lock', () => acquireSyncLock())
@@ -98,27 +100,36 @@ try {
   if (runPreMainSmoke) {
     await runStage('smoke_pre_main_flow', () => run('node', ['scripts/deployed-main-flow-smoke.mjs', '--env', 'pre']))
   }
-
-  await appendSyncAudit({
-    status: 'completed',
-    startedAt,
-    completedAt: new Date().toISOString()
-  })
-
-  console.log('Prod to pre sync completed')
 } catch (error) {
-  await appendSyncAudit({
-    status: 'failed',
-    startedAt,
-    completedAt: new Date().toISOString(),
-    error: error?.message || String(error)
-  })
-  throw error
+  executionError = error
 } finally {
   if (lockAcquired) {
-    await releaseSyncLock()
+    try {
+      await runStage('remove_prod_dump', () => removeDumpFile())
+    } catch (error) {
+      executionError = mergeExecutionErrors(executionError, error)
+    }
+
+    try {
+      await releaseSyncLock()
+    } catch (error) {
+      executionError = mergeExecutionErrors(executionError, error)
+    }
   }
+
+  await appendSyncAudit({
+    status: executionError ? 'failed' : 'completed',
+    startedAt,
+    completedAt: new Date().toISOString(),
+    ...(executionError ? { error: executionError?.message || String(executionError) } : {})
+  })
 }
+
+if (executionError) {
+  throw executionError
+}
+
+console.log('Prod to pre sync completed')
 
 function validateSyncInputs(options = {}) {
   if (!prodUrl || !preUrl) {
@@ -202,6 +213,16 @@ async function releaseSyncLock() {
   }
 }
 
+async function removeDumpFile() {
+  try {
+    await unlink(dumpPath)
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      throw error
+    }
+  }
+}
+
 async function appendSyncAudit(record) {
   const payload = {
     ...record,
@@ -217,6 +238,16 @@ async function appendSyncAudit(record) {
   }
 
   await appendFile(auditPath, `${JSON.stringify(payload)}\n`)
+}
+
+function mergeExecutionErrors(primary, secondary) {
+  if (!primary) {
+    return secondary
+  }
+
+  const primaryMessage = primary?.message || String(primary)
+  const secondaryMessage = secondary?.message || String(secondary)
+  return new Error(`${primaryMessage}; cleanup failed: ${secondaryMessage}`)
 }
 
 async function runStage(name, callback) {
