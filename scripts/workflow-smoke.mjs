@@ -64,6 +64,11 @@ function assertCiReleaseGate() {
 
 function assertReleaseGateProfileBoundary() {
   assertIncludesAll('scripts/verify-release-gate.mjs', releaseGateScript, [
+    "name: 'production readiness strict report'",
+    "'--output'",
+    "'docs/deployment-readiness-audit-strict.md'",
+    "'--json-output'",
+    "'docs/deployment-readiness-audit-strict.json'",
     "args: ['scripts/production-readiness-audit.mjs', '--check-only', '--require-deployed-smoke-inputs']",
     "args: ['scripts/production-readiness-audit.mjs']",
     "if (profile !== 'release')",

@@ -22,6 +22,18 @@ addArtifactSmokeChecks()
 
 if (profile === 'release') {
   steps.push({
+    name: 'production readiness strict report',
+    command: process.execPath,
+    args: [
+      'scripts/production-readiness-audit.mjs',
+      '--require-deployed-smoke-inputs',
+      '--output',
+      'docs/deployment-readiness-audit-strict.md',
+      '--json-output',
+      'docs/deployment-readiness-audit-strict.json'
+    ]
+  })
+  steps.push({
     name: 'production readiness strict check',
     command: process.execPath,
     args: ['scripts/production-readiness-audit.mjs', '--check-only', '--require-deployed-smoke-inputs']
