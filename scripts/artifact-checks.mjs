@@ -221,6 +221,44 @@ function createRequiredRenderedTestIds() {
         'mine-agreement-toggle',
         'mine-goods-list',
         'mine-goods-empty'
+      ],
+      'pages/ops/ops': [
+        'ops-page',
+        'ops-auth-panel',
+        'ops-auth-state',
+        'ops-actor-input',
+        'ops-secret-input',
+        'ops-login-submit',
+        'ops-refresh',
+        'ops-clear-session',
+        'ops-stats-grid',
+        'ops-stat-card',
+        'ops-user-risk-panel',
+        'ops-user-status-filter',
+        'ops-user-card',
+        'ops-user-block-submit',
+        'ops-user-unblock-submit',
+        'ops-items-panel',
+        'ops-item-card',
+        'ops-item-approve',
+        'ops-item-reject',
+        'ops-reports-panel',
+        'ops-report-card',
+        'ops-report-dismiss',
+        'ops-report-uphold',
+        'ops-report-block-reporter',
+        'ops-disputes-panel',
+        'ops-dispute-card',
+        'ops-dispute-resolution',
+        'ops-dispute-submit',
+        'ops-deliveries-panel',
+        'ops-delivery-status-filter',
+        'ops-delivery-card',
+        'ops-delivery-retry-one',
+        'ops-client-events-panel',
+        'ops-client-event-card',
+        'ops-audit-panel',
+        'ops-audit-card'
       ]
     },
     components: {
@@ -246,6 +284,20 @@ function createRequiredRenderedAttributes() {
         'data-status',
         'data-rating',
         'data-tag'
+      ],
+      'pages/ops/ops': [
+        'data-stat',
+        'data-status',
+        'data-user-id',
+        'data-item-id',
+        'data-report-id',
+        'data-dispute-id',
+        'data-resolution',
+        'data-delivery-id',
+        'data-level',
+        'data-event-id',
+        'data-audit-id',
+        'data-action'
       ]
     }
   }
