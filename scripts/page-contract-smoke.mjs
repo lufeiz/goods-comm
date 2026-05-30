@@ -185,6 +185,16 @@ function verifyPageContracts() {
     'pages/ops/ops notification fallback must not reference queue outside its block scope'
   )
 
+  const detailSource = pageSources.get('pages/detail/detail')
+  assert.ok(
+    detailSource.includes('function hasCoordinateLocation(location)'),
+    'src/pages/detail/detail.vue must keep an explicit coordinate guard helper'
+  )
+  assert.ok(
+    detailSource.includes("if (!location || typeof location !== 'object')"),
+    'src/pages/detail/detail.vue coordinate checks must tolerate null or non-object locations'
+  )
+
   verifyDisplayStateContracts()
   verifyRenderedTestIdContracts()
 

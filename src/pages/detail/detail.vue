@@ -411,7 +411,11 @@ function buildServerEligibility(profile = null, message = '服务端将在发起
   }
 }
 
-function hasCoordinateLocation(location = {}) {
+function hasCoordinateLocation(location) {
+  if (!location || typeof location !== 'object') {
+    return false
+  }
+
   return Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude))
 }
 </script>
