@@ -57,6 +57,33 @@ assert.notEqual(topologyMismatch.status, 0)
 assert.match(topologyMismatch.stderr, /topology variables must match/)
 assert.match(topologyMismatch.stderr, /GOODS_COMM_CONTENT_SECURITY_PROVIDER/)
 
+const routeRateLimitTopologyMismatch = await runSyncScriptWithTemporaryEnv([], {
+  pre: {
+    GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS: '999'
+  }
+})
+assert.notEqual(routeRateLimitTopologyMismatch.status, 0)
+assert.match(routeRateLimitTopologyMismatch.stderr, /topology variables must match/)
+assert.match(routeRateLimitTopologyMismatch.stderr, /GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS/)
+
+const userRateLimitTopologyMismatch = await runSyncScriptWithTemporaryEnv([], {
+  prod: {
+    GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS: '120000'
+  }
+})
+assert.notEqual(userRateLimitTopologyMismatch.status, 0)
+assert.match(userRateLimitTopologyMismatch.stderr, /topology variables must match/)
+assert.match(userRateLimitTopologyMismatch.stderr, /GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS/)
+
+const advisoryLockTopologyMismatch = await runSyncScriptWithTemporaryEnv([], {
+  prod: {
+    GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY: 'goods-comm-prod-lock'
+  }
+})
+assert.notEqual(advisoryLockTopologyMismatch.status, 0)
+assert.match(advisoryLockTopologyMismatch.stderr, /topology variables must match/)
+assert.match(advisoryLockTopologyMismatch.stderr, /GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY/)
+
 const autoWithoutEnable = runSyncScript(['--auto'])
 assert.notEqual(autoWithoutEnable.status, 0)
 assert.match(autoWithoutEnable.stderr, /GOODS_COMM_SYNC_AUTO_ENABLED=true/)

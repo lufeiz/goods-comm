@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { appendFile, stat, unlink, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { readEnvironmentFile, containsPlaceholder, maskConnectionString } from './env-files.mjs'
+import { PRE_PROD_TOPOLOGY_MATCH_KEYS } from './environment-topology.mjs'
 
 const auto = process.argv.includes('--auto')
 const execute = process.argv.includes('--execute') || auto
@@ -20,34 +21,6 @@ const preHealthSmokeIntervalMs = parsePositiveInteger(process.env.GOODS_COMM_SYN
 const resetSql = resolve('backend/db/pre-sync-reset.sql')
 const anonymizeSql = resolve('backend/db/pre-sync-anonymize.sql')
 const syncStages = []
-const PRE_PROD_TOPOLOGY_MATCH_KEYS = [
-  'GOODS_COMM_TENCENT_REGION',
-  'HOST',
-  'PORT',
-  'GOODS_COMM_MAX_IMAGE_BYTES',
-  'GOODS_COMM_MAX_REQUEST_BYTES',
-  'GOODS_COMM_RATE_LIMIT_MAX_REQUESTS',
-  'GOODS_COMM_RATE_LIMIT_WINDOW_MS',
-  'GOODS_COMM_DATABASE_SCHEMA',
-  'GOODS_COMM_STATE_STORE',
-  'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS',
-  'GOODS_COMM_POSTGRES_AUTO_SCHEMA',
-  'GOODS_COMM_OBJECT_STORE',
-  'GOODS_COMM_COS_REGION',
-  'GOODS_COMM_MAP_PROVIDER',
-  'GOODS_COMM_MAP_REGION_DATASET',
-  'GOODS_COMM_TENCENT_MAP_GEOCODER_URL',
-  'GOODS_COMM_CONTENT_SECURITY_PROVIDER',
-  'GOODS_COMM_PLATFORM_AUTH_MODE',
-  'GOODS_COMM_PLATFORM_NOTIFY_PROVIDER',
-  'GOODS_COMM_OPS_LOGIN_MAX_FAILURES',
-  'GOODS_COMM_OPS_LOGIN_WINDOW_MS',
-  'GOODS_COMM_OPS_LOGIN_LOCK_MS',
-  'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS',
-  'GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL',
-  'GOODS_COMM_ALIPAY_GATEWAY'
-]
-
 validateSyncInputs()
 
 const plan = [

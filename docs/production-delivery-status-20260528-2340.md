@@ -116,6 +116,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，prod 到 pre 同步审计 JSONL 增加分阶段记录：拿锁、工具检查、prod dump、pre reset、pre restore、pre 脱敏和可选 smoke 均记录状态、时间戳、耗时与失败原因；`smoke:prod-sync` 已用临时 fake PostgreSQL 工具覆盖成功执行和 `pg_restore` 失败审计。
 - 2026-05-29 续做后，`backend/db/pre-sync-anonymize.sql` 扩大脱敏范围：平台 openid/unionid、商品标题/描述/精确坐标、交易商品标题、位置审计坐标、图片原始文件名、审核标题和账号注销原因都会在 prod 数据恢复到 pre 后清理；`smoke:prod-sync` 已加入 SQL 条款防回归。
 - 2026-05-29 续做后，prod 到 pre reset/anonymize 会显式清理旧版 `bff_state_snapshots`，避免历史 JSON 快照把生产明细带入预上线或在 data-only restore 时发生旧快照主键冲突；`smoke:prod-sync` 已加入 reset/anonymize SQL 防回归。
+- 2026-05-30 续做后，生产审计和 prod 到 pre 同步脚本共用 `scripts/environment-topology.mjs` 中的 pre/prod 拓扑一致性清单；`smoke:prod-sync` 已覆盖接口级限流、认证主体限流和 PostgreSQL advisory lock 不一致时拒绝同步，避免审计和真实同步执行口径漂移。
 - 2026-05-29 续做后，prod 到 pre 脱敏会清空恢复数据里的图片 URL、COS `storage_key`、checksum、原始文件名和图片审核 trace；商品卡和详情页会忽略空 URL 的图片对象并回退到色块封面，避免预上线展示生产图片或对象存储路径。
 - 2026-05-29 续做后，后端 JSON、OPTIONS 和资产响应统一补充基础安全响应头：`x-content-type-options: nosniff`、`x-frame-options: DENY`、`referrer-policy: no-referrer`、`permissions-policy: geolocation=(), camera=(), microphone=()`；pre/prod 运行环境额外返回 HSTS。
 - 已提供 CloudBase 配置、Dockerfile、腾讯云部署说明。
