@@ -71,6 +71,10 @@ const region = await post('/lbs/resolve-region', {
 
 assert(region.communityId || region.streetId, 'region resolution did not return communityId or streetId')
 
+const unauthenticatedUpload = await uploadSmokeImageExpectError('')
+assertEqual(unauthenticatedUpload.status, 401, 'unauthenticated image upload status')
+assertEqual(unauthenticatedUpload.code, 'UNAUTHENTICATED', 'unauthenticated image upload code')
+
 const uploadedImage = await uploadSmokeImage(seller.token)
 const itemImage = selectPublishImage(uploadedImage)
 const itemPayload = {
@@ -80,6 +84,9 @@ const itemPayload = {
   condition: 'good',
   description: `部署后主链路烟测 ${environment}`,
   images: [itemImage],
+  sellerOpenid: `client-spoof-openid-${smokeRunId}`,
+  platformId: `client-spoof-platform-${smokeRunId}`,
+  contentSafetyOpenid: `client-spoof-content-safety-${smokeRunId}`,
   tradeScope: {
     type: scopeType,
     label: scopeType === 'street' ? '同街道' : '同社区',
@@ -98,11 +105,14 @@ assertEqual(item.status, 'online', 'published item status')
 assertEqual(replayedItem.id, item.id, 'replayed item id')
 assertEqual(item.location.communityId || region.communityId, region.communityId || item.location.communityId, 'published item region')
 assertPublicItemPrivacy(item, 'published item response')
+assertNoReviewIdentityFields(item, 'published item response')
+assertNoReviewIdentityFields(replayedItem, 'replayed item response')
 
 const list = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}&accuracy=${encodeURIComponent(accuracy.value)}&capturedAt=${encodeURIComponent(smokeCapturedAt.value)}`)
 const listedItem = toArray(list.items).find((candidate) => candidate.id === item.id)
 assert(listedItem, 'published item did not appear in public list')
 assertPublicItemPrivacy(listedItem, 'public list item')
+assertNoReviewIdentityFields(listedItem, 'public list item')
 assert(Number.isFinite(Number(listedItem.distanceMeters)), 'public list item distanceMeters')
 
 const tradePayload = {
@@ -171,6 +181,7 @@ findNotification(sellerNotificationsAfterComplete, 'trade_completed', trade.id, 
 const soldItem = await get(`/items/${encodeURIComponent(item.id)}`)
 assertEqual(soldItem.status, 'sold', 'completed trade item status')
 assertPublicItemPrivacy(soldItem, 'sold item detail')
+assertNoReviewIdentityFields(soldItem, 'sold item detail')
 const postSoldTradeError = await postExpectError('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreateAfterSold))
 assertEqual(postSoldTradeError.status, 409, 'post-sale trade rejection status')
 assertEqual(postSoldTradeError.code, 'CONFLICT', 'post-sale trade rejection code')
@@ -299,6 +310,7 @@ async function runAccountDeletionSmoke() {
   const deleteItem = await post('/items', deleteItemPayload, account.token, idempotencyOptions(idempotencyKeys.accountDeleteItem))
   assertEqual(deleteItem.status, 'online', 'account deletion smoke item status')
   assertPublicItemPrivacy(deleteItem, 'account deletion smoke item response')
+  assertNoReviewIdentityFields(deleteItem, 'account deletion smoke item response')
 
   const deletion = await post('/auth/delete-account', {
     reason: 'deployed_main_flow_smoke'
@@ -357,6 +369,12 @@ function assertPublicItemPrivacy(item = {}, label) {
   }
 }
 
+function assertNoReviewIdentityFields(item = {}, label) {
+  for (const key of ['sellerOpenid', 'platformId', 'contentSafetyOpenid', 'contentSafetyProvider', 'contentSafetyUserId', 'contentSafetyReviewer', 'moderation']) {
+    assertNoOwnKey(item, key, label)
+  }
+}
+
 function assertTradeContactHidden(trade = {}, label) {
   assertEqual(trade.contactCode || '', '', `${label} contact code`)
   assertEqual(trade.contactCodeExpiresAt || null, null, `${label} contact code expiry`)
@@ -383,6 +401,22 @@ function assertNoOwnKey(object = {}, key, label) {
 }
 
 async function uploadSmokeImage(token) {
+  return request('/uploads/items', {
+    method: 'POST',
+    token,
+    body: createSmokeImageForm()
+  })
+}
+
+async function uploadSmokeImageExpectError(token = '') {
+  return requestExpectError('/uploads/items', {
+    method: 'POST',
+    token,
+    body: createSmokeImageForm()
+  })
+}
+
+function createSmokeImageForm() {
   const form = new FormData()
   const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4])
 
@@ -391,11 +425,7 @@ async function uploadSmokeImage(token) {
     type: 'image/png'
   }), 'deployed-smoke-item.png')
 
-  return request('/uploads/items', {
-    method: 'POST',
-    token,
-    body: form
-  })
+  return form
 }
 
 async function get(path, token = '') {
