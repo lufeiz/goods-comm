@@ -153,6 +153,15 @@ function addArtifactSmokeChecks() {
     command: process.execPath,
     args: ['scripts/artifact-smoke.mjs', '--profile', profile]
   })
+  steps.push({
+    name: 'smoke:h5:render',
+    command: process.execPath,
+    args: [
+      'scripts/h5-render-smoke.mjs',
+      '--dist',
+      profile === 'quick' ? 'dist/build/h5' : 'dist/build/dev/h5'
+    ]
+  })
 }
 
 async function listJavaScriptFiles(dir) {

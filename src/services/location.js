@@ -38,6 +38,11 @@ export function getSavedLocationProfile(options = {}) {
 
 export function getCurrentLocation() {
   return new Promise((resolve, reject) => {
+    if (isBrowserRuntime()) {
+      getBrowserCurrentLocation().then(resolve).catch(reject)
+      return
+    }
+
     if (typeof uni === 'undefined' || !uni.getLocation) {
       getBrowserCurrentLocation().then(resolve).catch(reject)
       return

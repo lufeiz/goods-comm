@@ -198,6 +198,15 @@ function isAnonymousWeixinProfile(userInfo) {
 
 function requestLogin() {
   return new Promise((resolve, reject) => {
+    if (getRuntimePlatform() === 'h5') {
+      const browserLogin = createBrowserLogin()
+
+      if (browserLogin) {
+        resolve(browserLogin)
+        return
+      }
+    }
+
     if (typeof uni === 'undefined' || !uni.login) {
       const browserLogin = createBrowserLogin()
 
@@ -226,6 +235,15 @@ function requestLogin() {
 
 function requestUserProfile() {
   return new Promise((resolve, reject) => {
+    if (getRuntimePlatform() === 'h5') {
+      const browserProfile = createBrowserProfile()
+
+      if (browserProfile) {
+        resolve(browserProfile)
+        return
+      }
+    }
+
     if (typeof uni !== 'undefined' && uni.getUserProfile) {
       uni.getUserProfile({
         desc: '用于展示社区交易昵称与头像',

@@ -67,6 +67,7 @@
     "smoke:backend:artifact": "node scripts/backend-artifact-smoke.mjs",
     "smoke:pages": "node scripts/page-contract-smoke.mjs",
     "smoke:main-flow-contract": "node scripts/main-flow-contract-smoke.mjs",
+    "smoke:h5:render": "node scripts/h5-render-smoke.mjs",
     "smoke:workflows": "node scripts/workflow-smoke.mjs",
     "smoke:backend:env": "node scripts/backend-env-smoke.mjs",
     "smoke:backend": "node scripts/backend-smoke.mjs",

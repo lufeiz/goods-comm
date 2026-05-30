@@ -73,6 +73,8 @@ function assertReleaseGateProfileBoundary() {
     "args: ['scripts/production-readiness-audit.mjs']",
     "if (profile !== 'release')",
     "'smoke:main-flow-contract'",
+    "name: 'smoke:h5:render'",
+    "'scripts/h5-render-smoke.mjs'",
     'quick/full profiles are CI or release-candidate gates only',
     'do not fail on remaining production blockers',
     'Run npm run verify:release:strict before a real pre/prod release.'

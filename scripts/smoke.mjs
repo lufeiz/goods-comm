@@ -121,7 +121,7 @@ function installLocationUni(options = {}) {
   }
 }
 
-function installH5Runtime() {
+function installH5Runtime(options = {}) {
   const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window')
   const navigatorDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
   const originalUni = {
@@ -168,11 +168,19 @@ function installH5Runtime() {
 
   globalThis.uni.getSetting = undefined
   globalThis.uni.authorize = undefined
-  globalThis.uni.getLocation = undefined
+  globalThis.uni.getLocation = options.exposeUnsupportedUniLocation
+    ? ({ fail }) => fail?.({ errMsg: 'getLocation:fail translate coordinate system faild, map provider not configured or not supported' })
+    : undefined
   globalThis.uni.chooseLocation = undefined
-  globalThis.uni.login = undefined
-  globalThis.uni.getUserProfile = undefined
-  globalThis.uni.getUserInfo = undefined
+  globalThis.uni.login = options.exposeUnsupportedUniAuth
+    ? ({ fail }) => fail?.({ errMsg: 'login:fail provider h5 is not supported by this runtime' })
+    : undefined
+  globalThis.uni.getUserProfile = options.exposeUnsupportedUniAuth
+    ? ({ fail }) => fail?.({ errMsg: 'getUserProfile:fail unsupported in h5 runtime' })
+    : undefined
+  globalThis.uni.getUserInfo = options.exposeUnsupportedUniAuth
+    ? ({ fail }) => fail?.({ errMsg: 'getUserInfo:fail unsupported in h5 runtime' })
+    : undefined
   globalThis.uni.getSystemInfoSync = () => ({
     uniPlatform: 'web'
   })
@@ -376,6 +384,26 @@ try {
   assert.equal(h5User.token.startsWith('local_token_'), true)
 } finally {
   restoreH5Runtime()
+  storage.delete('goods.authUser')
+}
+
+const restoreH5UnsupportedUniAuthRuntime = installH5Runtime({
+  exposeUnsupportedUniAuth: true,
+  exposeUnsupportedUniLocation: true
+})
+try {
+  const h5LocationProfile = await getLocationProfile()
+  assert.equal(h5LocationProfile.error, null)
+  assert.equal(h5LocationProfile.source, 'gps')
+  assert.equal(h5LocationProfile.location.accuracy, 35)
+  assert.equal(h5LocationProfile.region.communityId, region.communityId)
+
+  const h5User = await loginWithPlatformProfile()
+  assert.equal(h5User.provider, 'h5')
+  assert.equal(h5User.nickname, 'H5 用户')
+  assert.equal(h5User.token.startsWith('local_token_'), true)
+} finally {
+  restoreH5UnsupportedUniAuthRuntime()
   storage.delete('goods.authUser')
 }
 
