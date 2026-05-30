@@ -471,6 +471,8 @@ assert.equal(published.images.length, 1)
 assert.equal(isGoodsTradeAvailable(published, seller), false)
 assert.equal(isGoodsTradeAvailable(published, buyer), true)
 assert.equal(listGoods({}).some((goods) => goods.id === published.id), false)
+assert.equal(listGoods({ currentLocation: null }).some((goods) => goods.id === published.id), false)
+assert.equal(listGoods({ currentLocation: undefined }).some((goods) => goods.id === published.id), false)
 assert.equal(listGoods({ currentLocation: nearUser }).some((goods) => goods.id === published.id), true)
 assert.equal(listGoods({ currentLocation: farUser }).some((goods) => goods.id === published.id), false)
 assert.throws(() => publishGoods({

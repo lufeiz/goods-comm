@@ -1744,11 +1744,15 @@ function normalizeRemoteDistance(item, currentLocation) {
   return null
 }
 
-function hasCoordinateLocation(location = {}) {
+function hasCoordinateLocation(location) {
+  if (!location || typeof location !== 'object') {
+    return false
+  }
+
   return Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude))
 }
 
-function hasTrustedListLocation(location = {}) {
+function hasTrustedListLocation(location) {
   if (!hasCoordinateLocation(location)) {
     return false
   }
