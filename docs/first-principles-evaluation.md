@@ -126,7 +126,7 @@
 
 ### 3.10 商品展示缺少真实二手交易所需的图片能力
 
-当前商品卡片和详情页已经支持真实图片展示，发布页要求至少 1 张图片；有远端 API 时走 `/uploads/items`，Node HTTP 后端已经支持 multipart 图片字节落盘、返回 `storageKey` / `size` / `mimeType` / `checksum` / `traceId`，并通过 `/assets/...` 读取；BFF 会将未完成服务端审核的图片商品置为 `pending_review`，并可通过 `/moderation/media/:traceId/review` 接收微信异步图片审核结果。文本命中违禁词时，BFF 和本地演示路径都会拒绝发布并记录审核事件，避免无远端 API 时绕过内容审核。
+当前商品卡片和详情页已经支持真实图片展示，发布页要求至少 1 张图片；有远端 API 时走 `/uploads/items`，Node HTTP 后端已经支持 multipart 图片字节落盘、返回 `storageKey` / `size` / `mimeType` / `checksum` / `traceId`，并通过 `/assets/...` 读取；上传和发布审核都会先绑定服务端 session，微信内容安全使用 session 用户的 `openid`，不会信任客户端伪造的审核身份字段；BFF 会将未完成服务端审核的图片商品置为 `pending_review`，并可通过 `/moderation/media/:traceId/review` 接收微信异步图片审核结果。文本命中违禁词时，BFF 和本地演示路径都会拒绝发布并记录审核事件，避免无远端 API 时绕过内容审核。
 
 发布页也会根据返回状态给出不同反馈：`online` 商品提示已发布并回到集市，`pending_review` 商品提示已提交审核并引导到“我的发布”。这让发布成功、公开展示和审核中三个状态不再混在同一个提示里。
 

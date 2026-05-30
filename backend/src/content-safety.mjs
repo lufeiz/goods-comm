@@ -15,14 +15,14 @@ export function createContentSafetyClient(options = {}) {
 
   return {
     provider,
-    async reviewItemPayload(payload = {}) {
+    async reviewItemPayload(payload = {}, context = {}) {
       if (provider === 'mock') {
         return reviewTextWithMock(payload)
       }
 
-      return reviewTextWithWeChat(payload, createWeChatConfig(options))
+      return reviewTextWithWeChat(payload, createWeChatConfig(options), context)
     },
-    async reviewUploadedImage(file = {}) {
+    async reviewUploadedImage(file = {}, context = {}) {
       if (provider === 'mock') {
         return {
           ...file,
@@ -31,7 +31,7 @@ export function createContentSafetyClient(options = {}) {
         }
       }
 
-      return reviewImageWithWeChat(file, createWeChatConfig(options))
+      return reviewImageWithWeChat(file, createWeChatConfig(options), context)
     }
   }
 }
@@ -69,7 +69,7 @@ function reviewTextWithMock(payload = {}) {
   }
 }
 
-async function reviewTextWithWeChat(payload = {}, config) {
+async function reviewTextWithWeChat(payload = {}, config, context = {}) {
   assertWeChatConfigured(config)
   const content = `${payload.title || ''} ${payload.description || ''}`.trim()
 
@@ -94,7 +94,7 @@ async function reviewTextWithWeChat(payload = {}, config) {
       content,
       version: 2,
       scene: 2,
-      openid: payload.sellerOpenid || payload.platformId || ''
+      openid: context.openid || ''
     })
   })
   const body = await parseJsonResponse(response)
@@ -134,7 +134,7 @@ async function reviewTextWithWeChat(payload = {}, config) {
   }
 }
 
-async function reviewImageWithWeChat(file = {}, config) {
+async function reviewImageWithWeChat(file = {}, config, context = {}) {
   assertWeChatConfigured(config)
 
   if (!file.url || !String(file.url).startsWith('https://')) {
@@ -158,7 +158,7 @@ async function reviewImageWithWeChat(file = {}, config) {
       media_type: 2,
       version: 2,
       scene: 2,
-      openid: file.ownerOpenid || ''
+      openid: context.openid || ''
     })
   })
   const body = await parseJsonResponse(response)

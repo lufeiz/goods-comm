@@ -35,6 +35,7 @@ const wechatSafety = createContentSafetyClient({
     if (String(url).includes('/wxa/msg_sec_check')) {
       const body = JSON.parse(options.body)
       assert.equal(body.content, '普通商品 干净描述')
+      assert.equal(body.openid, 'openid-from-session')
       return jsonResponse({
         errcode: 0,
         result: {
@@ -46,6 +47,7 @@ const wechatSafety = createContentSafetyClient({
     if (String(url).includes('/wxa/media_check_async')) {
       const body = JSON.parse(options.body)
       assert.equal(body.media_url, 'https://cdn.example.com/assets/items/1.png')
+      assert.equal(body.openid, 'openid-from-session')
       return jsonResponse({
         errcode: 0,
         trace_id: 'trace-media'
@@ -58,12 +60,16 @@ const wechatSafety = createContentSafetyClient({
 const wechatText = await wechatSafety.reviewItemPayload({
   title: '普通商品',
   description: '干净描述'
+}, {
+  openid: 'openid-from-session'
 })
 assert.equal(wechatText.moderation.status, 'approved_auto')
 
 const wechatImage = await wechatSafety.reviewUploadedImage({
   url: 'https://cdn.example.com/assets/items/1.png',
   status: 'uploaded'
+}, {
+  openid: 'openid-from-session'
 })
 assert.equal(wechatImage.status, 'pending_review')
 assert.equal(wechatImage.moderationStatus, 'pending_media_review')

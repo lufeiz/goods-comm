@@ -123,6 +123,10 @@ export async function handleBffRequest(path, options = {}, state = createBffStat
   return withIdempotency(path, method, options, state, () => routeBffRequest(path, method, options, state))
 }
 
+export function resolveAuthenticatedUser(options = {}, state = createBffState()) {
+  return requireUser(options, state)
+}
+
 export function resolveIdempotencyReplay(path, options = {}, state = createBffState()) {
   const method = options.method || 'GET'
   const idempotencyKey = normalizeIdempotencyKey(resolveIdempotencyKey(options))
@@ -487,6 +491,21 @@ function stripIdempotencyFields(value) {
     .map(([key, entry]) => [key, stripIdempotencyFields(entry)]))
 }
 
+function stripServerOnlyItemFields(payload = {}) {
+  const {
+    moderation: _moderation,
+    sellerOpenid: _sellerOpenid,
+    contentSafetyOpenid: _contentSafetyOpenid,
+    contentSafetyProvider: _contentSafetyProvider,
+    contentSafetyUserId: _contentSafetyUserId,
+    contentSafetyReviewer: _contentSafetyReviewer,
+    platformId: _platformId,
+    ...itemPayload
+  } = payload || {}
+
+  return itemPayload
+}
+
 function stableStringify(value) {
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(',')}]`
@@ -787,7 +806,7 @@ function createItem(options = {}, state) {
   }
 
   const item = normalizeItem({
-    ...payload,
+    ...stripServerOnlyItemFields(payload),
     id: createId('item'),
     seller: normalizeUserForItem(user),
     images,

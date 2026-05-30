@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
 import { isIP } from 'node:net'
-import { handleBffRequest, isIdempotentRequest, resolveIdempotencyReplay } from '../../src/bff/handler.js'
+import { handleBffRequest, isIdempotentRequest, resolveAuthenticatedUser, resolveIdempotencyReplay } from '../../src/bff/handler.js'
 import { normalizeBffHttpError } from '../../src/bff/http-error.js'
 import { createRuntimeStateStore } from './state-store.mjs'
 import { createPlatformAuthResolver } from './platform-auth.mjs'
@@ -469,6 +469,24 @@ export function createGoodsCommServer(options = {}) {
         }
       }
 
+      if (url.pathname === '/uploads/items' && method === 'UPLOAD') {
+        const uploadUser = await resolveBffAuthenticatedUser(store, {
+          method,
+          data,
+          header: {
+            Authorization: request.headers.authorization || ''
+          }
+        })
+
+        data = {
+          ...data,
+          file: await contentSafety.reviewUploadedImage(
+            await objectStore.saveItemImage(data.file),
+            createContentSafetyReviewContext(uploadUser)
+          )
+        }
+      }
+
       if (url.pathname === '/items' && method === 'POST') {
         const regionResolvedData = {
           ...data,
@@ -477,30 +495,32 @@ export function createGoodsCommServer(options = {}) {
             serverRegion: await regionResolver.resolveRegion(data.location)
           }
         }
+        const publishData = stripClientSuppliedReviewIdentity(regionResolvedData)
 
-        if (hasRequestIdempotencyKey(request, regionResolvedData)) {
-          const replay = await replayBffIdempotencyBeforeExternalReview(store, url.pathname, {
-            method,
-            data: regionResolvedData,
-            header: {
-              Authorization: request.headers.authorization || '',
-              'Idempotency-Key': request.headers['idempotency-key'] || request.headers['x-idempotency-key'] || ''
-            }
-          })
-
-          if (replay.handled) {
-            sendResponse(response, 200, {
-              data: replay.response,
-              trace: {
-                traceId,
-                durationMs: Date.now() - startedAt
-              }
-            }, traceId, corsContext)
-            return
+        const reviewPreflight = await prepareBffRequestBeforeExternalReview(store, url.pathname, {
+          method,
+          data: publishData,
+          header: {
+            Authorization: request.headers.authorization || '',
+            'Idempotency-Key': request.headers['idempotency-key'] || request.headers['x-idempotency-key'] || ''
           }
+        })
+
+        if (reviewPreflight.replay.handled) {
+          sendResponse(response, 200, {
+            data: reviewPreflight.replay.response,
+            trace: {
+              traceId,
+              durationMs: Date.now() - startedAt
+            }
+          }, traceId, corsContext)
+          return
         }
 
-        data = await contentSafety.reviewItemPayload(regionResolvedData)
+        data = await contentSafety.reviewItemPayload(
+          publishData,
+          createContentSafetyReviewContext(reviewPreflight.user)
+        )
       }
 
       if (url.pathname === '/trades' && method === 'POST') {
@@ -573,8 +593,53 @@ async function runBffTransactionWithNotifications(store, platformNotifier, path,
   return result
 }
 
-async function replayBffIdempotencyBeforeExternalReview(store, path, requestOptions = {}) {
-  return store.transact(async (state) => resolveIdempotencyReplay(path, requestOptions, state))
+async function prepareBffRequestBeforeExternalReview(store, path, requestOptions = {}) {
+  return store.transact(async (state) => {
+    const user = resolveAuthenticatedUser(requestOptions, state)
+    const replay = resolveIdempotencyReplay(path, requestOptions, state)
+
+    return {
+      user: sanitizeContentSafetyUser(user),
+      replay
+    }
+  })
+}
+
+async function resolveBffAuthenticatedUser(store, requestOptions = {}) {
+  return store.transact(async (state) => sanitizeContentSafetyUser(resolveAuthenticatedUser(requestOptions, state)))
+}
+
+function sanitizeContentSafetyUser(user = {}) {
+  return {
+    id: user.id || '',
+    provider: user.provider || '',
+    platformId: user.platformId || '',
+    unionId: user.unionId || ''
+  }
+}
+
+function createContentSafetyReviewContext(user = {}) {
+  const provider = String(user.provider || '').trim().toLowerCase()
+
+  return {
+    userId: user.id || '',
+    provider,
+    openid: provider === 'weixin' ? user.platformId || '' : ''
+  }
+}
+
+function stripClientSuppliedReviewIdentity(data = {}) {
+  const {
+    sellerOpenid: _sellerOpenid,
+    contentSafetyOpenid: _contentSafetyOpenid,
+    contentSafetyProvider: _contentSafetyProvider,
+    contentSafetyUserId: _contentSafetyUserId,
+    contentSafetyReviewer: _contentSafetyReviewer,
+    platformId: _platformId,
+    ...payload
+  } = data || {}
+
+  return payload
 }
 
 function dispatchPlatformNotifications(platformNotifier, store, deliveryRecords = [], pendingNotifications = [], users = [], context = {}) {
@@ -953,14 +1018,6 @@ function getIdempotencyKeyFromRequest(request = {}) {
   return String(request.headers?.['idempotency-key'] || request.headers?.['x-idempotency-key'] || '').trim()
 }
 
-function hasRequestIdempotencyKey(request = {}, data = {}) {
-  return Boolean(
-    getIdempotencyKeyFromRequest(request) ||
-    data?.idempotencyKey ||
-    data?.clientRequestId
-  )
-}
-
 function assertProtectedWriteIdempotency(path, method, request = {}, environment = 'dev') {
   if (!PROTECTED_ENVIRONMENTS.includes(environment) || !isIdempotentRequest(path, method)) {
     return
@@ -1057,7 +1114,7 @@ async function parseRequestData(request, url, objectStore, contentSafety, maxReq
     if (url.pathname === '/uploads/items' && form.file) {
       return {
         ...form.fields,
-        file: await contentSafety.reviewUploadedImage(await objectStore.saveItemImage(form.file))
+        file: form.file
       }
     }
 

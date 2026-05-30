@@ -184,7 +184,8 @@ usage: item_image
 - Node HTTP 后端本地环境会将 multipart 图片字节写入 `GOODS_COMM_OBJECT_DIR`，返回 `/assets/...` URL，并保留 `storageKey`、大小、MIME、原文件名和 SHA-256 校验值。
 - `/assets/...` 读取缺失对象时返回 HTTP `404` 和错误码 `NOT_FOUND`，避免客户端把资源缺失误判为请求参数错误。
 - `pre/prod` 必须使用 `GOODS_COMM_OBJECT_STORE=cos`，本地对象存储会被后端启动保护拒绝；COS 适配器会上传到腾讯 COS，并返回 CDN URL、`storageKey`、大小、MIME、原文件名和 SHA-256 校验值。
-- `pre/prod` 必须使用 `GOODS_COMM_CONTENT_SECURITY_PROVIDER=wechat`；上传图片会提交微信异步图片审核并保留 `traceId`，返回 `pending_review` 时商品不会进入公开列表。
+- Node HTTP 后端会先用 `Authorization` 解析服务端 session，再保存上传字节并触发图片内容安全；未登录或过期 token 不应先写对象存储，也不能触发外部图片审核。
+- `pre/prod` 必须使用 `GOODS_COMM_CONTENT_SECURITY_PROVIDER=wechat`；上传图片会提交微信异步图片审核并保留 `traceId`，返回 `pending_review` 时商品不会进入公开列表；微信审核请求使用服务端 session 绑定的微信 `openid`，不能信任 multipart 字段或客户端提交的 `ownerOpenid`。
 
 ## 4. 商品
 
@@ -295,7 +296,8 @@ usage: item_image
 - 无法解析到社区 / 街道时必须拒绝发布，避免生成不可交易商品。
 - 文本命中违禁词时直接拒绝，记录审核事件，不写入普通商品表。
 - 本地演示路径也执行同样的违禁词拒绝语义，避免无远端 API 时绕过内容审核。
-- Node HTTP 后端会在 `/items` 发布前先补齐服务端区域解析并执行幂等重放预检，只有非重放请求才进入内容安全适配器：`dev/test` 使用 mock，`pre/prod` 使用微信内容安全；审核拒绝时返回 `422 VALIDATION_ERROR`，待复核时返回 `pending_review`。
+- Node HTTP 后端会在 `/items` 发布前先补齐服务端区域解析、解析服务端 session，并执行幂等重放预检，只有非重放请求才进入内容安全适配器：`dev/test` 使用 mock，`pre/prod` 使用微信内容安全；审核拒绝时返回 `422 VALIDATION_ERROR`，待复核时返回 `pending_review`。
+- 文本内容安全的微信 `openid` 只来自服务端 session 绑定用户；客户端提交的 `sellerOpenid`、`platformId` 或其他审核身份字段会被忽略，且不会写入商品响应或持久化商品。
 - 审核拒绝虽然对客户端返回错误，但必须保留 `moderation_events` 审计记录；BFF 使用显式 `commitStateOnError` 标记让 file/PostgreSQL store 提交审核拒绝事件后继续返回 `422`，不能依赖本地文件 store 的异常落盘副作用。
 - 图片未完成服务端上传 / 审核时，商品进入 `pending_review`，不进入公开列表或公开详情。
 - 图片和文本通过自动审核时，当前 BFF 示例返回 `online` + `reviewStatus: approved_auto`；生产环境可按策略改为人工或异步审核后再上架。

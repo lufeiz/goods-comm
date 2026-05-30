@@ -401,7 +401,7 @@ wx17450fc9a94221e4
 
 ### 5. 发布身份仍未接真实平台身份
 
-当前发布页已经通过 `requireStoredAuthUser()` 强制登录，且要求发布位置能解析到社区/街道；BFF 发布接口也会从未过期、未吊销的 session token hash 绑定卖家，不接受客户端伪造 seller，并要求发布定位未过期、带精度、满足精度阈值，再重算发布位置归属。session token 已改为服务端随机生成，服务端只持久化基于 `GOODS_COMM_SESSION_SECRET` 的 HMAC-SHA256 `tokenHash`，pre/prod 缺真实会话密钥时会拒绝签发 session。运营侧已补用户封禁 / 解封，封禁会吊销 session、下架活跃发布并把相关活跃交易转入争议。但本地环境仍没有真实平台 AppID/AppSecret、云端 openid/unionid 验证和真实数据库连接验证。正式环境下，发布记录仍必须绑定服务端用户 ID，并经过服务端审核和归属校验。
+当前发布页已经通过 `requireStoredAuthUser()` 强制登录，且要求发布位置能解析到社区/街道；BFF 发布接口也会从未过期、未吊销的 session token hash 绑定卖家，不接受客户端伪造 seller，并要求发布定位未过期、带精度、满足精度阈值，再重算发布位置归属。Node HTTP 层在图片上传和文本审核前也会先解析服务端 session，微信内容安全 `openid` 来自 session 绑定用户，客户端传入的 `sellerOpenid` / `platformId` 等审核身份字段会被忽略并从商品入库字段里剥离。session token 已改为服务端随机生成，服务端只持久化基于 `GOODS_COMM_SESSION_SECRET` 的 HMAC-SHA256 `tokenHash`，pre/prod 缺真实会话密钥时会拒绝签发 session。运营侧已补用户封禁 / 解封，封禁会吊销 session、下架活跃发布并把相关活跃交易转入争议。但本地环境仍没有真实平台 AppID/AppSecret、云端 openid/unionid 验证和真实数据库连接验证。正式环境下，发布记录仍必须绑定服务端用户 ID，并经过服务端审核和归属校验。
 
 发布后的展示也已经和审核状态对齐：接口返回 `pending_review` 时，发布页提示“已提交审核”并引导到“我的发布”；只有公开上架的商品才提示“已发布”并回到集市，避免待审商品在公开列表不可见造成误解。
 
@@ -415,7 +415,7 @@ wx17450fc9a94221e4
 
 ### 7. 图片与内容审核需要接真实基础设施
 
-商品卡片和详情页已支持图片展示，发布页强制至少 1 张图片；远端模式走 `/uploads/items`；Node HTTP 后端已支持 multipart 图片字节落盘、返回 `storageKey` / `size` / `mimeType` / `checksum` / `traceId`，并可通过 `/assets/...` 读取，资源缺失会返回 `404 NOT_FOUND`；发布时 `uploaded` 图片必须匹配当前卖家的上传记录，不能复用其他账号上传或客户端伪造的已审核 URL；BFF 和本地演示路径都会拒绝违禁词提交和同名活跃商品重复发布，BFF 还支持 `pending_review`、按微信图片 `trace_id` 回调审核、举报对象/原因/权限校验、重复举报幂等、写请求幂等键回放、高风险举报下架并将活跃交易转入争议，以及运营处理举报后恢复误报商品或确认下架。HTTP 发布入口已把服务端区域解析和幂等重放放在外部文本内容安全之前，同一幂等键的成功发布、审核拒绝重放或冲突重用都不会重复调用外部文本审核。真实生产仍需要把本地对象存储适配器替换为 COS / CloudBase storage，配置微信异步回调、图片压缩和后台复核台。
+商品卡片和详情页已支持图片展示，发布页强制至少 1 张图片；远端模式走 `/uploads/items`；Node HTTP 后端已支持 multipart 图片字节落盘、返回 `storageKey` / `size` / `mimeType` / `checksum` / `traceId`，并可通过 `/assets/...` 读取，资源缺失会返回 `404 NOT_FOUND`；上传请求会先校验服务端 session，再写对象存储并用 session 绑定的微信 `openid` 调用图片审核；发布时 `uploaded` 图片必须匹配当前卖家的上传记录，不能复用其他账号上传或客户端伪造的已审核 URL；BFF 和本地演示路径都会拒绝违禁词提交和同名活跃商品重复发布，BFF 还支持 `pending_review`、按微信图片 `trace_id` 回调审核、举报对象/原因/权限校验、重复举报幂等、写请求幂等键回放、高风险举报下架并将活跃交易转入争议，以及运营处理举报后恢复误报商品或确认下架。HTTP 发布入口已把服务端区域解析、session 审核身份绑定和幂等重放放在外部文本内容安全之前，同一幂等键的成功发布、审核拒绝重放或冲突重用都不会重复调用外部文本审核，也不会接受客户端伪造审核身份。真实生产仍需要把本地对象存储适配器替换为 COS / CloudBase storage，配置微信异步回调、图片压缩和后台复核台。
 
 建议优先级：P1。
 

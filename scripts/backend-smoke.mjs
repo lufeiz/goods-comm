@@ -12,6 +12,7 @@ const allowedOrigin = 'https://mini.example.com'
 const deliveredPlatformNotifications = []
 const failedPlatformNotificationTypes = new Set(['trade_reviewed'])
 const reviewedItemPayloads = []
+const reviewedUploadedImages = []
 const mockContentSafety = createContentSafetyClient({
   environment: 'test',
   contentSafetyProvider: 'mock'
@@ -44,11 +45,20 @@ const runtime = await startGoodsCommServer({
   maxRequestBytes: 16 * 1024,
   contentSafety: {
     provider: mockContentSafety.provider,
-    reviewItemPayload: async (payload = {}) => {
-      reviewedItemPayloads.push(payload)
+    reviewItemPayload: async (payload = {}, context = {}) => {
+      reviewedItemPayloads.push({
+        payload,
+        context
+      })
       return mockContentSafety.reviewItemPayload(payload)
     },
-    reviewUploadedImage: async (file = {}) => mockContentSafety.reviewUploadedImage(file)
+    reviewUploadedImage: async (file = {}, context = {}) => {
+      reviewedUploadedImages.push({
+        file,
+        context
+      })
+      return mockContentSafety.reviewUploadedImage(file)
+    }
   },
   platformNotifier: {
     provider: 'mock',
@@ -181,6 +191,8 @@ try {
   assert.equal(upload.size, uploadBytes.length)
   assert.equal(upload.checksum.length, 64)
   assert.equal(upload.url.startsWith('/assets/items/'), true)
+  assert.equal(reviewedUploadedImages.length, 1)
+  assert.equal(reviewedUploadedImages[0].context.openid, seller.user.platformId)
 
   const asset = await fetch(`${baseUrl}${upload.url}`, {
     headers: {
@@ -350,6 +362,8 @@ try {
     condition: 'good',
     description: '相同幂等键重复提交必须返回同一商品',
     images: [upload],
+    sellerOpenid: 'client-spoof-openid',
+    platformId: 'client-spoof-platform-id',
     tradeScope: {
       type: 'community',
       label: '同社区',
@@ -370,6 +384,12 @@ try {
   })
   assert.equal(replayedItem.id, idempotentItem.id)
   assert.equal(reviewedItemPayloads.length - itemReviewCallsBeforeIdempotentCreate, 1)
+  const idempotentReviewCall = reviewedItemPayloads[itemReviewCallsBeforeIdempotentCreate]
+  assert.equal(idempotentReviewCall.context.openid, seller.user.platformId)
+  assert.equal(idempotentReviewCall.payload.sellerOpenid, undefined)
+  assert.equal(idempotentReviewCall.payload.platformId, undefined)
+  assert.equal(idempotentItem.sellerOpenid, undefined)
+  assert.equal(idempotentItem.platformId, undefined)
   const reusedIdempotencyKey = await requestExpectError(`${baseUrl}/items`, {
     method: 'POST',
     token: seller.token,
@@ -424,6 +444,7 @@ try {
   assert.equal(replayedRejectedContentItem.code, 'VALIDATION_ERROR')
   assert.match(replayedRejectedContentItem.message, /商品未通过审核/)
   assert.equal(reviewedItemPayloads.length - itemReviewCallsBeforeRejectedContent, 1)
+  assert.equal(reviewedItemPayloads[itemReviewCallsBeforeRejectedContent].context.openid, seller.user.platformId)
 
   const stateAfterRejectedContent = JSON.parse(await readFile(statePath, 'utf8'))
   assert.equal(stateAfterRejectedContent.moderationEvents.filter((event) =>
