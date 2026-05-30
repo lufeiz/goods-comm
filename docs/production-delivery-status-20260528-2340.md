@@ -110,6 +110,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，后端部署 plan 的缺失前置项已与生产审计口径对齐：会列出真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，避免真实部署前遗漏运营后台或代理安全配置。
 - 2026-05-29 续做后，真实后端部署脚本在 deploy execute 成功后会默认执行 deployed health smoke；如需把写入型主链路验证绑定到同一次部署命令，可用 `--run-main-smoke` / `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会提前校验 seller/buyer code、经纬度和 prod 写入 opt-in。
 - 2026-05-29 续做后，`scripts/deployed-health-smoke.mjs` 支持 `--attempts` / `--interval-ms`，真实部署脚本默认用 12 次、10 秒间隔等待 `/health` 和 `/health/ready`，避免云托管冷启动或滚动发布延迟导致刚部署即误判失败。
+- 2026-05-30 续做后，`scripts/deployed-health-smoke.mjs` 会同时断言 `/health` 和 `/health/ready` 的安全响应头；pre/prod 还会要求 HSTS，避免真实网关 / CDN 覆盖后端安全头时仍误判部署健康。
 - 2026-05-29 续做后，GitHub `release-strict` workflow 的独立 deployed health smoke 也支持手动调等待窗口：默认 12 次、10 秒间隔，可用 workflow 输入 `health_attempts` / `health_interval_ms` 透传到 `GOODS_COMM_SMOKE_HEALTH_ATTEMPTS` / `GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS`。
 - 2026-05-29 续做后，prod 到 pre 同步脚本的同步后 pre health smoke 也接入同一套重试等待：默认 12 次、10 秒间隔，可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整。
 - 2026-05-29 续做后，GitHub `prod-to-pre-sync` workflow 已透传同步后 pre health smoke 的重试等待：手动执行用 `health_attempts` / `health_interval_ms`，定时执行用仓库变量 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS`。
@@ -157,7 +158,7 @@ npm run verify:release
 - 2026-05-29 续做后，新增 `npm run smoke:pages` 并接入 `verify:release` / `verify:release:strict`，静态校验页面注册、tabBar、页面跳转、模板事件处理器和登录 / 定位 / 发布 / 交易 / 运营 / 协议关键 service 接入。
 - 2026-05-29 续做后，已用 Browser 打开本地 H5 构建产物 `http://127.0.0.1:4187/` 做渲染 QA：桌面首屏、搜索交互和 390x844 移动视口均能渲染核心内容，浏览器 console 无相关 error / warn；截图证据保存于 `/private/tmp/goods-comm-h5-qa/`，未写入仓库。
 - 2026-05-29 续做后，prod-to-pre 同步新增 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，可在同步并脱敏后自动跑 pre 主链路 smoke；GitHub `prod-to-pre-sync` workflow 已增加 `run_pre_main_smoke` 输入和所需 smoke secret 透传。
-- 2026-05-29 续做后，新增 `npm run smoke:deployed:local-health`，会启动本地 HTTP 后端并复用部署后 health smoke 脚本验证 `/health` 与 `/health/ready`；`verify:release` full profile 会在本地 HTTP 后端 smoke 后运行它。
+- 2026-05-29 续做后，新增 `npm run smoke:deployed:local-health`，会启动本地 HTTP 后端并复用部署后 health smoke 脚本验证 `/health`、`/health/ready` 和基础安全响应头；`verify:release` full profile 会在本地 HTTP 后端 smoke 后运行它。
 - 2026-05-29 续做后，新增 `npm run smoke:deployed:local-main`，会启动本地 HTTP 后端并复用部署后主链路 smoke 脚本验证登录、定位、上传、发布、交易、卖家确认、完成售出、评价和退出登录；`verify:release` full profile 会在本地 HTTP 后端 smoke 后运行它。
 - 2026-05-29 续做后，严格发布 workflow 已禁止“部署后端但关闭部署后 smoke”：启用 `run_backend_deploy=true` 时必须保持 `run_deployed_smoke=true`，否则 workflow 直接失败。
 - 2026-05-29 续做后，`verify:release:strict` 会用 `--require-deployed-smoke-inputs` 把 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 缺失从 warning 升级为 blocker。

@@ -38,29 +38,31 @@ async function waitForHealthy() {
 }
 
 async function assertHealthy() {
-const health = await getJson('/health')
-assertEqual(health.environment, environment, 'health.environment')
+  const health = await getJson('/health')
+  assertSecurityHeaders(health.headers, '/health')
+  assertEqual(health.data.environment, environment, 'health.environment')
 
-if (['pre', 'prod'].includes(environment)) {
-  assertEqual(health.stateStore, 'postgres', 'health.stateStore')
-  assertEqual(health.objectStore, 'cos', 'health.objectStore')
-  assertEqual(health.contentSafety, 'wechat', 'health.contentSafety')
-  assertEqual(health.mapProvider, 'tencent', 'health.mapProvider')
-  assertEqual(health.platformNotify, 'wechat', 'health.platformNotify')
-}
+  if (['pre', 'prod'].includes(environment)) {
+    assertEqual(health.data.stateStore, 'postgres', 'health.stateStore')
+    assertEqual(health.data.objectStore, 'cos', 'health.objectStore')
+    assertEqual(health.data.contentSafety, 'wechat', 'health.contentSafety')
+    assertEqual(health.data.mapProvider, 'tencent', 'health.mapProvider')
+    assertEqual(health.data.platformNotify, 'wechat', 'health.platformNotify')
+  }
 
-const ready = await getJson('/health/ready')
-assertEqual(ready.ok, true, 'ready.ok')
-assertEqual(ready.environment, environment, 'ready.environment')
+  const ready = await getJson('/health/ready')
+  assertSecurityHeaders(ready.headers, '/health/ready')
+  assertEqual(ready.data.ok, true, 'ready.ok')
+  assertEqual(ready.data.environment, environment, 'ready.environment')
 
-if (['pre', 'prod'].includes(environment)) {
-  assertEqual(ready.stateStore, 'postgres', 'ready.stateStore')
-  assertEqual(ready.objectStore, 'cos', 'ready.objectStore')
-  assertEqual(ready.contentSafety, 'wechat', 'ready.contentSafety')
-  assertEqual(ready.mapProvider, 'tencent', 'ready.mapProvider')
-  assertEqual(ready.platformNotify, 'wechat', 'ready.platformNotify')
-  assertPostgresReadiness(ready.readiness)
-}
+  if (['pre', 'prod'].includes(environment)) {
+    assertEqual(ready.data.stateStore, 'postgres', 'ready.stateStore')
+    assertEqual(ready.data.objectStore, 'cos', 'ready.objectStore')
+    assertEqual(ready.data.contentSafety, 'wechat', 'ready.contentSafety')
+    assertEqual(ready.data.mapProvider, 'tencent', 'ready.mapProvider')
+    assertEqual(ready.data.platformNotify, 'wechat', 'ready.platformNotify')
+    assertPostgresReadiness(ready.data.readiness)
+  }
 }
 
 function validateInputs() {
@@ -94,7 +96,10 @@ async function getJson(path) {
     throw new Error(`${path} response did not include data`)
   }
 
-  return body.data
+  return {
+    data: body.data,
+    headers: response.headers
+  }
 }
 
 function assertEqual(actual, expected, label) {
@@ -138,6 +143,35 @@ function assertPostgresReadiness(readiness = {}) {
 
   if (rowCountTotal !== currentRowCount) {
     throw new Error(`ready.readiness.rowCounts total ${rowCountTotal} does not equal currentRowCount ${currentRowCount}`)
+  }
+}
+
+function assertSecurityHeaders(headers, path) {
+  assertEqual(headers.get('x-content-type-options'), 'nosniff', `${path}.headers.x-content-type-options`)
+  assertEqual(headers.get('x-frame-options'), 'DENY', `${path}.headers.x-frame-options`)
+  assertEqual(headers.get('referrer-policy'), 'no-referrer', `${path}.headers.referrer-policy`)
+  assertRequiredHeaderDirectives(headers.get('permissions-policy') || '', [
+    'geolocation=()',
+    'camera=()',
+    'microphone=()'
+  ], `${path}.headers.permissions-policy`)
+
+  const strictTransportSecurity = headers.get('strict-transport-security') || ''
+
+  if (['pre', 'prod'].includes(environment)) {
+    if (!/max-age=15552000\b/i.test(strictTransportSecurity) || !/includeSubDomains/i.test(strictTransportSecurity)) {
+      throw new Error(`${path}.headers.strict-transport-security must include max-age=15552000 and includeSubDomains`)
+    }
+  } else if (strictTransportSecurity) {
+    throw new Error(`${path}.headers.strict-transport-security should only be set for pre/prod, got ${strictTransportSecurity}`)
+  }
+}
+
+function assertRequiredHeaderDirectives(value = '', directives = [], label) {
+  for (const directive of directives) {
+    if (!value.split(',').some((entry) => entry.trim() === directive)) {
+      throw new Error(`${label} must include ${directive}, got ${value || 'empty'}`)
+    }
   }
 }
 

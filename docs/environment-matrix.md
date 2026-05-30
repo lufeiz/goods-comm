@@ -144,7 +144,7 @@ npm run smoke:deployed:pre:main
 npm run smoke:deployed:prod
 ```
 
-`smoke:deployed:*` 会检查 `/health` 和 `/health/ready`，并确认 pre/prod 实际使用 `postgres`、`cos`、内容安全 `wechat`、地图 `tencent` 和平台通知 `wechat`。
+`smoke:deployed:*` 会检查 `/health` 和 `/health/ready`，确认 pre/prod 实际使用 `postgres`、`cos`、内容安全 `wechat`、地图 `tencent` 和平台通知 `wechat`，并断言 `x-content-type-options`、`x-frame-options`、`referrer-policy`、`permissions-policy` 等安全响应头未被云网关 / CDN 覆盖；pre/prod 还会要求 HSTS。
 
 `smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、未登录上传拒绝、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、一次性联系码格式 / 过期时间 / 完成后清空、买家完成、售出后拒绝二次交易、公开商品响应隐私脱敏、客户端伪造审核身份字段不外泄、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度；如果要把账号注销也纳入真实部署后验收，可额外提供独立一次性测试账号 `GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`，不要复用 seller/buyer 主烟测账号：
 
