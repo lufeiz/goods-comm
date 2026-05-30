@@ -164,7 +164,7 @@ src/pages/ops/ops.vue                  947
 
 ### 6.11 页面异常路径已修复，但仍需 E2E
 
-本轮已修复 `src/pages/ops/ops.vue:452-479` 的通知投递 fallback 作用域问题：运营队列结果提升为外层 `moderationQueue`，通知投递接口失败时可回退到队列里的 `notificationDeliveries`，或安全返回空数组。`scripts/page-contract-smoke.mjs:134-173` 增加了静态契约，防止再次引用作用域外 `queue.notificationDeliveries`。核心 H5 / 小程序页面也已补 `data-testid` 渲染测试锚点，覆盖首页、发布、详情、交易、我的、定位组件和商品卡片，`smoke:pages` 会阻断这些主流程测试锚点被误删。
+本轮已修复 `src/pages/ops/ops.vue:452-479` 的通知投递 fallback 作用域问题：运营队列结果提升为外层 `moderationQueue`，通知投递接口失败时可回退到队列里的 `notificationDeliveries`，或安全返回空数组。`scripts/page-contract-smoke.mjs:134-173` 增加了静态契约，防止再次引用作用域外 `queue.notificationDeliveries`。核心 H5 / 小程序页面也已补 `data-testid` 渲染测试锚点，覆盖首页、发布、详情、交易、我的、定位组件和商品卡片，`smoke:pages` 会阻断这些主流程测试锚点被误删，`smoke:artifacts` 会继续确认这些锚点在 H5 / 微信 / 支付宝编译产物中真实保留。
 
 这个修复降低了运营台异常路径风险，也为渲染级自动化提供了稳定定位元素。页面层仍需要把这些锚点接入 Playwright / 开发者工具 / 真机矩阵 E2E，并补接口失败模拟，而不能只依赖主路径 smoke。
 

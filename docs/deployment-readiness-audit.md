@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-30T01:41:18.675Z
+Generated: 2026-05-30T01:47:52.278Z
 Scope: pre, prod
 Result: BLOCKED (46 blockers, 9 warnings)
 
@@ -158,12 +158,12 @@ Local override: not present
 - dist/build/prod/mp-weixin exists
 - dist/build/prod/mp-alipay exists
 - dist/build/prod/h5 exists
-- pre h5 artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config
-- pre mp-weixin artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config
-- pre mp-alipay artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config
-- prod h5 artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config
-- prod mp-weixin artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config
-- prod mp-alipay artifact includes core pages, tabBar, key components, H5 route chunks, and runtime environment config
+- pre h5 artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config
+- pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config
+- pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config
+- prod h5 artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config
+- prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config
+- prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, H5 route chunks, and runtime environment config
 
 ## Deployed smoke readiness
 

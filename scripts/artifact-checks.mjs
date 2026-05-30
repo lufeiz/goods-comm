@@ -17,7 +17,8 @@ export async function createArtifactChecks(options = {}) {
     expectedTabPages,
     expectedTabLabels,
     expectedEnvironmentConfigs,
-    requiredComponents: ['GoodCard', 'LocationGuard', 'EligibilityTag']
+    requiredComponents: ['GoodCard', 'LocationGuard', 'EligibilityTag'],
+    requiredRenderedTestIds: createRequiredRenderedTestIds()
   }
   const targets = profile === 'quick'
     ? quickTargets(root)
@@ -103,6 +104,8 @@ async function verifyH5Target(target, context) {
   if (target.environment) {
     await verifyH5RuntimeConfig(target, context, assetNames)
   }
+
+  await verifyH5RenderedTestIds(target, context, assetNames)
 }
 
 async function verifyMiniProgramTarget(target, context) {
@@ -154,6 +157,117 @@ async function verifyMiniProgramTarget(target, context) {
       `${target.label}: runtime app config does not contain the expected API base URL`
     )
   }
+
+  await verifyMiniProgramRenderedTestIds(target, context, markupExtension)
+}
+
+function createRequiredRenderedTestIds() {
+  return {
+    pages: {
+      'pages/home/home': [
+        'home-page',
+        'home-publish-entry',
+        'home-search-input',
+        'home-search-button',
+        'home-good-list',
+        'home-empty-state'
+      ],
+      'pages/publish/publish': [
+        'publish-page',
+        'publish-form',
+        'publish-title-input',
+        'publish-price-input',
+        'publish-description-input',
+        'publish-image-add',
+        'publish-location-summary',
+        'publish-submit'
+      ],
+      'pages/detail/detail': [
+        'detail-page',
+        'detail-eligibility-panel',
+        'detail-refresh-eligibility',
+        'detail-choose-location',
+        'detail-report-button',
+        'detail-start-trade',
+        'detail-not-found'
+      ],
+      'pages/orders/orders': [
+        'orders-page',
+        'orders-summary',
+        'orders-login-required',
+        'orders-login-entry',
+        'orders-trade-list',
+        'orders-empty-state'
+      ],
+      'pages/mine/mine': [
+        'mine-page',
+        'mine-profile',
+        'mine-login-button',
+        'mine-agreement-toggle',
+        'mine-goods-list',
+        'mine-goods-empty'
+      ]
+    },
+    components: {
+      GoodCard: [
+        'good-card'
+      ],
+      LocationGuard: [
+        'location-guard',
+        'location-refresh',
+        'location-choose',
+        'location-error'
+      ]
+    }
+  }
+}
+
+async function verifyH5RenderedTestIds(target, context, assetNames) {
+  const jsAssetNames = assetNames.filter((name) => name.endsWith('.js'))
+  let jsBundleText = ''
+
+  for (const assetName of jsAssetNames) {
+    jsBundleText += await readExistingFile(join(target.directory, 'assets', assetName), target.label)
+    jsBundleText += '\n'
+  }
+
+  for (const testId of allRequiredRenderedTestIds(context)) {
+    assertCondition(
+      jsBundleText.includes(testId),
+      `${target.label}: H5 artifact is missing rendered test id ${testId}`
+    )
+  }
+}
+
+async function verifyMiniProgramRenderedTestIds(target, context, markupExtension) {
+  for (const [page, testIds] of Object.entries(context.requiredRenderedTestIds.pages)) {
+    const markup = await readExistingFile(join(target.directory, `${page}.${markupExtension}`), target.label)
+
+    for (const testId of testIds) {
+      assertCondition(
+        markup.includes(`data-testid="${testId}"`),
+        `${target.label}: ${page}.${markupExtension} is missing rendered test id ${testId}`
+      )
+    }
+  }
+
+  for (const [component, testIds] of Object.entries(context.requiredRenderedTestIds.components)) {
+    const markup = await readExistingFile(join(target.directory, `components/${component}.${markupExtension}`), target.label)
+
+    for (const testId of testIds) {
+      assertCondition(
+        markup.includes(`data-testid="${testId}"`),
+        `${target.label}: components/${component}.${markupExtension} is missing rendered test id ${testId}`
+      )
+    }
+  }
+}
+
+function allRequiredRenderedTestIds(context) {
+  return [
+    ...Object.values(context.requiredRenderedTestIds.pages).flat(),
+    ...Object.values(context.requiredRenderedTestIds.components).flat()
+  ]
 }
 
 async function verifyH5RuntimeConfig(target, context, assetNames) {

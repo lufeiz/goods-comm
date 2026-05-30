@@ -427,7 +427,7 @@ wx17450fc9a94221e4
 
 ### 9. 缺少完整测试体系
 
-当前 smoke 已覆盖领域层、本地 service、远端 service、BFF 契约、Fetch 适配、PostgreSQL store 和 HTTP 后端主链路；微信、支付宝、H5 和后端构建也能通过。现在已新增 `scripts/verify-release-gate.mjs`、`scripts/page-contract-smoke.mjs` 和 `.github/workflows/ci.yml`，CI / 发布候选门禁会运行语法检查、完整 smoke、HTTP 后端 smoke、页面契约 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告。2026-05-29 续做时还完成了一次本地 H5 Browser 渲染 QA，覆盖桌面首屏、搜索交互和移动视口；核心页面和关键组件已补 `data-testid` 渲染测试锚点，并由 `smoke:pages` 强制校验，避免后续 E2E 只能依赖中文文案或 CSS 结构。剩余缺口是把这些锚点接入可纳入 CI 的页面交互自动化、真机定位、开发者工具导入和设备矩阵验证。
+当前 smoke 已覆盖领域层、本地 service、远端 service、BFF 契约、Fetch 适配、PostgreSQL store 和 HTTP 后端主链路；微信、支付宝、H5 和后端构建也能通过。现在已新增 `scripts/verify-release-gate.mjs`、`scripts/page-contract-smoke.mjs` 和 `.github/workflows/ci.yml`，CI / 发布候选门禁会运行语法检查、完整 smoke、HTTP 后端 smoke、页面契约 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告。2026-05-29 续做时还完成了一次本地 H5 Browser 渲染 QA，覆盖桌面首屏、搜索交互和移动视口；核心页面和关键组件已补 `data-testid` 渲染测试锚点，并由 `smoke:pages` 强制校验，避免后续 E2E 只能依赖中文文案或 CSS 结构。`smoke:artifacts` 也会在编译后的 H5 JS chunk、微信 wxml 和支付宝 axml 里复核这些锚点实际保留，避免源码契约和真实产物脱节。剩余缺口是把这些锚点接入可纳入 CI 的页面交互自动化、真机定位、开发者工具导入和设备矩阵验证。
 
 建议优先级：P1。
 
