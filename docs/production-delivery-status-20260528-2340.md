@@ -28,7 +28,7 @@ Production readiness audit: BLOCKED (50 blockers, 9 warnings)
 - 已把逐项生产化方案沉淀到 `docs/production-hardening-plan.md`。
 - 已把接口契约沉淀到 `docs/api-contract.md`。
 - 已把数据库边界沉淀到 `docs/database-schema.md`。
-- 已把部署缺失项沉淀到 `docs/deployment-missing-info.md`。
+- 已把部署缺失项沉淀到 `docs/deployment-missing-info.md`，并把运行时覆盖模板和部署后 smoke 一次性输入模板拆开维护。
 - 已生成并刷新生产就绪审计：`docs/deployment-readiness-audit.md`。
 
 ### 2. 登录与账号体系
@@ -173,6 +173,7 @@ npm run verify:release
 - 2026-05-30 续做后，新增 `npm run smoke:request-logger` 并接入 `verify:release` / `verify:release:quick` / `verify:release:strict`，覆盖访问日志开关、JSON 输出、错误级别、query/header/body 不落日志、动态交易路径归一化和部署后 health smoke 的 `accessLog.enabled=true` 断言；`verify:release:quick -- --skip-http-backend` 当前 `98/98` 通过。
 - 2026-05-30 续做后，新增 `npm run github:push:preflight` 和 `smoke:github-push-preflight`，检查 `origin=https://github.com/lufeiz/goods-comm`、`main` upstream、工作区干净和 GitHub CLI token 的 `repo` / `workflow` scope；每天 21:00 的 `goods-comm-nightly-github-push` 自动化会在 quick release gate 通过后再执行该 preflight 并推送 `origin/main`。
 - 2026-05-30 续做后，新增 `.env.pre.local.example` / `.env.prod.local.example` 与 `npm run smoke:env-local-templates`，把真实 API、数据库、COS/CDN、地图、审核、session、运营账号、可信代理、告警、平台登录和订阅消息模板这些上线前置项变成可复制的本地覆盖模板，并纳入 release gate 自测。
+- 2026-05-30 续做后，新增 `.env.smoke.pre.example` / `.env.smoke.prod.example` 与 `npm run smoke:deployed-input-templates`，把部署后 health / main-flow smoke 的 API、一次性登录 code、坐标、已审核测试图、可选注销账号和生产写入 opt-in 变成可复制且可自检的输入模板，并强制生产模板默认不允许写入。
 - 2026-05-29 续做后，运营台通知投递 fallback 修复已通过 `node --check scripts/page-contract-smoke.mjs`、`npm run smoke:pages`、`npm run smoke:bff` 和 `npm run verify:release:quick -- --skip-http-backend` 验证；quick release gate 84/84 通过并重建 backend、H5、微信、支付宝默认产物。
 - 2026-05-29 续做后，生产就绪审计的 Build artifacts 区域也会运行后端 artifact smoke，把后端部署包完整性和容器生产依赖安装步骤纳入权威审计报告。
 - 最新生产就绪审计仍是 `BLOCKED (50 blockers, 9 warnings)`，严格审计仍是 `BLOCKED (52 blockers, 7 warnings)`；2026-05-29 续做后，区域网格配置格式阻塞已解除，并新增可信代理配置缺失项作为上线前真实环境输入；2026-05-30 续做后，生产告警 Webhook URL/token 与结构化访问日志配置都已纳入审计和部署后 health smoke，剩余阻塞仍来自真实云资源、密钥、工具链、可信代理 IP / 网段、生产告警真实值、云侧日志采集和部署后验证。

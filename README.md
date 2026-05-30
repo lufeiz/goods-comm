@@ -53,7 +53,7 @@ npm run audit:production-readiness
 npm run audit:production-readiness -- --check-only
 ```
 
-审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。
+审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。部署后 health / main-flow smoke 的一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制到 `.env.smoke.pre.local` / `.env.smoke.prod.local` 后加载，模板完整性由 `npm run smoke:deployed-input-templates` 校验。
 
 prod 到 pre 数据同步同时支持手动和自动定时入口；真实执行前必须替换数据库连接串并准备 PostgreSQL 工具：
 
@@ -109,6 +109,18 @@ git push origin main
 ```
 
 `github:push:preflight` 会检查 `origin=https://github.com/lufeiz/goods-comm`、`main` 跟踪 `origin/main`、工作区干净，以及 GitHub CLI token 具备 `repo` 和 `workflow` scope，避免 `.github/workflows/*.yml` 因权限不足推送失败。
+
+真实部署后 smoke 可先加载对应环境的一次性输入模板：
+
+```bash
+cp .env.smoke.pre.example .env.smoke.pre.local
+# replace login codes, coordinates, API URL and approved image URL
+set -a; source .env.smoke.pre.local; set +a
+npm run smoke:deployed:pre
+npm run smoke:deployed:pre:main
+```
+
+生产主链路 smoke 会写真实数据，`.env.smoke.prod.example` 默认保持 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=false`，必须在明确批准对应生产 smoke 运行时才改为 `true`。
 
 GitHub Actions 中有两个门禁：
 

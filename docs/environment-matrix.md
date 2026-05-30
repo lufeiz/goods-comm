@@ -24,7 +24,7 @@
 - `.env.pre`
 - `.env.prod`
 
-这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。
+这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。部署后 health / main-flow smoke 的一次性输入使用 `.env.smoke.pre.example` / `.env.smoke.prod.example` 单独维护，复制到 `.env.smoke.*.local` 后由 shell 加载，模板覆盖度由 `npm run smoke:deployed-input-templates` 校验。
 
 关键变量：
 
@@ -153,6 +153,9 @@ npm run smoke:deployed:prod
 `smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、未登录上传拒绝、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、一次性联系码格式 / 过期时间 / 完成后清空、买家完成、售出后拒绝二次交易、公开商品响应隐私脱敏、客户端伪造审核身份字段不外泄、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度；如果要把账号注销也纳入真实部署后验收，可额外提供独立一次性测试账号 `GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`，不要复用 seller/buyer 主烟测账号：
 
 ```bash
+cp .env.smoke.pre.example .env.smoke.pre.local
+# replace one-time codes, API URL, coordinates and approved image URL
+set -a; source .env.smoke.pre.local; set +a
 GOODS_COMM_SMOKE_SELLER_CODE=...
 GOODS_COMM_SMOKE_BUYER_CODE=...
 GOODS_COMM_SMOKE_LATITUDE=31.22945
