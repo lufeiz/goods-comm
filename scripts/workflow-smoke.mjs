@@ -76,6 +76,14 @@ function assertReleaseGateProfileBoundary() {
     'do not fail on remaining production blockers',
     'Run npm run verify:release:strict before a real pre/prod release.'
   ])
+
+  const strictReportIndex = releaseGateScript.indexOf("name: 'production readiness strict report'")
+  const strictCheckIndex = releaseGateScript.indexOf("name: 'production readiness strict check'")
+
+  assert.ok(
+    strictReportIndex >= 0 && strictCheckIndex > strictReportIndex,
+    'scripts/verify-release-gate.mjs: strict readiness artifacts must be written before the strict check can fail'
+  )
 }
 
 function assertStrictReleaseGate() {
