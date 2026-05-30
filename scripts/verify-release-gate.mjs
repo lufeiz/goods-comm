@@ -86,6 +86,7 @@ function addCoreSmokes() {
     'smoke:region',
     'smoke:postgres-store',
     'smoke:prod-sync',
+    'smoke:github-push-preflight',
     'smoke:workflows',
     'smoke:pages',
     'smoke:main-flow-contract',

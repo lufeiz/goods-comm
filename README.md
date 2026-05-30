@@ -100,6 +100,16 @@ npm run verify:release:strict
 
 `verify:release:strict` 会执行 `audit:production-readiness -- --check-only`，只有 pre/prod 真实云资源和密钥补齐后才会通过。
 
+GitHub 推送前先跑 release gate，再确认本地 `main`、`origin` 和 GitHub token 权限：
+
+```bash
+npm run verify:release:quick -- --skip-http-backend
+npm run github:push:preflight
+git push origin main
+```
+
+`github:push:preflight` 会检查 `origin=https://github.com/lufeiz/goods-comm`、`main` 跟踪 `origin/main`、工作区干净，以及 GitHub CLI token 具备 `repo` 和 `workflow` scope，避免 `.github/workflows/*.yml` 因权限不足推送失败。
+
 GitHub Actions 中有两个门禁：
 
 - `.github/workflows/ci.yml`：PR / 主干日常门禁，运行 `npm run verify:release`，会生成生产审计但不因占位 pre/prod 阻断普通开发。
