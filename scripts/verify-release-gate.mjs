@@ -78,6 +78,7 @@ function addCoreSmokes() {
     'env:check',
     'smoke:ops-auth',
     'smoke:ops-alerts',
+    'smoke:request-logger',
     'smoke:platform-auth',
     'smoke:platform-notifier',
     'smoke:storage-content',

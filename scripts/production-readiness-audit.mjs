@@ -65,6 +65,7 @@ const REQUIRED_KEYS = [
   'GOODS_COMM_ALERT_WEBHOOK_URL',
   'GOODS_COMM_ALERT_WEBHOOK_TOKEN',
   'GOODS_COMM_ALERT_TIMEOUT_MS',
+  'GOODS_COMM_ACCESS_LOG_ENABLED',
   'GOODS_COMM_PLATFORM_AUTH_MODE',
   'GOODS_COMM_PLATFORM_NOTIFY_PROVIDER',
   'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
@@ -84,7 +85,8 @@ const PRODUCTION_MODE_EXPECTATIONS = {
   GOODS_COMM_CONTENT_SECURITY_PROVIDER: 'wechat',
   GOODS_COMM_PLATFORM_AUTH_MODE: 'platform',
   GOODS_COMM_PLATFORM_NOTIFY_PROVIDER: 'wechat',
-  GOODS_COMM_ALERT_PROVIDER: 'webhook'
+  GOODS_COMM_ALERT_PROVIDER: 'webhook',
+  GOODS_COMM_ACCESS_LOG_ENABLED: 'true'
 }
 
 const POSTGRES_SNAPSHOT_LIMIT_KEY = 'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS'
@@ -276,6 +278,16 @@ async function auditEnvironment(environment, values) {
       blockers.push('GOODS_COMM_ALERT_TIMEOUT_MS must be a positive integer')
     } else {
       passes.push(`GOODS_COMM_ALERT_TIMEOUT_MS is ${alertTimeout.value}`)
+    }
+  }
+
+  if (values.GOODS_COMM_ACCESS_LOG_ENABLED) {
+    const accessLogEnabled = parseBooleanSetting(values.GOODS_COMM_ACCESS_LOG_ENABLED)
+
+    if (!accessLogEnabled.valid) {
+      blockers.push('GOODS_COMM_ACCESS_LOG_ENABLED must be true or false')
+    } else {
+      passes.push(`GOODS_COMM_ACCESS_LOG_ENABLED is ${accessLogEnabled.value}`)
     }
   }
 

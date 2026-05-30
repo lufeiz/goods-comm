@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-30T10:05:12.413Z",
+  "generatedAt": "2026-05-30T10:21:29.007Z",
   "scope": [
     "pre",
     "prod"
@@ -285,43 +285,49 @@
             "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
           },
           {
-            "id": "environment.pre.pass.9.goods-comm-rate-limit-max-requests-is-300",
+            "id": "environment.pre.pass.9.goods-comm-access-log-enabled-is-true",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_ACCESS_LOG_ENABLED is true"
+          },
+          {
+            "id": "environment.pre.pass.10.goods-comm-rate-limit-max-requests-is-300",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
           },
           {
-            "id": "environment.pre.pass.10.goods-comm-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.11.goods-comm-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
+            "id": "environment.pre.pass.12.goods-comm-route-rate-limit-max-requests-is-120",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
           },
           {
-            "id": "environment.pre.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.13.goods-comm-route-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
+            "id": "environment.pre.pass.14.goods-comm-user-rate-limit-max-requests-is-80",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
           },
           {
-            "id": "environment.pre.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.15.goods-comm-user-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "id": "environment.pre.pass.16.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -523,43 +529,49 @@
             "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
           },
           {
-            "id": "environment.prod.pass.9.goods-comm-rate-limit-max-requests-is-300",
+            "id": "environment.prod.pass.9.goods-comm-access-log-enabled-is-true",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_ACCESS_LOG_ENABLED is true"
+          },
+          {
+            "id": "environment.prod.pass.10.goods-comm-rate-limit-max-requests-is-300",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
           },
           {
-            "id": "environment.prod.pass.10.goods-comm-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.11.goods-comm-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
+            "id": "environment.prod.pass.12.goods-comm-route-rate-limit-max-requests-is-120",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
           },
           {
-            "id": "environment.prod.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.13.goods-comm-route-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
+            "id": "environment.prod.pass.14.goods-comm-user-rate-limit-max-requests-is-80",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
           },
           {
-            "id": "environment.prod.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.15.goods-comm-user-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "id": "environment.prod.pass.16.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -589,7 +601,7 @@
           "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
           "area": "cross_environment",
           "severity": "pass",
-          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_ALERT_PROVIDER, GOODS_COMM_ALERT_TIMEOUT_MS, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_ALERT_PROVIDER, GOODS_COMM_ALERT_TIMEOUT_MS, GOODS_COMM_ACCESS_LOG_ENABLED, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
         },
         {
           "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",
@@ -1143,43 +1155,49 @@
       "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
     },
     {
-      "id": "environment.pre.pass.9.goods-comm-rate-limit-max-requests-is-300",
+      "id": "environment.pre.pass.9.goods-comm-access-log-enabled-is-true",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_ACCESS_LOG_ENABLED is true"
+    },
+    {
+      "id": "environment.pre.pass.10.goods-comm-rate-limit-max-requests-is-300",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
     },
     {
-      "id": "environment.pre.pass.10.goods-comm-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.11.goods-comm-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
+      "id": "environment.pre.pass.12.goods-comm-route-rate-limit-max-requests-is-120",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
     },
     {
-      "id": "environment.pre.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.13.goods-comm-route-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
+      "id": "environment.pre.pass.14.goods-comm-user-rate-limit-max-requests-is-80",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
     },
     {
-      "id": "environment.pre.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.15.goods-comm-user-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "id": "environment.pre.pass.16.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -1233,43 +1251,49 @@
       "message": "GOODS_COMM_ALERT_TIMEOUT_MS is 3000"
     },
     {
-      "id": "environment.prod.pass.9.goods-comm-rate-limit-max-requests-is-300",
+      "id": "environment.prod.pass.9.goods-comm-access-log-enabled-is-true",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_ACCESS_LOG_ENABLED is true"
+    },
+    {
+      "id": "environment.prod.pass.10.goods-comm-rate-limit-max-requests-is-300",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
     },
     {
-      "id": "environment.prod.pass.10.goods-comm-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.11.goods-comm-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.11.goods-comm-route-rate-limit-max-requests-is-120",
+      "id": "environment.prod.pass.12.goods-comm-route-rate-limit-max-requests-is-120",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS is 120"
     },
     {
-      "id": "environment.prod.pass.12.goods-comm-route-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.13.goods-comm-route-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.13.goods-comm-user-rate-limit-max-requests-is-80",
+      "id": "environment.prod.pass.14.goods-comm-user-rate-limit-max-requests-is-80",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS is 80"
     },
     {
-      "id": "environment.prod.pass.14.goods-comm-user-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.15.goods-comm-user-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.15.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "id": "environment.prod.pass.16.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -1278,7 +1302,7 @@
       "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
       "area": "cross_environment",
       "severity": "pass",
-      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_ALERT_PROVIDER, GOODS_COMM_ALERT_TIMEOUT_MS, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS, GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_ALERT_PROVIDER, GOODS_COMM_ALERT_TIMEOUT_MS, GOODS_COMM_ACCESS_LOG_ENABLED, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
     },
     {
       "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",

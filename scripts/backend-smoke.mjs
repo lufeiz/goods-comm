@@ -4,6 +4,7 @@ import { readFile, rm, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { startGoodsCommServer } from '../backend/src/server.mjs'
 import { createContentSafetyClient } from '../backend/src/content-safety.mjs'
+import { createRequestLogger } from '../backend/src/request-logger.mjs'
 import { ITEM_STATUS, TRADE_STATUS } from '../src/services/goods.js'
 
 const statePath = resolve('/private/tmp/goods-comm-backend-smoke.json')
@@ -11,6 +12,7 @@ const objectRootDir = resolve('/private/tmp/goods-comm-object-store-smoke')
 const allowedOrigin = 'https://mini.example.com'
 const deliveredPlatformNotifications = []
 const emittedOpsAlerts = []
+const capturedRequestLogs = []
 const failedPlatformNotificationTypes = new Set(['trade_reviewed'])
 const reviewedItemPayloads = []
 const reviewedUploadedImages = []
@@ -86,6 +88,11 @@ const runtime = await startGoodsCommServer({
       }))
     }
   },
+  requestLogger: createRequestLogger({
+    environment: 'test',
+    accessLogEnabled: true,
+    logSink: (line) => capturedRequestLogs.push(JSON.parse(line))
+  }),
   opsAlerts: {
     provider: 'webhook',
     describe: () => ({
@@ -127,6 +134,8 @@ try {
   assert.equal(health.payload.data.platformNotify, 'mock')
   assert.equal(health.payload.data.opsAlert, 'webhook')
   assert.equal(health.payload.data.opsAlertConfig.configured, true)
+  assert.equal(health.payload.data.accessLog.enabled, true)
+  assert.equal(health.payload.data.accessLog.format, 'json')
   assert.equal(health.payload.trace.traceId, 'trace_backend_smoke')
   assert.equal(health.traceId, 'trace_backend_smoke')
   assert.equal(health.corsOrigin, allowedOrigin)
@@ -148,8 +157,17 @@ try {
   assert.equal(ready.payload.data.mapProvider, 'mock')
   assert.equal(ready.payload.data.platformNotify, 'mock')
   assert.equal(ready.payload.data.opsAlert, 'webhook')
+  assert.equal(ready.payload.data.accessLog.enabled, true)
   assert.equal(ready.payload.data.opsAlertReadiness.ok, true)
   assert.equal(ready.payload.data.readiness.type, 'file')
+  await waitFor(() => capturedRequestLogs.some((entry) =>
+    entry.event === 'http_request' &&
+    entry.traceId === 'trace_backend_smoke' &&
+    entry.method === 'GET' &&
+    entry.path === '/health' &&
+    entry.statusCode === 200 &&
+    entry.environment === 'test'
+  ))
 
   const allowedPreflight = await optionsEnvelope(`${baseUrl}/items`, allowedOrigin)
   assert.equal(allowedPreflight.status, 204)
@@ -356,6 +374,13 @@ try {
   assert.equal(listWithoutLocationQuality.status, 422)
   assert.equal(listWithoutLocationQuality.code, 'VALIDATION_ERROR')
   assert.match(listWithoutLocationQuality.message, /需要提交实时 GPS 定位时间/)
+  await waitFor(() => capturedRequestLogs.some((entry) =>
+    entry.event === 'http_request' &&
+    entry.method === 'GET' &&
+    entry.path === '/items' &&
+    entry.statusCode === 422 &&
+    JSON.stringify(entry).includes('latitude') === false
+  ))
 
   const visibleNearList = await get(`${baseUrl}/items?latitude=31.2301&longitude=121.4556&accuracy=60&capturedAt=${Date.now()}`)
   assert.equal(visibleNearList.items.some((candidate) => candidate.id === item.id), true)
@@ -1480,7 +1505,8 @@ async function assertProtectedSecurityHeaders() {
     mapProvider: 'mock',
     allowSampleRegion: true,
     notifyProvider: 'mock',
-    allowMockPlatformNotify: true
+    allowMockPlatformNotify: true,
+    accessLogEnabled: false
   })
 
   try {

@@ -40,6 +40,8 @@ Operational endpoints:
 - `GET /health`: liveness check.
 - `GET /health/ready`: readiness check; verifies the configured state store can be reached.
 
+Both endpoints expose the active `accessLog` settings so deployed smoke can confirm production access logging was not disabled.
+
 Local smoke tests use a file-backed state store so the HTTP boundary is real and repeatable without external credentials. `pre/prod` use the PostgreSQL state store by default; it reads and writes the normalized tables in `backend/db/schema.sql` inside a transaction. In `pre/prod`, schema auto-creation is disabled by default, so the database migration must run before backend startup.
 
 Mutating business requests support `Idempotency-Key` / `X-Idempotency-Key`. The BFF stores the first successful response in `idempotency_records` for 24 hours, replays it for exact duplicate requests in the same scope, and rejects key reuse for different requests with `409 CONFLICT`. Replayed trade-confirm responses are sanitized through the same one-time contact-code expiry rules so an old idempotency record cannot leak an expired code. The mini-program service layer already sends stable keys for publish, trade, review, report and status update paths.
@@ -81,6 +83,7 @@ Useful environment variables:
 - `GOODS_COMM_PLATFORM_NOTIFY_PROVIDER`: `mock` or `wechat`. Defaults to `mock` in `dev/test` and `wechat` in `pre/prod`.
 - `GOODS_COMM_ALERT_PROVIDER`: `none` or `webhook`. `pre/prod` should use `webhook` so notification delivery failures reach the on-call/monitoring system.
 - `GOODS_COMM_ALERT_WEBHOOK_URL`, `GOODS_COMM_ALERT_WEBHOOK_TOKEN`, `GOODS_COMM_ALERT_TIMEOUT_MS`: alert webhook endpoint, bearer token, and timeout. `pre/prod` require a real HTTPS URL and token.
+- `GOODS_COMM_ACCESS_LOG_ENABLED`: enables structured JSON access logs. Defaults to `false` in `dev/test` and `true` in `pre/prod`; production health smoke asserts it remains enabled.
 - `GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS`: comma-separated WeChat subscribe-message templates, for example `trade_created:tmpl1,trade_confirmed:tmpl2`.
 - `GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS`: template field mapping, default-compatible format `title:thing1,body:thing2,time:time3`.
 - `GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL`: WeChat subscribe-message send endpoint.
@@ -90,6 +93,8 @@ Useful environment variables:
 - `GOODS_COMM_ALLOWED_ORIGINS`: comma-separated browser origins allowed by CORS, for example `https://mini.example.com,https://h5.example.com`. Unset means `*` for local development, but `pre/prod` reject empty or wildcard origins unless the unsafe emergency override is explicitly enabled.
 
 The backend adds baseline HTTP hardening headers to JSON, preflight, error, and asset responses: `x-content-type-options: nosniff`, `x-frame-options: DENY`, `referrer-policy: no-referrer`, and `permissions-policy: geolocation=(), camera=(), microphone=()`. `pre/prod` responses also include HSTS. Keep cloud gateway, CDN, or WAF configuration from stripping these headers. When the service is behind CloudBase, CDN, WAF, or a load balancer, set `GOODS_COMM_TRUSTED_PROXY_IPS` to that trusted hop only; never trust arbitrary `x-forwarded-for` from the public internet.
+
+When access logging is enabled, each completed HTTP request writes one JSON line to stdout with trace id, method, normalized route path, status, duration, CORS result and rate-limit summary. Query strings, headers and request bodies are not logged, and dynamic route IDs are collapsed to route shapes such as `/items/:id` or `/trades/:id/status`.
 
 ## Production Target
 
@@ -119,7 +124,7 @@ Deployment and database operations are executable plans:
 
 Run `npm run smoke:postgres-store` to verify the state-to-table mapping without requiring a live database. A live deployment must still validate the same path against a real TencentDB / PostgreSQL instance.
 
-Use `/health/ready` as the cloud run readiness probe. It returns `503 SERVICE_UNAVAILABLE` when the configured state store is not reachable, the PostgreSQL runtime dependency is missing, the normalized schema was not migrated before startup, a required normalized column is missing, or a configured production alert webhook is invalid. For PostgreSQL it also reports `mode: normalized_snapshot_rewrite`, `autoSchema`, `currentRowCount`, `snapshotRowLimit`, and table-level `rowCounts` so operators can see when the bridge implementation is approaching its configured safety ceiling.
+Use `/health/ready` as the cloud run readiness probe. It returns `503 SERVICE_UNAVAILABLE` when the configured state store is not reachable, the PostgreSQL runtime dependency is missing, the normalized schema was not migrated before startup, a required normalized column is missing, or a configured production alert webhook is invalid. For PostgreSQL it also reports `mode: normalized_snapshot_rewrite`, `autoSchema`, `currentRowCount`, `snapshotRowLimit`, and table-level `rowCounts` so operators can see when the bridge implementation is approaching its configured safety ceiling. The same readiness response includes `accessLog` so pre/prod deployments can prove structured request logs are enabled.
 
 `backend/src/platform-auth.mjs` performs server-side platform identity exchange before `/auth/login` reaches the BFF handler. In `pre/prod`, demo login is rejected unless explicitly overridden for emergency debugging; login must exchange the client code for a platform `openid` / `user_id` first.
 

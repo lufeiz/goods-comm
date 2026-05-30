@@ -55,6 +55,7 @@ const requiredKeys = [
   'GOODS_COMM_ALERT_WEBHOOK_URL',
   'GOODS_COMM_ALERT_WEBHOOK_TOKEN',
   'GOODS_COMM_ALERT_TIMEOUT_MS',
+  'GOODS_COMM_ACCESS_LOG_ENABLED',
   'GOODS_COMM_PLATFORM_AUTH_MODE',
   'GOODS_COMM_PLATFORM_NOTIFY_PROVIDER',
   'GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_IDS',
@@ -166,6 +167,14 @@ for (const environment of environments) {
     } else if (['pre', 'prod'].includes(environment) && !values.GOODS_COMM_ALERT_WEBHOOK_URL.startsWith('https://')) {
       errors.push(`[${environment}] GOODS_COMM_ALERT_WEBHOOK_URL must use HTTPS`)
     }
+  }
+
+  if (!isBooleanString(values.GOODS_COMM_ACCESS_LOG_ENABLED)) {
+    errors.push(`[${environment}] GOODS_COMM_ACCESS_LOG_ENABLED must be true or false`)
+  }
+
+  if (['pre', 'prod'].includes(environment) && values.GOODS_COMM_ACCESS_LOG_ENABLED !== 'true') {
+    errors.push(`[${environment}] GOODS_COMM_ACCESS_LOG_ENABLED must be true`)
   }
 
   if (!isBooleanString(values.GOODS_COMM_POSTGRES_AUTO_SCHEMA)) {

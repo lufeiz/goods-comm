@@ -13,6 +13,7 @@ import { createPlatformNotifier } from './platform-notifier.mjs'
 import { createOpsAuth } from './ops-auth.mjs'
 import { createRateLimiter, rateLimitHeaders } from './rate-limiter.mjs'
 import { createOpsAlertClient } from './ops-alerts.mjs'
+import { createRequestLogger } from './request-logger.mjs'
 
 const DEFAULT_PORT = 8787
 const DEFAULT_CORS_METHODS = 'GET,POST,PATCH,OPTIONS'
@@ -68,6 +69,10 @@ export function createGoodsCommServer(options = {}) {
     ...options,
     environment: deploymentEnv
   })
+  const requestLogger = options.requestLogger || createRequestLogger({
+    ...options,
+    environment: deploymentEnv
+  })
   const opsAuth = options.opsAuth || createOpsAuth({
     ...options,
     environment: deploymentEnv
@@ -76,7 +81,17 @@ export function createGoodsCommServer(options = {}) {
   return createServer(async (request, response) => {
     const startedAt = Date.now()
     const traceId = getTraceId(request)
+    const requestLog = {
+      traceId,
+      method: request.method || 'GET',
+      path: request.url || '/',
+      environment: deploymentEnv,
+      rateLimit: null,
+      corsAllowed: true
+    }
+    registerRequestAccessLog(response, requestLogger, requestLog, startedAt)
     const corsContext = createCorsContext(request, corsPolicy)
+    requestLog.corsAllowed = corsContext.allowed
     corsContext.securityHeaders = securityHeaders(deploymentEnv)
 
     if (!corsContext.allowed) {
@@ -97,6 +112,7 @@ export function createGoodsCommServer(options = {}) {
     }
 
     const rateLimit = rateLimiter.check(request)
+    requestLog.rateLimit = rateLimit
 
     if (!rateLimit.allowed) {
       sendResponse(response, 429, {
@@ -134,6 +150,9 @@ export function createGoodsCommServer(options = {}) {
             opsAlertConfig: typeof opsAlerts.describe === 'function'
               ? opsAlerts.describe()
               : { provider: opsAlerts.provider },
+            accessLog: typeof requestLogger.describe === 'function'
+              ? requestLogger.describe()
+              : { enabled: true, format: 'json', destination: 'stdout' },
             rateLimit: rateLimiter.describe(),
             uptimeSeconds: Math.round(process.uptime())
           },
@@ -168,6 +187,9 @@ export function createGoodsCommServer(options = {}) {
               mapProvider: regionResolver.provider,
               platformNotify: platformNotifier.provider,
               opsAlert: opsAlerts.provider,
+              accessLog: typeof requestLogger.describe === 'function'
+                ? requestLogger.describe()
+                : { enabled: true, format: 'json', destination: 'stdout' },
               rateLimit: rateLimiter.describe(),
               readiness,
               platformNotifyReadiness,
@@ -1315,6 +1337,27 @@ function getTraceId(request) {
   }
 
   return `trace_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+function registerRequestAccessLog(response, requestLogger, requestLog = {}, startedAt = Date.now()) {
+  if (!requestLogger || typeof requestLogger.logRequest !== 'function') {
+    return
+  }
+
+  response.once('finish', () => {
+    Promise.resolve(requestLogger.logRequest({
+      ...requestLog,
+      statusCode: response.statusCode,
+      durationMs: Date.now() - startedAt
+    })).catch((error) => {
+      console.warn(JSON.stringify({
+        level: 'warn',
+        event: 'access_log_failed',
+        traceId: requestLog.traceId,
+        message: error?.message || '访问日志写入失败'
+      }))
+    })
+  })
 }
 
 function createCorsPolicy(allowedOrigins = '', options = {}) {
