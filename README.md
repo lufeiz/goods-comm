@@ -53,7 +53,7 @@ npm run audit:production-readiness
 npm run audit:production-readiness -- --check-only
 ```
 
-审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可创建 `.env.pre.local` / `.env.prod.local` 覆盖占位配置；这些文件会被脚本读取，并已被 `.gitignore` 忽略。
+审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。
 
 prod 到 pre 数据同步同时支持手动和自动定时入口；真实执行前必须替换数据库连接串并准备 PostgreSQL 工具：
 

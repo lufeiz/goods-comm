@@ -61,6 +61,7 @@
     "smoke:ops-auth": "node scripts/ops-auth-smoke.mjs",
     "smoke:ops-alerts": "node scripts/ops-alerts-smoke.mjs",
     "smoke:request-logger": "node scripts/request-logger-smoke.mjs",
+    "smoke:env-local-templates": "node scripts/env-local-template-smoke.mjs",
     "smoke:platform-notifier": "node scripts/platform-notifier-smoke.mjs",
     "smoke:storage-content": "node scripts/storage-content-smoke.mjs",
     "smoke:rate-limiter": "node scripts/rate-limiter-smoke.mjs",

@@ -24,7 +24,7 @@
 - `.env.pre`
 - `.env.prod`
 
-这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。
+这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。
 
 关键变量：
 
