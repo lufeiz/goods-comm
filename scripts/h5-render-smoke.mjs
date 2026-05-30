@@ -52,9 +52,11 @@ async function runMainFlow(page, baseUrl) {
 
   await page.navigateHash('/pages/mine/mine')
   await page.waitForSelector('mine-page')
+  await page.assertText('mine-auth-actions', 'H5 体验登录')
   await page.ensureAgreementAccepted()
   await page.callPageMethod('mine-page', 'login')
   await page.waitForSelector('mine-logout-button')
+  await page.assertText('mine-auth-actions', '刷新 H5 体验身份')
   const seller = await page.getStorage('goods.authUser')
   assert.ok(seller?.id, 'seller must be logged in through the H5 UI')
 

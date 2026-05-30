@@ -164,6 +164,10 @@ export default {
       return `${this.platformName} · 已授权用户信息`
     },
     loginButtonText() {
+      if (this.platformName === 'H5') {
+        return this.user ? '刷新 H5 体验身份' : 'H5 体验登录'
+      }
+
       const platformLabel = this.platformName.includes('支付宝') ? '支付宝' : '微信'
 
       // #ifdef MP-WEIXIN
