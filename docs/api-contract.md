@@ -917,6 +917,7 @@ npm run smoke:bff:fetch
 本仓库新增 `backend/` 后端项目：
 
 - `backend/src/server.mjs`：Node HTTP 入口，支持 `/health`、`/health/ready`、业务接口和带密钥的审核回调接口，并返回统一 `traceId`、错误 `code` 和 HTTP 状态码。
+- `backend/src/rate-limiter.mjs`：Node HTTP 入口使用的三层进程内限流模块，覆盖 IP、接口路径和认证主体写请求配额。
 - `backend/src/file-state-store.mjs`：本地 smoke 用文件状态存储，保证 HTTP 请求之间状态可持久化。
 - `backend/src/postgres-state-store.mjs`：pre/prod 用 PostgreSQL 状态存储，将 BFF 状态读写到规范化表并用事务提交。
 - `backend/src/local-object-store.mjs`：本地 smoke / 预发用对象存储适配器，支持 multipart 图片落盘和 `/assets/...` 读取。
@@ -931,6 +932,7 @@ npm run smoke:bff:fetch
 
 ```bash
 npm run smoke:backend
+npm run smoke:rate-limiter
 npm run smoke:postgres-store
 npm run build:backend
 npm run smoke:backend:artifact

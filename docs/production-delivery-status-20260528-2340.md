@@ -106,6 +106,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 - 2026-05-29 续做后，后端新增 `GOODS_COMM_RATE_LIMIT_MAX_REQUESTS` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS` 客户端基础限流，进入业务 handler 前按客户端 IP 拦截超频请求并返回 `429 TOO_MANY_REQUESTS`；`/health` / `/health/ready` 保持可探测，pre/prod 拓扑一致性也会检查这些配置。
 - 2026-05-29 续做后，后端新增 `GOODS_COMM_TRUSTED_PROXY_IPS`：只有直连来源命中可信代理 IP / CIDR 白名单时，才读取 `x-forwarded-for` 作为限流客户端标识；否则忽略该头，避免公网客户端伪造来源绕过基础限流。
 - 2026-05-30 续做后，后端在 IP 限流外新增接口级配额 `GOODS_COMM_ROUTE_RATE_LIMIT_*` 和认证主体写请求配额 `GOODS_COMM_USER_RATE_LIMIT_*`；认证主体以 Authorization / 运营 token / 审核密钥的 SHA-256 哈希计数，不保存明文 token。
+- 2026-05-30 续做后，限流逻辑从 `backend/src/server.mjs` 拆到 `backend/src/rate-limiter.mjs`，并新增 `smoke:rate-limiter` focused smoke，降低后端入口文件继续膨胀的风险。
 - 2026-05-29 续做后，后端部署 plan 的缺失前置项已与生产审计口径对齐：会列出真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知和平台登录等运行时配置，避免真实部署前遗漏运营后台或代理安全配置。
 - 2026-05-29 续做后，真实后端部署脚本在 deploy execute 成功后会默认执行 deployed health smoke；如需把写入型主链路验证绑定到同一次部署命令，可用 `--run-main-smoke` / `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`，脚本会提前校验 seller/buyer code、经纬度和 prod 写入 opt-in。
 - 2026-05-29 续做后，`scripts/deployed-health-smoke.mjs` 支持 `--attempts` / `--interval-ms`，真实部署脚本默认用 12 次、10 秒间隔等待 `/health` 和 `/health/ready`，避免云托管冷启动或滚动发布延迟导致刚部署即误判失败。
@@ -162,7 +163,7 @@ npm run verify:release
 - 2026-05-29 续做后，`npm run smoke:backend:env` 已覆盖文件状态 store 的普通事务失败回滚和 `commitStateOnError` 审计提交，避免本地 HTTP smoke 与 PostgreSQL 生产语义在失败写入上分叉。
 - 2026-05-29 续做后，`npm run smoke:bff` 和 `npm run smoke:backend` 已覆盖“发布违禁商品返回 422、商品不落库、审核拒绝事件落库、同一幂等键重试不重复追加审核事件”的链路。
 - 2026-05-29 续做后，`npm run smoke`、`npm run smoke:bff`、`npm run smoke:backend` 和 `npm run smoke:deployed:local-main` 已覆盖商品列表展示的 LBS 准入：无当前位置或超出同社区 / 同街道半径时不展示，当前位置可交易时才进入列表和主链路交易。
-- 2026-05-29 续做后，`npm run smoke:ops-auth` 和 `npm run smoke:backend` 已覆盖运营登录失败锁定；`npm run smoke:backend` 已覆盖超限请求 `413 PAYLOAD_TOO_LARGE`、客户端基础限流 `429 TOO_MANY_REQUESTS`、接口级配额、认证主体写请求配额、不信任伪造 `x-forwarded-for`、可信代理 forwarded 客户端限流、JSON / OPTIONS / 资产响应安全头和 pre/prod HSTS；`npm run smoke:postgres-store` 已覆盖 PostgreSQL schema readiness 的缺表和缺列失败分支；`npm run smoke:backend:artifact` 已覆盖后端部署包完整性、artifact lockfile 和容器 `npm ci` 生产依赖安装步骤；`verify:release:quick -- --skip-http-backend` 已通过。
+- 2026-05-29 续做后，`npm run smoke:ops-auth` 和 `npm run smoke:backend` 已覆盖运营登录失败锁定；`npm run smoke:backend` 已覆盖超限请求 `413 PAYLOAD_TOO_LARGE`、客户端基础限流 `429 TOO_MANY_REQUESTS`、接口级配额、认证主体写请求配额、不信任伪造 `x-forwarded-for`、可信代理 forwarded 客户端限流、JSON / OPTIONS / 资产响应安全头和 pre/prod HSTS；`npm run smoke:rate-limiter` 已覆盖限流模块的路由归一化、可信代理、认证主体哈希、窗口重置和配置错误；`npm run smoke:postgres-store` 已覆盖 PostgreSQL schema readiness 的缺表和缺列失败分支；`npm run smoke:backend:artifact` 已覆盖后端部署包完整性、artifact lockfile 和容器 `npm ci` 生产依赖安装步骤；`verify:release:quick -- --skip-http-backend` 已通过。
 - 2026-05-29 续做后，运营台通知投递 fallback 修复已通过 `node --check scripts/page-contract-smoke.mjs`、`npm run smoke:pages`、`npm run smoke:bff` 和 `npm run verify:release:quick -- --skip-http-backend` 验证；quick release gate 84/84 通过并重建 backend、H5、微信、支付宝默认产物。
 - 2026-05-29 续做后，生产就绪审计的 Build artifacts 区域也会运行后端 artifact smoke，把后端部署包完整性和容器生产依赖安装步骤纳入权威审计报告。
 - 最新生产就绪审计仍是 `BLOCKED (46 blockers, 9 warnings)`，严格审计仍是 `BLOCKED (48 blockers, 7 warnings)`；2026-05-29 续做后，区域网格配置格式阻塞已解除，并新增可信代理配置缺失项作为上线前真实环境输入，剩余阻塞仍来自真实云资源、密钥、工具链、可信代理 IP / 网段和部署后验证。

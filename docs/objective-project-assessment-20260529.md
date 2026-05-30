@@ -63,12 +63,12 @@
 | `src/bff/handler.js:120-252` | BFF 契约覆盖登录、上传、商品、交易、评价、通知、举报、运营、审核和争议处理。 |
 | `src/bff/handler.js:260-334` | 主要写请求有 `Idempotency-Key` 机制，弱网重试和重复点击风险有处理意识。 |
 | `src/services/goods.js:51-55` / `src/bff/handler.js:672-690` | 端侧无有效坐标时不请求远端列表；本地和远端公开商品列表复用 LBS 交易资格规则，只返回当前位置可交易范围内的在线商品。 |
-| `backend/src/server.mjs:19-48` | Node HTTP 后端装配 state store、平台登录、对象存储、内容安全、区域解析、平台通知和运营鉴权。 |
-| `backend/src/server.mjs:84-125` | `/health` 和 `/health/ready` 能暴露运行环境与依赖状态，适合部署后验收。 |
-| `backend/src/server.mjs` / `scripts/backend-smoke.mjs` | 后端在进入业务 handler 前执行客户端 IP、接口级和认证主体写请求三层基础限流，超频请求返回 `429 TOO_MANY_REQUESTS`；认证主体只保存 token / 密钥哈希，不保存明文。 |
+| `backend/src/server.mjs:22-69` | Node HTTP 后端装配 state store、平台登录、对象存储、内容安全、区域解析、平台通知、运营鉴权和限流器。 |
+| `backend/src/server.mjs:94-160` | `/health` 和 `/health/ready` 能暴露运行环境与依赖状态，适合部署后验收。 |
+| `backend/src/rate-limiter.mjs` / `scripts/rate-limiter-smoke.mjs` / `scripts/backend-smoke.mjs` | 后端在进入业务 handler 前执行客户端 IP、接口级和认证主体写请求三层基础限流，超频请求返回 `429 TOO_MANY_REQUESTS`；认证主体只保存 token / 密钥哈希，不保存明文。 |
 | `backend/src/server.mjs` / `scripts/backend-smoke.mjs` | 后端只在直连来源命中 `GOODS_COMM_TRUSTED_PROXY_IPS` 时信任 `x-forwarded-for`，并用 smoke 覆盖不信任伪造头和可信代理转发两种限流路径。 |
-| `backend/src/server.mjs:1320-1354` / `scripts/backend-smoke.mjs` | JSON、OPTIONS 和资产响应已统一带 `x-content-type-options`、`x-frame-options`、`referrer-policy`、`permissions-policy`，pre/prod 还会加 HSTS；后端 smoke 已断言这些响应头。 |
-| `backend/src/server.mjs:1008-1041` | 后端在 JSON / multipart 解析前执行请求体大小上限，超限请求返回 `413 PAYLOAD_TOO_LARGE`。 |
+| `backend/src/server.mjs:1319-1354` / `scripts/backend-smoke.mjs` | JSON、OPTIONS 和资产响应已统一带 `x-content-type-options`、`x-frame-options`、`referrer-policy`、`permissions-policy`，pre/prod 还会加 HSTS；后端 smoke 已断言这些响应头。 |
+| `backend/src/server.mjs:1135-1184` | 后端在 JSON / multipart 解析前执行请求体大小上限，超限请求返回 `413 PAYLOAD_TOO_LARGE`。 |
 | `backend/db/schema.sql:5-260` | PostgreSQL schema 覆盖用户、会话、幂等、商品、图片、交易、争议、评价、位置审计、举报、通知。 |
 | `package.json:7-74` | 三端构建、四环境构建、后端构建、smoke、部署 plan、生产审计和 release gate 已脚本化。 |
 | `scripts/verify-release-gate.mjs:23-31` | 只有 `release` profile 执行 strict check；quick/full profile 只生成生产审计报告，不能等同于上线放行。 |
@@ -137,11 +137,12 @@
 src/bff/handler.js                    3056
 backend/src/postgres-state-store.mjs  2230
 src/services/goods.js                 1807
-backend/src/server.mjs                1829
+backend/src/server.mjs                1440
 src/pages/ops/ops.vue                  969
+backend/src/rate-limiter.mjs           400
 ```
 
-业务规则、状态机、序列化、鉴权、审核、通知和运营逻辑集中在大文件里，短期推进快，长期多人协作和回归风险会升高。
+业务规则、状态机、序列化、鉴权、审核、通知和运营逻辑仍有大文件集中问题。2026-05-30 续做后，HTTP 限流已从 `backend/src/server.mjs` 抽到 `backend/src/rate-limiter.mjs`，并补 `smoke:rate-limiter` focused smoke；这降低了 server 入口继续膨胀的风险，但 BFF、PostgreSQL store 和 goods service 后续仍应继续拆分。
 
 ### 6.6 测试覆盖仍偏 smoke
 

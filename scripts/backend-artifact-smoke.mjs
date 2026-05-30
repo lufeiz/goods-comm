@@ -18,6 +18,7 @@ const requiredFiles = [
   'backend/src/region-resolver.mjs',
   'backend/src/object-store.mjs',
   'backend/src/cos-object-store.mjs',
+  'backend/src/rate-limiter.mjs',
   'backend/db/schema.sql',
   'backend/db/pre-sync-anonymize.sql',
   'backend/deploy/Dockerfile',
@@ -95,6 +96,7 @@ for (const table of [
 
 for (const file of [
   'backend/src/server.mjs',
+  'backend/src/rate-limiter.mjs',
   'backend/src/postgres-state-store.mjs',
   'src/bff/handler.js'
 ]) {

@@ -80,6 +80,7 @@ function addCoreSmokes() {
     'smoke:platform-auth',
     'smoke:platform-notifier',
     'smoke:storage-content',
+    'smoke:rate-limiter',
     'smoke:region',
     'smoke:postgres-store',
     'smoke:prod-sync',

@@ -60,6 +60,7 @@
     "smoke:ops-auth": "node scripts/ops-auth-smoke.mjs",
     "smoke:platform-notifier": "node scripts/platform-notifier-smoke.mjs",
     "smoke:storage-content": "node scripts/storage-content-smoke.mjs",
+    "smoke:rate-limiter": "node scripts/rate-limiter-smoke.mjs",
     "smoke:region": "node scripts/region-resolver-smoke.mjs",
     "smoke:postgres-store": "node scripts/postgres-store-smoke.mjs",
     "smoke:prod-sync": "node scripts/prod-sync-smoke.mjs",
