@@ -27,6 +27,7 @@ const requiredKeys = [
   'GOODS_COMM_DATABASE_SCHEMA',
   'GOODS_COMM_STATE_STORE',
   'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS',
+  'GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY',
   'GOODS_COMM_POSTGRES_AUTO_SCHEMA',
   'GOODS_COMM_COS_BUCKET',
   'GOODS_COMM_COS_REGION',
@@ -106,6 +107,10 @@ for (const environment of environments) {
 
   if (!isNonNegativeInteger(values.GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS)) {
     errors.push(`[${environment}] GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS must be a non-negative integer`)
+  }
+
+  if (!isValidPostgresAdvisoryLockKey(values.GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY)) {
+    errors.push(`[${environment}] GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY must be 1-128 characters`)
   }
 
   if (!isPositiveInteger(values.GOODS_COMM_MAX_REQUEST_BYTES)) {
@@ -259,6 +264,12 @@ function isBooleanString(value = '') {
 
 function isNonNegativeInteger(value = '') {
   return /^\d+$/.test(String(value || '').trim())
+}
+
+function isValidPostgresAdvisoryLockKey(value = '') {
+  const normalized = String(value || '').trim()
+
+  return normalized.length > 0 && normalized.length <= 128
 }
 
 function isPositiveInteger(value = '') {

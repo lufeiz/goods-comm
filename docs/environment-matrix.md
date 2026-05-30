@@ -39,6 +39,7 @@
 | `GOODS_COMM_DATABASE_URL` | 当前环境数据库连接串 |
 | `GOODS_COMM_STATE_STORE` | 后端状态存储类型；dev/test 可为 `file`，pre/prod 必须为 `postgres` |
 | `GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS` | PostgreSQL bridge store 的 snapshot-rewrite 安全上限，默认 `20000`；超过后写事务失败，要求先改为增量 SQL 仓储 |
+| `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY` | PostgreSQL snapshot-rewrite 事务级 advisory lock key；pre/prod 应保持一致，确保多实例写入串行化 |
 | `GOODS_COMM_POSTGRES_AUTO_SCHEMA` | 是否允许后端启动时自动创建 / 补齐 PostgreSQL schema；dev/test 可为 `true`，pre/prod 必须为 `false`，由显式迁移脚本先初始化数据库 |
 | `GOODS_COMM_COS_BUCKET` | 当前环境对象存储 bucket |
 | `GOODS_COMM_OBJECT_STORE` | 图片存储类型；dev/test 可为 `local`，pre/prod 必须为 `cos` |

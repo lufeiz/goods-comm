@@ -36,6 +36,7 @@ const REQUIRED_KEYS = [
   'GOODS_COMM_DATABASE_SCHEMA',
   'GOODS_COMM_STATE_STORE',
   'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS',
+  'GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY',
   'GOODS_COMM_POSTGRES_AUTO_SCHEMA',
   'GOODS_COMM_COS_BUCKET',
   'GOODS_COMM_COS_REGION',
@@ -87,6 +88,7 @@ const PRE_PROD_TOPOLOGY_MATCH_KEYS = [
   'GOODS_COMM_DATABASE_SCHEMA',
   'GOODS_COMM_STATE_STORE',
   'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS',
+  'GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY',
   'GOODS_COMM_POSTGRES_AUTO_SCHEMA',
   'GOODS_COMM_OBJECT_STORE',
   'GOODS_COMM_COS_REGION',
@@ -105,6 +107,7 @@ const PRE_PROD_TOPOLOGY_MATCH_KEYS = [
 ]
 
 const POSTGRES_SNAPSHOT_LIMIT_KEY = 'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS'
+const POSTGRES_ADVISORY_LOCK_KEY = 'GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY'
 const POSTGRES_AUTO_SCHEMA_KEY = 'GOODS_COMM_POSTGRES_AUTO_SCHEMA'
 
 const REAL_VALUE_KEYS = [
@@ -242,6 +245,16 @@ async function auditEnvironment(environment, values) {
       blockers.push(`${POSTGRES_SNAPSHOT_LIMIT_KEY} must be greater than 0 for pre/prod PostgreSQL store`)
     } else if (values.GOODS_COMM_STATE_STORE === 'postgres') {
       passes.push(`${POSTGRES_SNAPSHOT_LIMIT_KEY} limits PostgreSQL snapshot rewrites to ${snapshotLimit.value} rows`)
+    }
+  }
+
+  if (values[POSTGRES_ADVISORY_LOCK_KEY]) {
+    const advisoryLockKey = String(values[POSTGRES_ADVISORY_LOCK_KEY]).trim()
+
+    if (!advisoryLockKey || advisoryLockKey.length > 128) {
+      blockers.push(`${POSTGRES_ADVISORY_LOCK_KEY} must be 1-128 characters`)
+    } else if (values.GOODS_COMM_STATE_STORE === 'postgres') {
+      passes.push(`${POSTGRES_ADVISORY_LOCK_KEY} enables PostgreSQL advisory transaction locks for snapshot rewrites`)
     }
   }
 

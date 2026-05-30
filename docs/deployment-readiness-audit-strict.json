@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-30T06:04:48.846Z",
+  "generatedAt": "2026-05-30T07:55:24.095Z",
   "scope": [
     "pre",
     "prod"
@@ -231,43 +231,49 @@
             "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
           },
           {
-            "id": "environment.pre.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+            "id": "environment.pre.pass.2.goods-comm-postgres-advisory-lock-key-enables-postgresql-advisory-transaction-lo",
+            "area": "environment.pre",
+            "severity": "pass",
+            "message": "GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY enables PostgreSQL advisory transaction locks for snapshot rewrites"
+          },
+          {
+            "id": "environment.pre.pass.3.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
           },
           {
-            "id": "environment.pre.pass.3.goods-comm-ops-login-max-failures-is-5",
+            "id": "environment.pre.pass.4.goods-comm-ops-login-max-failures-is-5",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
           },
           {
-            "id": "environment.pre.pass.4.goods-comm-ops-login-window-ms-is-900000",
+            "id": "environment.pre.pass.5.goods-comm-ops-login-window-ms-is-900000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
           },
           {
-            "id": "environment.pre.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+            "id": "environment.pre.pass.6.goods-comm-ops-login-lock-ms-is-900000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
           },
           {
-            "id": "environment.pre.pass.6.goods-comm-rate-limit-max-requests-is-300",
+            "id": "environment.pre.pass.7.goods-comm-rate-limit-max-requests-is-300",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
           },
           {
-            "id": "environment.pre.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+            "id": "environment.pre.pass.8.goods-comm-rate-limit-window-ms-is-60000",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.pre.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "id": "environment.pre.pass.9.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
             "area": "environment.pre",
             "severity": "pass",
             "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -415,43 +421,49 @@
             "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
           },
           {
-            "id": "environment.prod.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+            "id": "environment.prod.pass.2.goods-comm-postgres-advisory-lock-key-enables-postgresql-advisory-transaction-lo",
+            "area": "environment.prod",
+            "severity": "pass",
+            "message": "GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY enables PostgreSQL advisory transaction locks for snapshot rewrites"
+          },
+          {
+            "id": "environment.prod.pass.3.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
           },
           {
-            "id": "environment.prod.pass.3.goods-comm-ops-login-max-failures-is-5",
+            "id": "environment.prod.pass.4.goods-comm-ops-login-max-failures-is-5",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
           },
           {
-            "id": "environment.prod.pass.4.goods-comm-ops-login-window-ms-is-900000",
+            "id": "environment.prod.pass.5.goods-comm-ops-login-window-ms-is-900000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
           },
           {
-            "id": "environment.prod.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+            "id": "environment.prod.pass.6.goods-comm-ops-login-lock-ms-is-900000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
           },
           {
-            "id": "environment.prod.pass.6.goods-comm-rate-limit-max-requests-is-300",
+            "id": "environment.prod.pass.7.goods-comm-rate-limit-max-requests-is-300",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
           },
           {
-            "id": "environment.prod.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+            "id": "environment.prod.pass.8.goods-comm-rate-limit-window-ms-is-60000",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
           },
           {
-            "id": "environment.prod.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+            "id": "environment.prod.pass.9.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
             "area": "environment.prod",
             "severity": "pass",
             "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -481,7 +493,7 @@
           "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
           "area": "cross_environment",
           "severity": "pass",
-          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+          "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
         },
         {
           "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",
@@ -969,43 +981,49 @@
       "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
     },
     {
-      "id": "environment.pre.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+      "id": "environment.pre.pass.2.goods-comm-postgres-advisory-lock-key-enables-postgresql-advisory-transaction-lo",
+      "area": "environment.pre",
+      "severity": "pass",
+      "message": "GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY enables PostgreSQL advisory transaction locks for snapshot rewrites"
+    },
+    {
+      "id": "environment.pre.pass.3.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
     },
     {
-      "id": "environment.pre.pass.3.goods-comm-ops-login-max-failures-is-5",
+      "id": "environment.pre.pass.4.goods-comm-ops-login-max-failures-is-5",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
     },
     {
-      "id": "environment.pre.pass.4.goods-comm-ops-login-window-ms-is-900000",
+      "id": "environment.pre.pass.5.goods-comm-ops-login-window-ms-is-900000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
     },
     {
-      "id": "environment.pre.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+      "id": "environment.pre.pass.6.goods-comm-ops-login-lock-ms-is-900000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
     },
     {
-      "id": "environment.pre.pass.6.goods-comm-rate-limit-max-requests-is-300",
+      "id": "environment.pre.pass.7.goods-comm-rate-limit-max-requests-is-300",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
     },
     {
-      "id": "environment.pre.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+      "id": "environment.pre.pass.8.goods-comm-rate-limit-window-ms-is-60000",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.pre.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "id": "environment.pre.pass.9.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
       "area": "environment.pre",
       "severity": "pass",
       "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -1017,43 +1035,49 @@
       "message": "GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS limits PostgreSQL snapshot rewrites to 20000 rows"
     },
     {
-      "id": "environment.prod.pass.2.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
+      "id": "environment.prod.pass.2.goods-comm-postgres-advisory-lock-key-enables-postgresql-advisory-transaction-lo",
+      "area": "environment.prod",
+      "severity": "pass",
+      "message": "GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY enables PostgreSQL advisory transaction locks for snapshot rewrites"
+    },
+    {
+      "id": "environment.prod.pass.3.goods-comm-postgres-auto-schema-is-disabled-for-postgresql-store",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_POSTGRES_AUTO_SCHEMA is disabled for PostgreSQL store"
     },
     {
-      "id": "environment.prod.pass.3.goods-comm-ops-login-max-failures-is-5",
+      "id": "environment.prod.pass.4.goods-comm-ops-login-max-failures-is-5",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_OPS_LOGIN_MAX_FAILURES is 5"
     },
     {
-      "id": "environment.prod.pass.4.goods-comm-ops-login-window-ms-is-900000",
+      "id": "environment.prod.pass.5.goods-comm-ops-login-window-ms-is-900000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_OPS_LOGIN_WINDOW_MS is 900000"
     },
     {
-      "id": "environment.prod.pass.5.goods-comm-ops-login-lock-ms-is-900000",
+      "id": "environment.prod.pass.6.goods-comm-ops-login-lock-ms-is-900000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_OPS_LOGIN_LOCK_MS is 900000"
     },
     {
-      "id": "environment.prod.pass.6.goods-comm-rate-limit-max-requests-is-300",
+      "id": "environment.prod.pass.7.goods-comm-rate-limit-max-requests-is-300",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_MAX_REQUESTS is 300"
     },
     {
-      "id": "environment.prod.pass.7.goods-comm-rate-limit-window-ms-is-60000",
+      "id": "environment.prod.pass.8.goods-comm-rate-limit-window-ms-is-60000",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_RATE_LIMIT_WINDOW_MS is 60000"
     },
     {
-      "id": "environment.prod.pass.8.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
+      "id": "environment.prod.pass.9.goods-comm-map-region-dataset-contains-2-configured-region-mappings",
       "area": "environment.prod",
       "severity": "pass",
       "message": "GOODS_COMM_MAP_REGION_DATASET contains 2 configured region mappings"
@@ -1062,7 +1086,7 @@
       "id": "cross_environment.pass.1.pre-prod-topology-variables-match-goods-comm-tencent-region-host-port-goods-comm",
       "area": "cross_environment",
       "severity": "pass",
-      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
+      "message": "pre/prod topology variables match: GOODS_COMM_TENCENT_REGION, HOST, PORT, GOODS_COMM_MAX_IMAGE_BYTES, GOODS_COMM_MAX_REQUEST_BYTES, GOODS_COMM_RATE_LIMIT_MAX_REQUESTS, GOODS_COMM_RATE_LIMIT_WINDOW_MS, GOODS_COMM_DATABASE_SCHEMA, GOODS_COMM_STATE_STORE, GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS, GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY, GOODS_COMM_POSTGRES_AUTO_SCHEMA, GOODS_COMM_OBJECT_STORE, GOODS_COMM_COS_REGION, GOODS_COMM_MAP_PROVIDER, GOODS_COMM_MAP_REGION_DATASET, GOODS_COMM_TENCENT_MAP_GEOCODER_URL, GOODS_COMM_CONTENT_SECURITY_PROVIDER, GOODS_COMM_PLATFORM_AUTH_MODE, GOODS_COMM_PLATFORM_NOTIFY_PROVIDER, GOODS_COMM_OPS_LOGIN_MAX_FAILURES, GOODS_COMM_OPS_LOGIN_WINDOW_MS, GOODS_COMM_OPS_LOGIN_LOCK_MS, GOODS_COMM_WECHAT_SUBSCRIBE_TEMPLATE_FIELDS, GOODS_COMM_WECHAT_SUBSCRIBE_SEND_URL, GOODS_COMM_ALIPAY_GATEWAY"
     },
     {
       "id": "cross_environment.pass.2.pre-accepts-controlled-prod-to-pre-sync",

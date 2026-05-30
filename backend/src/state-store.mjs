@@ -34,6 +34,7 @@ export function createRuntimeStateStore(options = {}) {
         environment,
         seedItems,
         maxSnapshotRows: options.maxSnapshotRows,
+        advisoryLockKey: options.advisoryLockKey,
         autoSchema: options.autoSchema,
         allowUnsafeAutoSchema: options.allowUnsafeAutoSchema
       }),

@@ -91,7 +91,7 @@
 
 ### 3.6 数据持久化不成立
 
-项目目前已经有可运行 HTTP 后端、文件持久化状态 store 和 PostgreSQL 规范化表状态 store，并提供 `backend/db/schema.sql` 作为 PostgreSQL / TencentDB 建库脚本。端侧 service 已经支持远端 API 模式，BFF handler 也模拟了 `users`、`sessions`、`idempotencyRecords`、`items`、`trades`、`uploads`、`reports`、`moderationEvents`、`accountDeletions` 等状态边界。正式生产仍缺云数据库实例和真实连接验证，但代码层不再只停留在文件 store。
+项目目前已经有可运行 HTTP 后端、文件持久化状态 store 和 PostgreSQL 规范化表状态 store，并提供 `backend/db/schema.sql` 作为 PostgreSQL / TencentDB 建库脚本。端侧 service 已经支持远端 API 模式，BFF handler 也模拟了 `users`、`sessions`、`idempotencyRecords`、`items`、`trades`、`uploads`、`reports`、`moderationEvents`、`accountDeletions` 等状态边界。PostgreSQL snapshot rewrite 写事务已通过 transaction-level advisory lock 串行化，降低多实例并发覆盖风险；正式生产仍缺云数据库实例和真实连接验证，但代码层不再只停留在文件 store。
 
 这意味着：
 
@@ -201,7 +201,7 @@ Production readiness audit: BLOCKED (46 blockers, 9 warnings)
 | 产品闭环 | 4.5/5 | 浏览、发布、详情、卖家确认、取消、完成、争议工单、客服裁决、评价、举报、用户封禁、写请求幂等、站内通知、平台通知适配器和失败重试路径已具备；仍缺真实微信订阅消息模板 ID、完整客服后台 UI |
 | LBS 领域建模 | 4.1/5 | 领域函数清晰，端侧最终 GPS 校验、BFF 重算契约和腾讯地图服务端适配器已补；仍缺真实地图 Key/网格数据 |
 | 账号与权限 | 3.9/5 | 有 session/token/注销契约、随机 token、HMAC tokenHash、过期校验、注销吊销、封禁 / 解封和端侧入口；仍缺真实平台凭据、真实数据库连接验证和更完整风控策略 |
-| 数据持久化 | 3.4/5 | 已补 HTTP 后端文件 store、数据库 DDL、PostgreSQL 规范化表 store、幂等记录持久化和部署产物；仍缺真实云数据库实例与连接验证 |
+| 数据持久化 | 3.5/5 | 已补 HTTP 后端文件 store、数据库 DDL、PostgreSQL 规范化表 store、幂等记录持久化、snapshot rewrite advisory lock 和部署产物；仍缺真实云数据库实例与连接验证 |
 | 隐私与风控 | 3.9/5 | 联系码延迟展示、商品响应脱敏、用户协议 / 隐私政策页面、关键动作协议门禁、服务端协议审计、举报/审核/注销/封禁路径、运营队列和举报处理结果已补；仍缺 IM、真实内容安全和完整后台 UI |
 | 工程结构 | 4.2/5 | 页面、服务、领域、BFF、HTTP 后端、契约文档边界更清楚 |
 | 测试与交付 | 4.3/5 | smoke、BFF smoke、Fetch smoke、PostgreSQL store smoke、HTTP 后端 smoke、页面契约 smoke、主流程证据矩阵 smoke、H5 渲染主链路 smoke、CI 发布候选门禁和微信/支付宝/H5/后端构建覆盖主路径；核心页面、交易售卖动作和运营台关键操作已有稳定锚点及动态选择器属性并纳入三端产物检查；生产审计仍被 blocker 阻断，且仍缺微信 / 支付宝开发者工具自动化和真机矩阵 |

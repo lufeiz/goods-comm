@@ -5,9 +5,12 @@ import { DEMO_REGIONS } from '../src/data/regions.js'
 import {
   assertNormalizedSchemaReady,
   assertSnapshotRowLimit,
+  acquireSnapshotRewriteLock,
   countSerializedRows,
   deserializeRowsToState,
+  DEFAULT_POSTGRES_ADVISORY_LOCK_KEY,
   NORMALIZED_TABLE_COLUMN_REQUIREMENTS,
+  normalizePostgresAdvisoryLockKey,
   normalizeSnapshotRowLimit,
   serializeStateToRows
 } from '../backend/src/postgres-state-store.mjs'
@@ -303,6 +306,19 @@ assert.throws(
   () => normalizeSnapshotRowLimit('not-a-number'),
   /GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS must be a non-negative number/
 )
+assert.equal(normalizePostgresAdvisoryLockKey(), DEFAULT_POSTGRES_ADVISORY_LOCK_KEY)
+assert.equal(normalizePostgresAdvisoryLockKey('  goods_comm_custom_state_lock  '), 'goods_comm_custom_state_lock')
+assert.equal(normalizePostgresAdvisoryLockKey('   '), DEFAULT_POSTGRES_ADVISORY_LOCK_KEY)
+assert.throws(
+  () => normalizePostgresAdvisoryLockKey('x'.repeat(129)),
+  /GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY must be 128 characters or fewer/
+)
+const lockClient = captureQueryClient()
+await acquireSnapshotRewriteLock(lockClient, 'goods_comm_test_lock')
+assert.deepEqual(lockClient.queries, [{
+  sql: 'SELECT pg_advisory_xact_lock(hashtext($1))',
+  args: ['goods_comm_test_lock']
+}])
 
 await assert.doesNotReject(() => assertNormalizedSchemaReady(schemaReadyClient(), 'pre'))
 await assert.rejects(
@@ -478,6 +494,22 @@ function schemaReadyClient(options = {}) {
       }
 
       throw new Error(`Unexpected schema readiness query: ${sql}`)
+    }
+  }
+}
+
+function captureQueryClient() {
+  const queries = []
+
+  return {
+    queries,
+    query: async (sql, args = []) => {
+      queries.push({
+        sql,
+        args
+      })
+
+      return { rows: [] }
     }
   }
 }

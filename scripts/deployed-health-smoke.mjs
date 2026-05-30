@@ -106,6 +106,7 @@ function assertEqual(actual, expected, label) {
 function assertPostgresReadiness(readiness = {}) {
   assertEqual(readiness.mode, 'normalized_snapshot_rewrite', 'ready.readiness.mode')
   assertEqual(readiness.autoSchema, false, 'ready.readiness.autoSchema')
+  assertEqual(readiness.snapshotWriteLock, 'pg_advisory_xact_lock', 'ready.readiness.snapshotWriteLock')
 
   const snapshotRowLimit = Number(readiness.snapshotRowLimit)
   if (!Number.isSafeInteger(snapshotRowLimit) || snapshotRowLimit <= 0) {

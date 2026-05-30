@@ -68,6 +68,8 @@ Runtime variables:
 - `GOODS_COMM_STATE_PATH=/data/goods-comm-state.json`
 - `GOODS_COMM_DATABASE_URL=postgres://...`
 - `GOODS_COMM_STATE_STORE=postgres`
+- `GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS=20000`
+- `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY=goods_comm_state_store_v1`
 - `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`
 - `GOODS_COMM_PLATFORM_AUTH_MODE=platform`
 - `GOODS_COMM_WECHAT_APP_ID=...`
@@ -99,7 +101,7 @@ Runtime variables:
 
 Production database requirement:
 
-The local file store is only for dev/test smoke validation. `pre/prod` use `backend/src/postgres-state-store.mjs`, which persists the BFF state into normalized PostgreSQL tables inside a transaction. The following operations are covered by the same transaction boundary:
+The local file store is only for dev/test smoke validation. `pre/prod` use `backend/src/postgres-state-store.mjs`, which persists the BFF state into normalized PostgreSQL tables inside a transaction. Snapshot rewrites acquire a PostgreSQL transaction-level advisory lock keyed by `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY`, so multiple backend instances serialize writes instead of concurrently replacing the same normalized table set. The following operations are covered by the same transaction boundary:
 
 - item creation with duplicate active-title check
 - idempotency record creation and response replay for mutating business requests

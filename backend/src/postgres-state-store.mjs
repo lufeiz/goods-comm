@@ -1,7 +1,7 @@
 import { createBffState } from '../../src/bff/handler.js'
 import { normalizeState } from './file-state-store.mjs'
 
-const ADVISORY_LOCK_KEY = 'goods_comm_state_store_v1'
+export const DEFAULT_POSTGRES_ADVISORY_LOCK_KEY = 'goods_comm_state_store_v1'
 const DEFAULT_MAX_SNAPSHOT_ROWS = 20000
 const PROTECTED_ENVIRONMENTS = new Set(['pre', 'prod'])
 const NORMALIZED_TABLES = [
@@ -266,6 +266,7 @@ export class PostgresStateStore {
     this.seedItems = options.seedItems
     this.environment = normalizeStoreEnvironment(options.environment || process.env.GOODS_COMM_ENV || 'dev')
     this.maxSnapshotRows = normalizeSnapshotRowLimit(options.maxSnapshotRows ?? process.env.GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS)
+    this.advisoryLockKey = normalizePostgresAdvisoryLockKey(options.advisoryLockKey ?? process.env.GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY)
     this.autoSchema = normalizePostgresAutoSchema(options.autoSchema ?? process.env.GOODS_COMM_POSTGRES_AUTO_SCHEMA, this.environment, options.allowUnsafeAutoSchema)
     this.pool = null
     this.productionSafe = true
@@ -278,7 +279,7 @@ export class PostgresStateStore {
     try {
       await client.query('BEGIN')
       await prepareNormalizedSchema(client, this)
-      await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [ADVISORY_LOCK_KEY])
+      await acquireSnapshotRewriteLock(client, this.advisoryLockKey)
 
       const state = await loadNormalizedState(client, this.seedItems)
       let result
@@ -329,6 +330,7 @@ export class PostgresStateStore {
         autoSchema: this.autoSchema,
         currentRowCount: countSerializedRows(rowCounts),
         snapshotRowLimit: this.maxSnapshotRows,
+        snapshotWriteLock: 'pg_advisory_xact_lock',
         rowCounts
       }
     } finally {
@@ -410,6 +412,33 @@ export function normalizeSnapshotRowLimit(value = DEFAULT_MAX_SNAPSHOT_ROWS) {
   }
 
   return Math.floor(normalized)
+}
+
+export function normalizePostgresAdvisoryLockKey(value = DEFAULT_POSTGRES_ADVISORY_LOCK_KEY) {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_POSTGRES_ADVISORY_LOCK_KEY
+  }
+
+  const normalized = String(value).trim()
+
+  if (!normalized) {
+    return DEFAULT_POSTGRES_ADVISORY_LOCK_KEY
+  }
+
+  if (normalized.length > 128) {
+    throw new Error('GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY must be 128 characters or fewer')
+  }
+
+  return normalized
+}
+
+export async function acquireSnapshotRewriteLock(client, advisoryLockKey = DEFAULT_POSTGRES_ADVISORY_LOCK_KEY) {
+  const normalizedLockKey = normalizePostgresAdvisoryLockKey(advisoryLockKey)
+
+  await client.query(
+    'SELECT pg_advisory_xact_lock(hashtext($1))',
+    [normalizedLockKey]
+  )
 }
 
 export function normalizePostgresAutoSchema(value = '', environment = 'dev', allowProtectedAutoSchema = false) {

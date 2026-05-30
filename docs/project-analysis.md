@@ -395,7 +395,7 @@ wx17450fc9a94221e4
 
 ### 4. 本地/内存状态导致数据不可共享
 
-端侧已经抽出远端 API 模式，BFF handler 也模拟了用户、幂等记录、商品、交易、交易评价、举报、审核事件和账号注销状态；本轮新增 `backend/src/server.mjs` HTTP 后端、`backend/src/file-state-store.mjs` 文件持久化 store、`backend/src/postgres-state-store.mjs` PostgreSQL 规范化表 store，并新增 `backend/db/schema.sql` 作为 PostgreSQL / TencentDB 建库脚本。真实上线仍需要接入真实云数据库实例并跑连接级 smoke，否则备份、并发锁、性能和审计能力仍没有被真实环境证明。
+端侧已经抽出远端 API 模式，BFF handler 也模拟了用户、幂等记录、商品、交易、交易评价、举报、审核事件和账号注销状态；本轮新增 `backend/src/server.mjs` HTTP 后端、`backend/src/file-state-store.mjs` 文件持久化 store、`backend/src/postgres-state-store.mjs` PostgreSQL 规范化表 store，并新增 `backend/db/schema.sql` 作为 PostgreSQL / TencentDB 建库脚本。PostgreSQL snapshot rewrite 写事务已补 transaction-level advisory lock，能在多实例下串行化同一状态集写回。真实上线仍需要接入真实云数据库实例并跑连接级 smoke，否则备份、性能和真实云侧事务能力仍没有被真实环境证明。
 
 建议优先级：P0。
 

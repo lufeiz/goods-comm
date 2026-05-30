@@ -11,7 +11,7 @@
 - `prod` 数据支持自动或手动同步到 `pre`，同步入口为 `scripts/sync-prod-to-pre.mjs`；恢复到 `pre` 后会执行 `backend/db/pre-sync-anonymize.sql` 脱敏和吊销 session。
 - 每次发布前先在 `pre` 连接 `goods_comm_pre` 验证，验证通过后再发布 `prod`。
 
-当前后端已提供 PostgreSQL 事务边界：`backend/src/postgres-state-store.mjs` 会把 BFF 状态读写到下方规范化实体表，让 `pre/prod` 不再依赖文件 store 或单行 JSON 快照。需要注意：当前 store 仍以“加载完整状态 -> 在事务内写回规范化表”的桥接模式运行，不是最终的按聚合根增量 SQL 仓储。为避免真实数据规模超出该桥接模式的安全范围，`GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS` 默认限制为 `20000`；超过限制时写事务会失败，并要求先迁移到增量 SQL 写入。`pre/prod` 还要求 `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`：schema 必须先由 `npm run db:migrate:pre` / `npm run db:migrate:prod` 显式初始化；后端 readiness 会检查所有规范化表和关键列是否齐全，防止迁移漏列时启动探针误通过。`/health/ready` 会返回当前行数、限制和是否允许 auto schema。`bff_state_snapshots` 只保留为早期测试部署的迁移桥，新的部署不应写入该表。
+当前后端已提供 PostgreSQL 事务边界：`backend/src/postgres-state-store.mjs` 会把 BFF 状态读写到下方规范化实体表，让 `pre/prod` 不再依赖文件 store 或单行 JSON 快照。需要注意：当前 store 仍以“加载完整状态 -> 在事务内写回规范化表”的桥接模式运行，不是最终的按聚合根增量 SQL 仓储；写事务会先获取 `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY` 对应的 PostgreSQL transaction-level advisory lock，确保多实例 snapshot rewrite 不会并发覆盖。为避免真实数据规模超出该桥接模式的安全范围，`GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS` 默认限制为 `20000`；超过限制时写事务会失败，并要求先迁移到增量 SQL 写入。`pre/prod` 还要求 `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`：schema 必须先由 `npm run db:migrate:pre` / `npm run db:migrate:prod` 显式初始化；后端 readiness 会检查所有规范化表和关键列是否齐全，防止迁移漏列时启动探针误通过，并返回当前行数、限制、auto schema 状态和 snapshot write lock 类型。`bff_state_snapshots` 只保留为早期测试部署的迁移桥，新的部署不应写入该表。
 
 本地 `FileStateStore` 和 PostgreSQL store 的事务语义保持一致：普通业务 callback 抛错时回滚，不保存部分状态。少数必须留痕但仍对客户端返回错误的业务拒绝，例如商品发布内容安全拒绝，会通过显式 `commitStateOnError` 标记提交 `moderation_events` 后继续返回错误，避免不同 store 对审核审计产生分叉。
 
