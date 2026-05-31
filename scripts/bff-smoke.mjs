@@ -190,6 +190,28 @@ const createSellerLocation = (overrides = {}) => ({
   ...overrides
 })
 
+const priorSellerLocationCapturedAt = Date.now() - 60 * 1000
+state.locationRiskEvents.push({
+  id: 'location_risk_prior_seller',
+  userId: sellerSession.user.id,
+  action: 'item_publish',
+  targetType: 'item',
+  targetId: 'prior-item',
+  latitude: 39.9042,
+  longitude: 116.4074,
+  accuracy: 35,
+  regionCommunityId: 'bj-demo-community',
+  regionStreetId: 'bj-demo-street',
+  capturedAt: priorSellerLocationCapturedAt,
+  previousEventId: '',
+  distanceMeters: null,
+  elapsedMs: null,
+  speedMetersPerSecond: null,
+  riskLevel: 'normal',
+  riskCode: '',
+  createdAt: priorSellerLocationCapturedAt
+})
+
 await assert.rejects(
   () => handleBffRequest('/items', {
     method: 'POST',
@@ -319,6 +341,21 @@ assert.equal(item.images.length, 1)
 assert.equal(item.location.communityId, region.communityId)
 assert.equal(item.location.streetId, region.streetId)
 assertNoPublicCoordinates(item)
+const publishRiskEvent = state.locationRiskEvents.find((event) =>
+  event.userId === sellerSession.user.id &&
+  event.targetId === item.id &&
+  event.riskCode === 'IMPOSSIBLE_TRAVEL'
+)
+assert.equal(Boolean(publishRiskEvent), true)
+assert.equal(publishRiskEvent.riskLevel, 'high')
+assert.equal(Number(publishRiskEvent.distanceMeters) > 1000000, true)
+assert.equal(state.clientEvents.some((event) =>
+  event.type === 'location_risk' &&
+  event.code === 'IMPOSSIBLE_TRAVEL' &&
+  event.userId === sellerSession.user.id &&
+  event.context.distanceMeters &&
+  !JSON.stringify(event.context).includes('latitude')
+), true)
 await assert.rejects(
   () => handleBffRequest('/items', {
     method: 'POST',

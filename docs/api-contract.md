@@ -148,6 +148,7 @@
 - 服务端必须接地图服务或社区网格库，返回标准社区/街道编码。Node HTTP 后端已提供 `backend/src/region-resolver.mjs`，`dev/test` 可用 mock，`pre/prod` 必须使用 `GOODS_COMM_MAP_PROVIDER=tencent`。
 - `GOODS_COMM_MAP_REGION_DATASET` 用于把腾讯地图行政区 / 街道结果映射成内部稳定 `communityId` / `streetId`，避免业务直接依赖外部展示文案；pre/prod 必须配置为非空 JSON 数组，不能只是数据集版本标签。
 - 发布商品和发起交易时服务端都必须重新解析，不使用客户端传来的行政区字段作为最终裁决。
+- 发布商品和发起交易成功后会记录 `location_risk_events`；同一账号短时间远距离异常切换会写脱敏 `client_events(type=location_risk)` 供运营复核，当前只审计不拦截，避免定位漂移误伤主链路。
 - 端侧定位 profile 会归一化失败状态：`LOCATION_DENIED`、`LOCATION_SYSTEM_DISABLED`、`LOCATION_TIMEOUT`、`LOCATION_NETWORK_FAILED`、`LOCATION_LOW_ACCURACY`、`LOCATION_EXPIRED`、`LOCATION_INVALID`、`LOCATION_REGION_FAILED`、`LOCATION_UNSUPPORTED`、`LOCATION_CANCELLED`。页面必须据此区分去设置、重新定位、检查系统定位或稍后重试，而不是统一显示“定位失败”。
 
 ## 3. 图片上传
@@ -291,6 +292,7 @@ usage: item_image
 - `location` 必须来自新鲜、带精度的实时 GPS；过期、缺少精度或低精度坐标必须拒绝发布。
 - `location` 的经纬度可用于服务端解析；`communityId`、`streetId` 等行政区字段只能作为展示初值，最终归属必须由服务端重算并覆盖。
 - 商品创建成功后的公开响应也必须复用商品脱敏规则：卖家联系码和精确发布坐标不返回，服务端保留坐标用于交易校验和距离计算。
+- 商品发布成功会写入后端位置风控事件；若与同账号近期位置使用记录构成不合理高速移动，服务端会额外写脱敏风险遥测，但不会把精确坐标写入公开响应。
 - 同一卖家存在同名 `pending_review` / `online` / `reserved` 商品时，服务端必须拒绝重复发布，避免刷屏和重复审核。
 - 端侧重复提交同一次发布请求时应使用相同幂等键，服务端必须返回首次创建的商品或首次审核拒绝错误，不能重复写入商品、重复写入审核队列，也不能重复调用外部文本审核。
 - 无法解析到社区 / 街道时必须拒绝发布，避免生成不可交易商品。

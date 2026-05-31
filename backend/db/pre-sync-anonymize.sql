@@ -37,6 +37,16 @@ SET
   longitude = NULL,
   accuracy = NULL;
 
+UPDATE location_risk_events
+SET
+  latitude = NULL,
+  longitude = NULL,
+  accuracy = NULL,
+  region_community_id = '',
+  region_street_id = '',
+  distance_meters = NULL,
+  speed_mps = NULL;
+
 UPDATE trade_reviews
 SET
   item_title = '预上线交易商品',

@@ -24,6 +24,13 @@ VALUES (
   'baseline:backend/db/schema.sql#auth_sessions.last_seen_at',
   'backend/db/schema.sql',
   CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
+),
+(
+  '20260531_location_risk_events',
+  'location_risk_events',
+  'baseline:backend/db/schema.sql#location_risk_events',
+  'backend/db/schema.sql',
+  CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
 )
 ON CONFLICT (version) DO UPDATE
 SET name = EXCLUDED.name,
@@ -268,6 +275,37 @@ CREATE TABLE IF NOT EXISTS reports (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_reports_pending_same_reason
 ON reports (reporter_id, target_type, target_id, reason)
 WHERE status = 'pending_review';
+
+CREATE TABLE IF NOT EXISTS location_risk_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  action TEXT NOT NULL,
+  target_type TEXT NOT NULL DEFAULT '',
+  target_id TEXT NOT NULL DEFAULT '',
+  latitude NUMERIC(10, 7),
+  longitude NUMERIC(10, 7),
+  accuracy NUMERIC(10, 2),
+  region_community_id TEXT NOT NULL DEFAULT '',
+  region_street_id TEXT NOT NULL DEFAULT '',
+  captured_at BIGINT NOT NULL,
+  previous_event_id TEXT,
+  distance_meters NUMERIC(12, 2),
+  elapsed_ms BIGINT,
+  speed_mps NUMERIC(12, 2),
+  risk_level TEXT NOT NULL DEFAULT 'normal',
+  risk_code TEXT NOT NULL DEFAULT '',
+  created_at BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_location_risk_events_user_created_at
+ON location_risk_events(user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_location_risk_events_level_created_at
+ON location_risk_events(risk_level, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_location_risk_events_code_created_at
+ON location_risk_events(risk_code, created_at DESC)
+WHERE risk_code <> '';
 
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,

@@ -17,6 +17,7 @@ const NORMALIZED_TABLES = [
   'trade_reviews',
   'location_audits',
   'reports',
+  'location_risk_events',
   'moderation_events',
   'notifications',
   'notification_deliveries',
@@ -35,6 +36,12 @@ export const REQUIRED_SCHEMA_MIGRATIONS = [
     version: '20260531_auth_session_last_seen',
     name: 'auth_session_last_seen',
     checksum: 'baseline:backend/db/schema.sql#auth_sessions.last_seen_at',
+    source: 'backend/db/schema.sql'
+  },
+  {
+    version: '20260531_location_risk_events',
+    name: 'location_risk_events',
+    checksum: 'baseline:backend/db/schema.sql#location_risk_events',
     source: 'backend/db/schema.sql'
   }
 ]
@@ -205,6 +212,26 @@ export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
     'created_at',
     'updated_at',
     'resolved_at'
+  ],
+  location_risk_events: [
+    'id',
+    'user_id',
+    'action',
+    'target_type',
+    'target_id',
+    'latitude',
+    'longitude',
+    'accuracy',
+    'region_community_id',
+    'region_street_id',
+    'captured_at',
+    'previous_event_id',
+    'distance_meters',
+    'elapsed_ms',
+    'speed_mps',
+    'risk_level',
+    'risk_code',
+    'created_at'
   ],
   moderation_events: [
     'id',
@@ -723,6 +750,37 @@ export function serializeStateToRows(state = {}, seedItems) {
     })
     .filter(Boolean)
 
+  const locationRiskEventRows = toArray(normalized.locationRiskEvents)
+    .map((event) => {
+      const userId = knownUserId(usersById, event.userId)
+
+      if (!userId) {
+        return null
+      }
+
+      return {
+        id: event.id,
+        userId,
+        action: event.action || '',
+        targetType: event.targetType || '',
+        targetId: event.targetId || '',
+        latitude: nullableNumber(event.latitude),
+        longitude: nullableNumber(event.longitude),
+        accuracy: nullableNumber(event.accuracy),
+        regionCommunityId: event.regionCommunityId || '',
+        regionStreetId: event.regionStreetId || '',
+        capturedAt: toInteger(event.capturedAt, event.createdAt || Date.now()),
+        previousEventId: event.previousEventId || null,
+        distanceMeters: nullableNumber(event.distanceMeters),
+        elapsedMs: nullableInteger(event.elapsedMs),
+        speedMps: nullableNumber(event.speedMetersPerSecond ?? event.speedMps),
+        riskLevel: event.riskLevel || 'normal',
+        riskCode: event.riskCode || '',
+        createdAt: toInteger(event.createdAt, Date.now())
+      }
+    })
+    .filter((event) => event?.id && event.userId && event.action)
+
   const notificationRows = normalized.notifications
     .map((notification) => {
       const userId = knownUserId(usersById, notification.userId)
@@ -883,6 +941,7 @@ export function serializeStateToRows(state = {}, seedItems) {
     disputeCases: disputeRows,
     reviews: reviewRows,
     reports: reportRows,
+    locationRiskEvents: locationRiskEventRows,
     notifications: notificationRows,
     notificationDeliveries: notificationDeliveryRows,
     moderationEvents: moderationEventRows,
@@ -974,6 +1033,27 @@ export function deserializeRowsToState(rows = {}, seedItems) {
     createdAt: toInteger(row.created_at ?? row.createdAt, Date.now()),
     updatedAt: toInteger(row.updated_at ?? row.updatedAt, Date.now()),
     resolvedAt: nullableInteger(row.resolved_at ?? row.resolvedAt)
+  }))
+
+  const locationRiskEvents = toArray(rows.locationRiskEvents).map((row) => ({
+    id: row.id || '',
+    userId: row.user_id || row.userId || '',
+    action: row.action || '',
+    targetType: row.target_type || row.targetType || '',
+    targetId: row.target_id || row.targetId || '',
+    latitude: nullableNumber(row.latitude),
+    longitude: nullableNumber(row.longitude),
+    accuracy: nullableNumber(row.accuracy),
+    regionCommunityId: row.region_community_id || row.regionCommunityId || '',
+    regionStreetId: row.region_street_id || row.regionStreetId || '',
+    capturedAt: toInteger(row.captured_at ?? row.capturedAt, Date.now()),
+    previousEventId: row.previous_event_id || row.previousEventId || '',
+    distanceMeters: nullableNumber(row.distance_meters ?? row.distanceMeters),
+    elapsedMs: nullableInteger(row.elapsed_ms ?? row.elapsedMs),
+    speedMetersPerSecond: nullableNumber(row.speed_mps ?? row.speedMetersPerSecond),
+    riskLevel: row.risk_level || row.riskLevel || 'normal',
+    riskCode: row.risk_code || row.riskCode || '',
+    createdAt: toInteger(row.created_at ?? row.createdAt, Date.now())
   }))
 
   const disputeCases = toArray(rows.disputeCases).map((row) => ({
@@ -1120,6 +1200,7 @@ export function deserializeRowsToState(rows = {}, seedItems) {
     reviews,
     uploads,
     reports,
+    locationRiskEvents,
     notifications,
     notificationDeliveries,
     moderationEvents,
@@ -1137,6 +1218,7 @@ export function deserializeRowsToState(rows = {}, seedItems) {
     toArray(rows.locationAudits).length ||
     uploads.length ||
     reports.length ||
+    locationRiskEvents.length ||
     disputeCases.length ||
     reviews.length ||
     notifications.length ||
@@ -1159,6 +1241,7 @@ async function loadNormalizedState(client, seedItems) {
   const tradeTimeline = await client.query('SELECT * FROM trade_timeline ORDER BY trade_id, created_at ASC')
   const locationAudits = await client.query('SELECT * FROM location_audits ORDER BY trade_id, created_at DESC')
   const reports = await client.query('SELECT * FROM reports ORDER BY created_at DESC')
+  const locationRiskEvents = await client.query('SELECT * FROM location_risk_events ORDER BY created_at DESC LIMIT 2000')
   const disputeCases = await client.query('SELECT * FROM trade_disputes ORDER BY created_at DESC')
   const reviews = await client.query('SELECT * FROM trade_reviews ORDER BY created_at DESC')
   const notifications = await client.query('SELECT * FROM notifications ORDER BY created_at DESC')
@@ -1178,6 +1261,7 @@ async function loadNormalizedState(client, seedItems) {
     tradeTimeline: tradeTimeline.rows,
     locationAudits: locationAudits.rows,
     reports: reports.rows,
+    locationRiskEvents: locationRiskEvents.rows,
     disputeCases: disputeCases.rows,
     reviews: reviews.rows,
     notifications: notifications.rows,
@@ -1200,6 +1284,7 @@ async function countNormalizedRows(client) {
     ['tradeTimeline', 'trade_timeline'],
     ['locationAudits', 'location_audits'],
     ['reports', 'reports'],
+    ['locationRiskEvents', 'location_risk_events'],
     ['disputeCases', 'trade_disputes'],
     ['reviews', 'trade_reviews'],
     ['notifications', 'notifications'],
@@ -1486,6 +1571,36 @@ async function saveNormalizedRows(client, rows) {
     )
   }
 
+  for (const event of rows.locationRiskEvents) {
+    await client.query(
+      `INSERT INTO location_risk_events (
+        id, user_id, action, target_type, target_id, latitude, longitude, accuracy,
+        region_community_id, region_street_id, captured_at, previous_event_id, distance_meters,
+        elapsed_ms, speed_mps, risk_level, risk_code, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+      [
+        event.id,
+        event.userId,
+        event.action,
+        event.targetType,
+        event.targetId,
+        event.latitude,
+        event.longitude,
+        event.accuracy,
+        event.regionCommunityId,
+        event.regionStreetId,
+        event.capturedAt,
+        event.previousEventId,
+        event.distanceMeters,
+        event.elapsedMs,
+        event.speedMps,
+        event.riskLevel,
+        event.riskCode,
+        event.createdAt
+      ]
+    )
+  }
+
   for (const notification of rows.notifications) {
     await client.query(
       `INSERT INTO notifications (
@@ -1607,6 +1722,7 @@ async function deleteBusinessRows(client) {
   await client.query('DELETE FROM ops_audit_events')
   await client.query('DELETE FROM client_events')
   await client.query('DELETE FROM moderation_events')
+  await client.query('DELETE FROM location_risk_events')
   await client.query('DELETE FROM notification_deliveries')
   await client.query('DELETE FROM notifications')
   await client.query('DELETE FROM reports')
@@ -1926,6 +2042,32 @@ async function ensureNormalizedSchema(client) {
     ON reports (reporter_id, target_type, target_id, reason)
     WHERE status = 'pending_review'
   `)
+
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS location_risk_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      action TEXT NOT NULL,
+      target_type TEXT NOT NULL DEFAULT '',
+      target_id TEXT NOT NULL DEFAULT '',
+      latitude NUMERIC(10, 7),
+      longitude NUMERIC(10, 7),
+      accuracy NUMERIC(10, 2),
+      region_community_id TEXT NOT NULL DEFAULT '',
+      region_street_id TEXT NOT NULL DEFAULT '',
+      captured_at BIGINT NOT NULL,
+      previous_event_id TEXT,
+      distance_meters NUMERIC(12, 2),
+      elapsed_ms BIGINT,
+      speed_mps NUMERIC(12, 2),
+      risk_level TEXT NOT NULL DEFAULT 'normal',
+      risk_code TEXT NOT NULL DEFAULT '',
+      created_at BIGINT NOT NULL
+    )
+  `)
+  await client.query('CREATE INDEX IF NOT EXISTS idx_location_risk_events_user_created_at ON location_risk_events(user_id, created_at DESC)')
+  await client.query('CREATE INDEX IF NOT EXISTS idx_location_risk_events_level_created_at ON location_risk_events(risk_level, created_at DESC)')
+  await client.query("CREATE INDEX IF NOT EXISTS idx_location_risk_events_code_created_at ON location_risk_events(risk_code, created_at DESC) WHERE risk_code <> ''")
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS moderation_events (

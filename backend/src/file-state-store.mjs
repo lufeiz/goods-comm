@@ -93,6 +93,7 @@ export function normalizeState(state = {}, seedItems) {
     notificationDeliveries: Array.isArray(state.notificationDeliveries) ? state.notificationDeliveries : initial.notificationDeliveries,
     uploads: Array.isArray(state.uploads) ? state.uploads : initial.uploads,
     reports: Array.isArray(state.reports) ? state.reports : initial.reports,
+    locationRiskEvents: Array.isArray(state.locationRiskEvents) ? state.locationRiskEvents : initial.locationRiskEvents,
     moderationEvents: Array.isArray(state.moderationEvents) ? state.moderationEvents : initial.moderationEvents,
     clientEvents: Array.isArray(state.clientEvents) ? state.clientEvents : initial.clientEvents,
     opsAuditEvents: Array.isArray(state.opsAuditEvents) ? state.opsAuditEvents : initial.opsAuditEvents,

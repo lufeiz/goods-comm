@@ -4,6 +4,7 @@ TRUNCATE TABLE
   account_deletions,
   client_events,
   idempotency_records,
+  location_risk_events,
   moderation_events,
   ops_audit_events,
   notification_deliveries,

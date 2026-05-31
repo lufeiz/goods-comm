@@ -21,13 +21,13 @@
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema` 和 `20260531_auth_session_last_seen` |
+| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema`、`20260531_auth_session_last_seen` 和 `20260531_location_risk_events` |
 | `name` | string | 迁移名称 |
 | `checksum` | string | 当前 schema 基线标识，后续可替换为真实文件校验值 |
 | `source` | string | 迁移来源文件 |
 | `applied_at` | datetime | 首次应用时间 |
 
-`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema` 与 `20260531_auth_session_last_seen`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
+`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`、`20260531_auth_session_last_seen` 与 `20260531_location_risk_events`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
 
 ### `users`
 
@@ -274,6 +274,37 @@
 
 当前 `backend/src/postgres-state-store.mjs` 会从交易对象的 `locationAudit` 同步写入本表；`trade_intents.location_audit` JSONB 字段仅作为兼容冗余。
 
+### `location_risk_events`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | string / uuid | 位置风控事件 ID |
+| `user_id` | string / uuid | 被审计用户 |
+| `action` | string | 触发动作，当前为 `item_publish` / `trade_create` |
+| `target_type` | string | 关联对象类型 |
+| `target_id` | string | 关联对象 ID |
+| `latitude` | decimal nullable | 服务端内部使用的本次定位纬度，公开响应不返回 |
+| `longitude` | decimal nullable | 服务端内部使用的本次定位经度，公开响应不返回 |
+| `accuracy` | decimal nullable | GPS 精度 |
+| `region_community_id` | string | 服务端解析后的社区 ID |
+| `region_street_id` | string | 服务端解析后的街道 ID |
+| `captured_at` | datetime | 端侧定位采集时间 |
+| `previous_event_id` | string nullable | 上一次同用户位置事件 |
+| `distance_meters` | decimal nullable | 与上一次位置事件的距离 |
+| `elapsed_ms` | integer nullable | 与上一次位置事件的时间差 |
+| `speed_mps` | decimal nullable | 推算移动速度 |
+| `risk_level` | enum/string | `normal` / `high` |
+| `risk_code` | string | 风险码，例如 `IMPOSSIBLE_TRAVEL` |
+| `created_at` | datetime | 服务端记录时间 |
+
+索引：
+
+- index(`user_id`, `created_at`)
+- index(`risk_level`, `created_at`)
+- partial index(`risk_code`, `created_at`) where `risk_code <> ''`
+
+发布商品和发起交易成功后会写入该表。若同一用户 30 分钟内出现超过阈值的远距离高速切换，服务端会额外写一条脱敏 `client_events(type=location_risk, level=warn)`，供运营排障和风控复核；该机制先审计不拦截，避免真机定位漂移造成主链路误伤。prod 同步到 pre 时会清空经纬度、精度、区域和速度字段，只保留结构性风险状态。
+
 ### `notifications`
 
 | 字段 | 类型 | 说明 |
@@ -430,7 +461,7 @@
 
 ## 2. 必须事务化的操作
 
-1. 创建交易：校验商品 `online`、校验 LBS、创建 `trade_intents`、写入 `location_audits`、商品置为 `reserved`、给卖家写 `notifications` 和 `notification_deliveries`。
+1. 创建交易：校验商品 `online`、校验 LBS、创建 `trade_intents`、写入 `location_audits` 和 `location_risk_events`、商品置为 `reserved`、给卖家写 `notifications` 和 `notification_deliveries`。
 2. 交易确认：交易置为 `pending_meetup`、生成一次性联系码、写 `trade_timeline`、给买家写 `notifications` 和 `notification_deliveries`。
 3. 交易完成：交易置为 `completed`、清空一次性联系码、商品置为 `sold`、写 `trade_timeline`、`notifications` 和 `notification_deliveries`。
 4. 交易取消：交易置为 `cancelled`、清空一次性联系码、若无其他活跃交易则商品回到 `online`、写 `trade_timeline`、`notifications` 和 `notification_deliveries`。
@@ -442,7 +473,7 @@
 10. 退出登录：只吊销当前 `auth_sessions` 记录，不影响同一用户的其他有效 session。
 11. 幂等写请求：执行业务写入和 `idempotency_records` 响应快照必须处于同一事务；成功请求记录 `completed`，已提交审计的业务拒绝记录 `committed_error`；重复请求不能再次追加商品、交易时间线、站内通知、审核事件或平台通知 outbox。请求身份不包含服务端注入的 `serverRegion` 和 `moderation` 字段，发布重试应在外部内容安全调用前先命中幂等重放。
 12. 举报处理：运营通过 `uphold_report` 或 `dismiss_report` 处理 `pending_review` 举报；确认违规时下架商品并把活跃交易转争议，驳回误报时只在没有活跃 / 争议交易阻塞时恢复 `reported_removed` 商品为 `online`，同时写 `reports` 处理字段、`moderation_events` 和 `ops_audit_events`。
-13. 客户端遥测：端侧登录、定位、发布、交易、举报等失败事件写入 `client_events`；该记录不参与交易事务裁决，但必须脱敏并可供运营排障查询。
+13. 客户端遥测与位置风控：端侧登录、定位、发布、交易、举报等失败事件写入 `client_events`；发布和交易的可信定位使用会写入 `location_risk_events`，短时间远距离跳变会额外生成脱敏 `client_events(type=location_risk)`。这些记录不参与交易事务裁决，但必须脱敏并可供运营排障查询。
 
 ## 3. 服务端不变量
 

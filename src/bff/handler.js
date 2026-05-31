@@ -74,6 +74,10 @@ const LOCAL_SESSION_SECRET = 'goods-comm-local-session-secret'
 const AGREEMENT_ACCEPTED_AT_CLOCK_SKEW_MS = 5 * 60 * 1000
 const IDEMPOTENCY_RECORD_TTL_MS = 24 * 60 * 60 * 1000
 const IDEMPOTENCY_RECORD_LIMIT = 1000
+const LOCATION_RISK_EVENT_LIMIT = 1000
+const LOCATION_RISK_LOOKBACK_MS = 30 * 60 * 1000
+const LOCATION_RISK_MIN_DISTANCE_METERS = 3000
+const LOCATION_RISK_MAX_SPEED_METERS_PER_SECOND = 80
 const IDEMPOTENT_PATHS = [
   /^\/items$/,
   /^\/items\/[^/]+\/status$/,
@@ -110,6 +114,7 @@ export function createBffState(seedItems = SEED_ITEMS) {
     notificationDeliveries: [],
     uploads: [],
     reports: [],
+    locationRiskEvents: [],
     moderationEvents: [],
     clientEvents: [],
     opsAuditEvents: [],
@@ -826,6 +831,15 @@ function createItem(options = {}, state) {
   })
 
   state.items.unshift(item)
+  recordTrustedLocationUse(state, {
+    user,
+    action: 'item_publish',
+    targetType: 'item',
+    targetId: item.id,
+    location: item.location,
+    region: serverRegion,
+    now
+  })
 
   return sanitizeItemForResponse(item)
 }
@@ -957,6 +971,7 @@ function createTrade(options = {}, state) {
   const buyer = requireUser(options, state)
   const payload = options.data || {}
   const item = findVisibleItem(payload.itemId, state)
+  const now = Date.now()
 
   if (item.status === ITEM_STATUS.SOLD) {
     throw new Error('物品已完成交易')
@@ -1010,7 +1025,7 @@ function createTrade(options = {}, state) {
     eligibilityMessage: eligibility.message,
     locationAudit: {
       source: 'server',
-      capturedAt: payload.buyerLocation?.capturedAt || Date.now(),
+      capturedAt: payload.buyerLocation?.capturedAt || now,
       accuracy: Number.isFinite(Number(payload.buyerLocation?.accuracy)) ? Number(payload.buyerLocation.accuracy) : null,
       distanceMeters: eligibility.distanceMeters,
       radiusMeters: eligibility.radiusMeters,
@@ -1020,13 +1035,22 @@ function createTrade(options = {}, state) {
     timeline: [
       createTimelineEvent(TRADE_STATUS.PENDING_SELLER_CONFIRM, buyer.id, '买家已发起交易意向')
     ],
-    createdAt: Date.now(),
-    updatedAt: Date.now()
+    createdAt: now,
+    updatedAt: now
   }
 
   state.trades.unshift(trade)
+  recordTrustedLocationUse(state, {
+    user: buyer,
+    action: 'trade_create',
+    targetType: 'trade',
+    targetId: trade.id,
+    location: payload.buyerLocation,
+    region: buyerRegion,
+    now
+  })
   item.status = ITEM_STATUS.RESERVED
-  item.updatedAt = Date.now()
+  item.updatedAt = now
   pushTradeNotification(state, {
     userId: trade.seller.id,
     type: 'trade_created',
@@ -2545,6 +2569,176 @@ function sanitizeClientEventValue(value) {
   }
 
   return ''
+}
+
+function recordTrustedLocationUse(state = {}, options = {}) {
+  const userId = String(options.user?.id || '').trim()
+  const currentLocation = normalizeLocationRiskPoint(options.location)
+
+  if (!userId || !currentLocation) {
+    return null
+  }
+
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
+  const events = normalizeLocationRiskEvents(state.locationRiskEvents)
+  const event = {
+    id: createId('location_risk'),
+    userId,
+    action: String(options.action || '').trim(),
+    targetType: String(options.targetType || '').trim(),
+    targetId: String(options.targetId || '').trim(),
+    latitude: currentLocation.latitude,
+    longitude: currentLocation.longitude,
+    accuracy: normalizeOptionalNumber(options.location?.accuracy),
+    regionCommunityId: options.region?.communityId || options.location?.communityId || '',
+    regionStreetId: options.region?.streetId || options.location?.streetId || '',
+    capturedAt: currentLocation.capturedAt,
+    previousEventId: '',
+    distanceMeters: null,
+    elapsedMs: null,
+    speedMetersPerSecond: null,
+    riskLevel: 'normal',
+    riskCode: '',
+    createdAt: now
+  }
+  const previous = findPreviousLocationRiskEvent(events, event)
+
+  if (previous) {
+    const distanceMeters = distanceInMeters(event, previous)
+    const elapsedMs = Math.max(event.capturedAt - previous.capturedAt, 1)
+    const speedMetersPerSecond = distanceMeters === null ? null : distanceMeters / (elapsedMs / 1000)
+
+    event.previousEventId = previous.id || ''
+    event.distanceMeters = Number.isFinite(distanceMeters) ? Math.round(distanceMeters) : null
+    event.elapsedMs = elapsedMs
+    event.speedMetersPerSecond = Number.isFinite(speedMetersPerSecond)
+      ? Math.round(speedMetersPerSecond * 10) / 10
+      : null
+
+    if (isImpossibleLocationTravel(event)) {
+      event.riskLevel = 'high'
+      event.riskCode = 'IMPOSSIBLE_TRAVEL'
+      pushLocationRiskClientEvent(state, event, previous)
+    }
+  }
+
+  state.locationRiskEvents = [event, ...events]
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+    .slice(0, LOCATION_RISK_EVENT_LIMIT)
+
+  return event
+}
+
+function normalizeLocationRiskEvents(events = []) {
+  return Array.isArray(events)
+    ? events
+        .map((event) => ({
+          id: event.id || '',
+          userId: event.userId || '',
+          action: event.action || '',
+          targetType: event.targetType || '',
+          targetId: event.targetId || '',
+          latitude: normalizeOptionalNumber(event.latitude),
+          longitude: normalizeOptionalNumber(event.longitude),
+          accuracy: normalizeOptionalNumber(event.accuracy),
+          regionCommunityId: event.regionCommunityId || '',
+          regionStreetId: event.regionStreetId || '',
+          capturedAt: Number.isFinite(Number(event.capturedAt)) ? Number(event.capturedAt) : Number(event.createdAt || Date.now()),
+          previousEventId: event.previousEventId || '',
+          distanceMeters: normalizeOptionalNumber(event.distanceMeters),
+          elapsedMs: Number.isFinite(Number(event.elapsedMs)) ? Math.trunc(Number(event.elapsedMs)) : null,
+          speedMetersPerSecond: normalizeOptionalNumber(event.speedMetersPerSecond),
+          riskLevel: event.riskLevel || 'normal',
+          riskCode: event.riskCode || '',
+          createdAt: Number.isFinite(Number(event.createdAt)) ? Number(event.createdAt) : Date.now()
+        }))
+        .filter((event) =>
+          event.id &&
+          event.userId &&
+          Number.isFinite(event.capturedAt)
+        )
+    : []
+}
+
+function normalizeLocationRiskPoint(location = {}) {
+  const latitude = Number(location.latitude)
+  const longitude = Number(location.longitude)
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null
+  }
+
+  const capturedAt = Number(location.capturedAt)
+
+  return {
+    latitude,
+    longitude,
+    capturedAt: Number.isFinite(capturedAt) ? capturedAt : Date.now()
+  }
+}
+
+function findPreviousLocationRiskEvent(events = [], event = {}) {
+  return events
+    .filter((candidate) =>
+      candidate.userId === event.userId &&
+      candidate.id !== event.id &&
+      Number.isFinite(candidate.latitude) &&
+      Number.isFinite(candidate.longitude) &&
+      Number.isFinite(candidate.capturedAt) &&
+      candidate.capturedAt <= event.capturedAt &&
+      event.capturedAt - candidate.capturedAt <= LOCATION_RISK_LOOKBACK_MS
+    )
+    .sort((a, b) => b.capturedAt - a.capturedAt)[0] || null
+}
+
+function isImpossibleLocationTravel(event = {}) {
+  return Number.isFinite(event.distanceMeters) &&
+    Number.isFinite(event.speedMetersPerSecond) &&
+    event.distanceMeters >= LOCATION_RISK_MIN_DISTANCE_METERS &&
+    event.speedMetersPerSecond > LOCATION_RISK_MAX_SPEED_METERS_PER_SECOND
+}
+
+function pushLocationRiskClientEvent(state = {}, event = {}, previous = {}) {
+  state.clientEvents = [
+    {
+      id: createId('client_event'),
+      type: 'location_risk',
+      level: 'warn',
+      code: event.riskCode,
+      message: '账号短时间位置切换异常',
+      route: event.action,
+      userId: event.userId,
+      platform: '',
+      appEnv: '',
+      traceId: '',
+      context: sanitizeClientEventContext({
+        action: event.action,
+        targetType: event.targetType,
+        targetId: event.targetId,
+        previousAction: previous.action || '',
+        previousTargetType: previous.targetType || '',
+        previousTargetId: previous.targetId || '',
+        previousRegionCommunityId: previous.regionCommunityId || '',
+        previousRegionStreetId: previous.regionStreetId || '',
+        currentRegionCommunityId: event.regionCommunityId || '',
+        currentRegionStreetId: event.regionStreetId || '',
+        distanceMeters: event.distanceMeters,
+        elapsedMs: event.elapsedMs,
+        speedMetersPerSecond: event.speedMetersPerSecond
+      }),
+      createdAt: event.createdAt
+    },
+    ...normalizeClientEvents(state.clientEvents)
+  ]
+}
+
+function normalizeOptionalNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
 }
 
 function pushTradeStatusNotifications(state, trade, nextStatus, actor) {

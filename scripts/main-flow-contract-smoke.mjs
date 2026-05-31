@@ -134,6 +134,23 @@ const flows = [
           'capturedAt: smokeCapturedAt.value',
           'accuracy.value'
         ]
+      },
+      {
+        file: 'src/bff/handler.js',
+        tokens: [
+          'locationRiskEvents',
+          'IMPOSSIBLE_TRAVEL',
+          "type: 'location_risk'",
+          'recordTrustedLocationUse'
+        ]
+      },
+      {
+        file: 'scripts/bff-smoke.mjs',
+        tokens: [
+          'location_risk_prior_seller',
+          "event.type === 'location_risk'",
+          "event.code === 'IMPOSSIBLE_TRAVEL'"
+        ]
       }
     ]
   },

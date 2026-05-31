@@ -295,13 +295,13 @@ blockedUser.blockedBy = 'risk-store-smoke'
 
 const rows = serializeStateToRows(state, [])
 
-assert.equal(countSerializedRows(rows), 32)
-assert.equal(normalizeSnapshotRowLimit('32'), 32)
-assert.doesNotThrow(() => assertSnapshotRowLimit(rows, 32))
+assert.equal(countSerializedRows(rows), 36)
+assert.equal(normalizeSnapshotRowLimit('36'), 36)
+assert.doesNotThrow(() => assertSnapshotRowLimit(rows, 36))
 assert.doesNotThrow(() => assertSnapshotRowLimit(rows, 0))
 assert.throws(
-  () => assertSnapshotRowLimit(rows, 31),
-  /PostgreSQL snapshot row count 32 exceeds GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS=31/
+  () => assertSnapshotRowLimit(rows, 35),
+  /PostgreSQL snapshot row count 36 exceeds GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS=35/
 )
 assert.throws(
   () => normalizeSnapshotRowLimit('not-a-number'),
@@ -355,6 +355,7 @@ assert.equal(rows.itemImages.length, 2)
 assert.equal(rows.trades.length, 2)
 assert.equal(rows.tradeTimeline.length, 5)
 assert.equal(rows.locationAudits.length, 2)
+assert.equal(rows.locationRiskEvents.length, 4)
 assert.equal(rows.disputeCases.length, 1)
 assert.equal(rows.reviews.length, 1)
 assert.equal(rows.reports.length, 1)
@@ -386,6 +387,8 @@ assert.equal(rows.idempotencyRecords[0].key, 'store_trade_create_key_001')
 assert.equal(rows.idempotencyRecords[0].response.id, trade.id)
 assert.equal(rows.reports[0].resolution, 'uphold_report')
 assert.equal(rows.reports[0].resolverId, sellerLogin.user.id)
+assert.equal(rows.locationRiskEvents.some((event) => event.userId === sellerLogin.user.id && event.action === 'item_publish'), true)
+assert.equal(rows.locationRiskEvents.some((event) => event.userId === buyerLogin.user.id && event.action === 'trade_create'), true)
 assert.equal(rows.moderationEvents[0].actorId, null)
 assert.equal(rows.clientEvents[0].userId, buyerLogin.user.id)
 assert.equal(rows.clientEvents[0].context.source, 'gps')
@@ -431,6 +434,8 @@ assert.equal(restored.reviews[0].reviewee.id, sellerLogin.user.id)
 assert.equal(restored.reports.length, 1)
 assert.equal(restored.reports[0].resolution, 'uphold_report')
 assert.equal(restored.reports[0].resolverId, sellerLogin.user.id)
+assert.equal(restored.locationRiskEvents.length, 4)
+assert.equal(restored.locationRiskEvents.some((event) => event.action === 'trade_create'), true)
 assert.equal(restored.notifications.length, 7)
 assert.equal(restored.notifications.some((notification) => notification.targetId === trade.id), true)
 assert.equal(restored.notificationDeliveries.length, 1)
@@ -466,6 +471,8 @@ assert.equal(roundTripRows.notificationDeliveries.length, rows.notificationDeliv
 assert.equal(roundTripRows.notificationDeliveries[0].attemptCount, 2)
 assert.equal(roundTripRows.tradeTimeline.length, rows.tradeTimeline.length)
 assert.equal(roundTripRows.locationAudits.length, rows.locationAudits.length)
+assert.equal(roundTripRows.locationRiskEvents.length, rows.locationRiskEvents.length)
+assert.equal(roundTripRows.locationRiskEvents.some((event) => event.action === 'item_publish'), true)
 assert.equal(roundTripRows.moderationEvents.length, rows.moderationEvents.length)
 assert.equal(roundTripRows.moderationEvents[0].actorId, null)
 assert.equal(roundTripRows.clientEvents.length, rows.clientEvents.length)
