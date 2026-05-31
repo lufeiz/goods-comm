@@ -84,6 +84,7 @@ function addCoreSmokes() {
     'smoke:ops-alerts',
     'smoke:request-logger',
     'smoke:location-permissions',
+    'smoke:environment-commands',
     'smoke:env-local-templates',
     'smoke:deployed-input-templates',
     'smoke:deployed-env-files',

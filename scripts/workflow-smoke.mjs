@@ -75,6 +75,7 @@ function assertReleaseGateProfileBoundary() {
     "args: ['scripts/production-readiness-audit.mjs']",
     "if (profile !== 'release')",
     "'smoke:location-permissions'",
+    "'smoke:environment-commands'",
     "'smoke:frontend-deploy'",
     "'smoke:mini-program-deploy-config'",
     "'smoke:main-flow-contract'",
