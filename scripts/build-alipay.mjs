@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { readEnvironmentFile } from './env-files.mjs'
 import { patchMiniProgramAppId } from './mini-program-deploy-config.mjs'
 
 const mode = parseMode(process.argv.slice(2))
-const tempOutDir = resolve('/private/tmp', `goods-comm-mp-alipay-build${mode ? `-${mode}` : ''}`)
+const tempOutDir = resolve(tmpdir(), `goods-comm-mp-alipay-build${mode ? `-${mode}` : ''}`)
 const targetBuildDir = mode ? resolve('dist/build', mode, 'mp-alipay') : resolve('dist/build/mp-alipay')
 const uniBin = resolve('node_modules/.bin/uni')
 const args = ['build', '-p', 'mp-alipay', '--outDir', tempOutDir]

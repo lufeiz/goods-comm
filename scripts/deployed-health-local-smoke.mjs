@@ -1,11 +1,12 @@
 import { spawn } from 'node:child_process'
 import { rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { startGoodsCommServer } from '../backend/src/server.mjs'
 
 const runId = `local-deployed-health-${Date.now()}`
-const statePath = resolve(`/private/tmp/goods-comm-${runId}.json`)
-const objectRootDir = resolve(`/private/tmp/goods-comm-${runId}-objects`)
+const statePath = resolve(tmpdir(), `goods-comm-${runId}.json`)
+const objectRootDir = resolve(tmpdir(), `goods-comm-${runId}-objects`)
 
 await rm(statePath, {
   force: true

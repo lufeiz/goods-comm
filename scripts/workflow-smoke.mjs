@@ -11,6 +11,7 @@ const workflows = {
 }
 const deployBackendScript = await readFile(resolve(root, 'scripts/deploy-backend.mjs'), 'utf8')
 const deployFrontendScript = await readFile(resolve(root, 'scripts/deploy-frontend.mjs'), 'utf8')
+const provisionDatabaseScript = await readFile(resolve(root, 'scripts/provision-database.mjs'), 'utf8')
 const migrateDatabaseScript = await readFile(resolve(root, 'scripts/migrate-database.mjs'), 'utf8')
 const releaseGateScript = await readFile(resolve(root, 'scripts/verify-release-gate.mjs'), 'utf8')
 
@@ -21,6 +22,7 @@ assertStrictReleaseGate()
 assertProdToPreSyncWorkflow()
 assertDirectBackendDeployProtection()
 assertDirectFrontendDeployProtection()
+assertDirectDatabaseProvisionProtection()
 assertDirectDatabaseMigrationProtection()
 
 console.log('Workflow smoke checks passed')
@@ -32,10 +34,25 @@ async function readWorkflow(name) {
   assert.match(content, /^name:\s+.+$/m, `${name}: workflow name is missing`)
   assert.match(content, /^on:\s*$/m, `${name}: workflow triggers are missing`)
   assert.match(content, /^jobs:\s*$/m, `${name}: jobs block is missing`)
+  assertNoAmbiguousPlainYamlScalars(name, content)
 
   return {
     name,
     content
+  }
+}
+
+function assertNoAmbiguousPlainYamlScalars(name, content) {
+  const lines = content.split(/\r?\n/)
+
+  for (const [index, line] of lines.entries()) {
+    const ambiguous = line.match(/^\s*[a-zA-Z0-9_-]+:\s+([^'"[{|>&*!#].*:\s+.+)$/)
+
+    assert.equal(
+      Boolean(ambiguous),
+      false,
+      `${name}:${index + 1}: quote YAML scalar values that contain ": "`
+    )
   }
 }
 
@@ -77,6 +94,8 @@ function assertReleaseGateProfileBoundary() {
     "if (profile !== 'release')",
     "'smoke:location-permissions'",
     "'smoke:environment-commands'",
+    "'smoke:database-migration'",
+    "'smoke:database-provision'",
     "'smoke:frontend-deploy'",
     "'smoke:mini-program-deploy-config'",
     "'smoke:main-flow-contract'",
@@ -92,6 +111,8 @@ function assertReleaseGateProfileBoundary() {
   ])
 
   assertIncludesAll('scripts/verify-release-gate.mjs', releaseGateScript, [
+    "name: `db provision plan ${env}`",
+    "args: ['scripts/provision-database.mjs', '--env', env]",
     "name: `frontend deploy plan ${env}`",
     "args: ['scripts/deploy-frontend.mjs', '--env', env]"
   ])
@@ -333,11 +354,25 @@ function assertDirectBackendDeployProtection() {
 
 function assertDirectDatabaseMigrationProtection() {
   assertIncludesAll('scripts/migrate-database.mjs', migrateDatabaseScript, [
-    "await import('pg')",
+    "GOODS_COMM_DB_MIGRATE_PG_MODULE",
+    'await import(moduleName)',
     'await client.query(schemaSql)',
     'GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
     'Refusing to migrate prod without GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment}${prodOptIn}'
+  ])
+}
+
+function assertDirectDatabaseProvisionProtection() {
+  assertIncludesAll('scripts/provision-database.mjs', provisionDatabaseScript, [
+    "GOODS_COMM_DATABASE_ADMIN_URL",
+    "GOODS_COMM_DB_PROVISION_CONFIRM=provision-${environment}",
+    "GOODS_COMM_DB_PROVISION_ALLOW_PROD=true",
+    "GOODS_COMM_DB_PROVISION_ROTATE_PASSWORD",
+    "CREATE ROLE ${quoteIdentifier(target.username)} WITH LOGIN PASSWORD",
+    "CREATE DATABASE ${quoteIdentifier(target.database)} OWNER ${quoteIdentifier(target.username)}",
+    'refusing to provision protected PostgreSQL database',
+    'GOODS_COMM_STATE_STORE must be postgres before database provisioning'
   ])
 }
 

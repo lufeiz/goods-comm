@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { readEnvironmentFile } from './env-files.mjs'
 import { patchMiniProgramAppId } from './mini-program-deploy-config.mjs'
 
 const mode = parseMode(process.argv.slice(2))
-const tempOutDir = resolve('/private/tmp', `goods-comm-mp-weixin-build${mode ? `-${mode}` : ''}`)
+const tempOutDir = resolve(tmpdir(), `goods-comm-mp-weixin-build${mode ? `-${mode}` : ''}`)
 const tempBuildDir = tempOutDir
 const targetBuildDir = mode ? resolve('dist/build', mode, 'mp-weixin') : resolve('dist/build/mp-weixin')
 const projectConfigFileName = 'project.config.json'

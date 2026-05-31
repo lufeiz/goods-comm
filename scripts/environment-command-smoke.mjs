@@ -11,6 +11,8 @@ for (const environment of VALID_ENVIRONMENTS) {
   assertScript(`build:h5:${environment}`, `uni build -p h5 --mode ${environment} --outDir dist/build/${environment}/h5`)
   assertScript(`build:weixin:${environment}`, `node scripts/build-weixin.mjs --mode ${environment}`)
   assertScript(`build:alipay:${environment}`, `node scripts/build-alipay.mjs --mode ${environment}`)
+  assertScript(`db:provision:${environment}:plan`, `node scripts/provision-database.mjs --env ${environment}`)
+  assertScript(`db:provision:${environment}`, `node scripts/provision-database.mjs --env ${environment} --execute`)
   assertScript(`db:migrate:${environment}:plan`, `node scripts/migrate-database.mjs --env ${environment}`)
   assertScript(`db:migrate:${environment}`, `node scripts/migrate-database.mjs --env ${environment} --execute`)
   assertScript(`deploy:backend:${environment}:plan`, `node scripts/deploy-backend.mjs --env ${environment}`)
@@ -21,6 +23,7 @@ for (const environment of VALID_ENVIRONMENTS) {
   assertScript(`smoke:deployed:${environment}:main`, `node scripts/deployed-main-flow-smoke.mjs --env ${environment}`)
 }
 
+assertScript('db:provision:plan', 'node scripts/provision-database.mjs')
 assertScript('db:migrate:plan', 'node scripts/migrate-database.mjs')
 assertScript('sync:prod-to-pre:plan', 'node scripts/sync-prod-to-pre.mjs')
 assertScript('sync:prod-to-pre', 'node scripts/sync-prod-to-pre.mjs --execute')

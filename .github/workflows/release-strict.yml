@@ -38,7 +38,7 @@ on:
         default: false
         type: boolean
       frontend_targets:
-        description: Frontend deploy targets: all, h5, mp-weixin, mp-alipay, or comma-separated aliases
+        description: 'Frontend deploy targets: all, h5, mp-weixin, mp-alipay, or comma-separated aliases'
         required: true
         default: h5
         type: string

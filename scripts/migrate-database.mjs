@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   containsPlaceholder,
   maskConnectionString,
@@ -11,7 +12,8 @@ const execute = process.argv.includes('--execute')
 const environment = getEnvironmentArg()
 const values = await readEnvironmentFile(environment)
 const databaseUrl = values.GOODS_COMM_DATABASE_URL
-const schemaPath = resolve('backend/db/schema.sql')
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const schemaPath = resolve(root, 'backend/db/schema.sql')
 const schemaSql = await readFile(schemaPath, 'utf8')
 
 validateInputs()
@@ -39,7 +41,7 @@ await runMigration()
 console.log(`Database migration completed for ${environment}`)
 
 async function runMigration() {
-  const { Client } = await loadPgClient()
+  const Client = await loadPgClient()
   const client = new Client({
     connectionString: databaseUrl,
     application_name: `goods-comm-migrate-${environment}`
@@ -65,8 +67,10 @@ async function runMigration() {
 }
 
 async function loadPgClient() {
+  const moduleName = process.env.GOODS_COMM_DB_MIGRATE_PG_MODULE || 'pg'
+
   try {
-    const pg = await import('pg')
+    const pg = await import(moduleName)
     return pg.default?.Client || pg.Client
   } catch (error) {
     if (error?.code === 'ERR_MODULE_NOT_FOUND') {
@@ -93,7 +97,9 @@ function validateInputs() {
 
 function getEnvironmentArg() {
   const envIndex = process.argv.findIndex((arg) => arg === '--env')
-  const value = envIndex >= 0 ? process.argv[envIndex + 1] : process.argv[2]
+  const value = envIndex >= 0
+    ? process.argv[envIndex + 1]
+    : process.argv.slice(2).find((arg) => !arg.startsWith('-'))
 
   return normalizeEnvironmentName(value || process.env.GOODS_COMM_ENV || 'pre')
 }

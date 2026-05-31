@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { appendFile, readFile, stat, unlink, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readEnvironmentFile, containsPlaceholder, maskConnectionString } from './env-files.mjs'
@@ -12,9 +13,9 @@ const prod = await readEnvironmentFile('prod')
 const pre = await readEnvironmentFile('pre')
 const prodUrl = prod.GOODS_COMM_DATABASE_URL
 const preUrl = pre.GOODS_COMM_DATABASE_URL
-const legacyDumpPath = process.env.GOODS_COMM_SYNC_DUMP_PATH || '/private/tmp/goods-comm-prod-to-pre.dump'
-const lockPath = process.env.GOODS_COMM_SYNC_LOCK_PATH || '/private/tmp/goods-comm-prod-to-pre.lock'
-const auditPath = process.env.GOODS_COMM_SYNC_AUDIT_PATH || '/private/tmp/goods-comm-prod-to-pre-audit.jsonl'
+const legacyDumpPath = process.env.GOODS_COMM_SYNC_DUMP_PATH || resolve(tmpdir(), 'goods-comm-prod-to-pre.dump')
+const lockPath = process.env.GOODS_COMM_SYNC_LOCK_PATH || resolve(tmpdir(), 'goods-comm-prod-to-pre.lock')
+const auditPath = process.env.GOODS_COMM_SYNC_AUDIT_PATH || resolve(tmpdir(), 'goods-comm-prod-to-pre-audit.jsonl')
 const lockTtlMs = Number(process.env.GOODS_COMM_SYNC_LOCK_TTL_MS || 2 * 60 * 60 * 1000)
 const runPreSmoke = process.env.GOODS_COMM_SYNC_RUN_PRE_SMOKE === 'true'
 const runPreMainSmoke = process.env.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE === 'true'

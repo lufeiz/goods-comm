@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const lockPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.lock`
-const auditPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.jsonl`
-const dumpPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.dump`
+const lockPath = join(tmpdir(), `goods-comm-prod-sync-smoke-${process.pid}.lock`)
+const auditPath = join(tmpdir(), `goods-comm-prod-sync-smoke-${process.pid}.jsonl`)
+const dumpPath = join(tmpdir(), `goods-comm-prod-sync-smoke-${process.pid}.dump`)
 const syncScriptPath = resolve(process.cwd(), 'scripts/sync-prod-to-pre.mjs')
 const anonymizeSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-anonymize.sql')
 const resetSqlPath = resolve(process.cwd(), 'backend/db/pre-sync-reset.sql')

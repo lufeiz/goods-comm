@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict'
 import { request as httpRequest } from 'node:http'
 import { readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { startGoodsCommServer } from '../backend/src/server.mjs'
 import { createContentSafetyClient } from '../backend/src/content-safety.mjs'
 import { createRequestLogger } from '../backend/src/request-logger.mjs'
 import { ITEM_STATUS, TRADE_STATUS } from '../src/services/goods.js'
 
-const statePath = resolve('/private/tmp/goods-comm-backend-smoke.json')
-const objectRootDir = resolve('/private/tmp/goods-comm-object-store-smoke')
+const statePath = resolve(tmpdir(), `goods-comm-backend-smoke-${process.pid}.json`)
+const objectRootDir = resolve(tmpdir(), `goods-comm-object-store-smoke-${process.pid}`)
 const allowedOrigin = 'https://mini.example.com'
 const deliveredPlatformNotifications = []
 const emittedOpsAlerts = []
@@ -1297,8 +1298,8 @@ try {
 }
 
 async function assertHttpRateLimit() {
-  const rateLimitStatePath = resolve('/private/tmp/goods-comm-backend-rate-limit-smoke.json')
-  const rateLimitObjectRootDir = resolve('/private/tmp/goods-comm-backend-rate-limit-object-store-smoke')
+  const rateLimitStatePath = resolve(tmpdir(), `goods-comm-backend-rate-limit-smoke-${process.pid}.json`)
+  const rateLimitObjectRootDir = resolve(tmpdir(), `goods-comm-backend-rate-limit-object-store-smoke-${process.pid}`)
 
   await rm(rateLimitStatePath, {
     force: true
@@ -1365,8 +1366,8 @@ async function assertHttpRateLimit() {
 }
 
 async function assertTrustedProxyForwardedRateLimit() {
-  const trustedProxyStatePath = resolve('/private/tmp/goods-comm-backend-trusted-proxy-rate-limit-smoke.json')
-  const trustedProxyObjectRootDir = resolve('/private/tmp/goods-comm-backend-trusted-proxy-rate-limit-object-store-smoke')
+  const trustedProxyStatePath = resolve(tmpdir(), `goods-comm-backend-trusted-proxy-rate-limit-smoke-${process.pid}.json`)
+  const trustedProxyObjectRootDir = resolve(tmpdir(), `goods-comm-backend-trusted-proxy-rate-limit-object-store-smoke-${process.pid}`)
 
   await rm(trustedProxyStatePath, {
     force: true
@@ -1433,8 +1434,8 @@ async function assertTrustedProxyForwardedRateLimit() {
 }
 
 async function assertRouteAndUserRateLimits() {
-  const routeStatePath = resolve('/private/tmp/goods-comm-backend-route-rate-limit-smoke.json')
-  const routeObjectRootDir = resolve('/private/tmp/goods-comm-backend-route-rate-limit-object-store-smoke')
+  const routeStatePath = resolve(tmpdir(), `goods-comm-backend-route-rate-limit-smoke-${process.pid}.json`)
+  const routeObjectRootDir = resolve(tmpdir(), `goods-comm-backend-route-rate-limit-object-store-smoke-${process.pid}`)
 
   await rm(routeStatePath, {
     force: true
@@ -1489,8 +1490,8 @@ async function assertRouteAndUserRateLimits() {
     })
   }
 
-  const userStatePath = resolve('/private/tmp/goods-comm-backend-user-rate-limit-smoke.json')
-  const userObjectRootDir = resolve('/private/tmp/goods-comm-backend-user-rate-limit-object-store-smoke')
+  const userStatePath = resolve(tmpdir(), `goods-comm-backend-user-rate-limit-smoke-${process.pid}.json`)
+  const userObjectRootDir = resolve(tmpdir(), `goods-comm-backend-user-rate-limit-object-store-smoke-${process.pid}`)
 
   await rm(userStatePath, {
     force: true
@@ -1571,8 +1572,8 @@ async function assertRouteAndUserRateLimits() {
 }
 
 async function assertProtectedSecurityHeaders() {
-  const protectedStatePath = resolve('/private/tmp/goods-comm-backend-protected-security-smoke.json')
-  const protectedObjectRootDir = resolve('/private/tmp/goods-comm-backend-protected-security-object-store-smoke')
+  const protectedStatePath = resolve(tmpdir(), `goods-comm-backend-protected-security-smoke-${process.pid}.json`)
+  const protectedObjectRootDir = resolve(tmpdir(), `goods-comm-backend-protected-security-object-store-smoke-${process.pid}`)
 
   await rm(protectedStatePath, {
     force: true

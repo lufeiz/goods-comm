@@ -95,6 +95,8 @@ function addCoreSmokes() {
     'smoke:rate-limiter',
     'smoke:region',
     'smoke:postgres-store',
+    'smoke:database-migration',
+    'smoke:database-provision',
     'smoke:prod-sync',
     'smoke:github-push-preflight',
     'smoke:frontend-deploy',
@@ -126,6 +128,11 @@ function addPlanChecks() {
   }
 
   for (const env of planEnvironments) {
+    steps.push({
+      name: `db provision plan ${env}`,
+      command: process.execPath,
+      args: ['scripts/provision-database.mjs', '--env', env]
+    })
     steps.push({
       name: `db migration plan ${env}`,
       command: process.execPath,

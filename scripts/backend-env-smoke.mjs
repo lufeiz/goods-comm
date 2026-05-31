@@ -96,7 +96,7 @@ assert.throws(() => createRuntimeStateStore({
 assert.throws(() => createGoodsCommServer({
   environment: 'pre',
   storeType: 'file',
-  statePath: '/private/tmp/goods-comm-unsafe-pre.json'
+  statePath: join(tmpdir(), 'goods-comm-unsafe-pre.json')
 }), /pre 环境不能使用文件状态存储/)
 
 assert.throws(() => createGoodsCommServer({
@@ -140,7 +140,7 @@ assert.throws(() => createGoodsCommServer({
 assert.throws(() => createGoodsCommServer({
   environment: 'prod',
   storeType: 'file',
-  statePath: '/private/tmp/goods-comm-unsafe-prod.json'
+  statePath: join(tmpdir(), 'goods-comm-unsafe-prod.json')
 }), /prod 环境不能使用文件状态存储/)
 
 assert.throws(() => createGoodsCommServer({
