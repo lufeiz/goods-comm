@@ -183,6 +183,20 @@ assert.equal(fetchOpsPublishRiskEvent.latitude, undefined)
 assert.equal(fetchOpsPublishRiskEvent.longitude, undefined)
 assert.equal(fetchOpsPublishRiskEvent.accuracy, undefined)
 assert.equal(JSON.stringify(fetchOpsPublishRiskEvent).includes('116.4074'), false)
+assert.equal(fetchOpsPublishRiskEvent.reviewStatus, 'pending_review')
+const reviewedFetchLocationRisk = await post(`/ops/location-risk-events/${fetchOpsPublishRiskEvent.id}/review`, {
+  reviewStatus: 'confirmed_risk',
+  actorId: 'fetch-risk-smoke',
+  note: 'Fetch smoke 确认风险'
+}, '', {
+  header: {
+    'x-moderation-secret': 'fetch-moderation-secret',
+    'Idempotency-Key': 'fetch_location_risk_review_key_001'
+  }
+})
+assert.equal(reviewedFetchLocationRisk.event.reviewStatus, 'confirmed_risk')
+assert.equal(reviewedFetchLocationRisk.event.reviewerId, 'fetch-risk-smoke')
+assert.equal(reviewedFetchLocationRisk.event.latitude, undefined)
 
 const duplicateItem = await raw('/items', {
   method: 'POST',
@@ -656,11 +670,12 @@ async function get(path, token = '', options = {}) {
   }))
 }
 
-async function post(path, data, token = '') {
+async function post(path, data, token = '', options = {}) {
   return readData(await raw(path, {
     method: 'POST',
     data,
-    token
+    token,
+    ...options
   }))
 }
 

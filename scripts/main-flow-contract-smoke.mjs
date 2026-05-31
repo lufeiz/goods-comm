@@ -161,16 +161,21 @@ const flows = [
         tokens: [
           'fetchLocationRiskEvents',
           "'/ops/location-risk-events'",
-          'normalizeLocationRiskFilters'
+          'normalizeLocationRiskFilters',
+          'reviewLocationRiskEvent',
+          'normalizeLocationRiskReviewPayload'
         ]
       },
       {
         file: 'src/pages/ops/ops.vue',
         tokens: [
           'fetchLocationRiskEvents',
+          'reviewLocationRiskEvent',
           'ops-location-risk-panel',
           'ops-location-risk-card',
-          'prefillLocationRisk'
+          'prefillLocationRisk',
+          'reviewLocationRisk',
+          'ops-location-risk-confirm'
         ]
       }
     ]

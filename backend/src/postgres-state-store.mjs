@@ -43,6 +43,12 @@ export const REQUIRED_SCHEMA_MIGRATIONS = [
     name: 'location_risk_events',
     checksum: 'baseline:backend/db/schema.sql#location_risk_events',
     source: 'backend/db/schema.sql'
+  },
+  {
+    version: '20260531_location_risk_review',
+    name: 'location_risk_review',
+    checksum: 'baseline:backend/db/schema.sql#location_risk_events.review',
+    source: 'backend/db/schema.sql'
   }
 ]
 export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
@@ -231,7 +237,13 @@ export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
     'speed_mps',
     'risk_level',
     'risk_code',
-    'created_at'
+    'review_status',
+    'resolution',
+    'resolution_note',
+    'reviewer_id',
+    'reviewed_at',
+    'created_at',
+    'updated_at'
   ],
   moderation_events: [
     'id',
@@ -776,7 +788,13 @@ export function serializeStateToRows(state = {}, seedItems) {
         speedMps: nullableNumber(event.speedMetersPerSecond ?? event.speedMps),
         riskLevel: event.riskLevel || 'normal',
         riskCode: event.riskCode || '',
-        createdAt: toInteger(event.createdAt, Date.now())
+        reviewStatus: event.reviewStatus || defaultLocationRiskReviewStatus(event),
+        resolution: event.resolution || '',
+        resolutionNote: event.resolutionNote || '',
+        reviewerId: event.reviewerId || '',
+        reviewedAt: nullableInteger(event.reviewedAt),
+        createdAt: toInteger(event.createdAt, Date.now()),
+        updatedAt: toInteger(event.updatedAt || event.createdAt, Date.now())
       }
     })
     .filter((event) => event?.id && event.userId && event.action)
@@ -1053,7 +1071,13 @@ export function deserializeRowsToState(rows = {}, seedItems) {
     speedMetersPerSecond: nullableNumber(row.speed_mps ?? row.speedMetersPerSecond),
     riskLevel: row.risk_level || row.riskLevel || 'normal',
     riskCode: row.risk_code || row.riskCode || '',
-    createdAt: toInteger(row.created_at ?? row.createdAt, Date.now())
+    reviewStatus: row.review_status || row.reviewStatus || defaultLocationRiskReviewStatus(row),
+    resolution: row.resolution || '',
+    resolutionNote: row.resolution_note || row.resolutionNote || '',
+    reviewerId: row.reviewer_id || row.reviewerId || '',
+    reviewedAt: nullableInteger(row.reviewed_at ?? row.reviewedAt),
+    createdAt: toInteger(row.created_at ?? row.createdAt, Date.now()),
+    updatedAt: toInteger(row.updated_at ?? row.updatedAt ?? row.created_at, Date.now())
   }))
 
   const disputeCases = toArray(rows.disputeCases).map((row) => ({
@@ -1576,8 +1600,9 @@ async function saveNormalizedRows(client, rows) {
       `INSERT INTO location_risk_events (
         id, user_id, action, target_type, target_id, latitude, longitude, accuracy,
         region_community_id, region_street_id, captured_at, previous_event_id, distance_meters,
-        elapsed_ms, speed_mps, risk_level, risk_code, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        elapsed_ms, speed_mps, risk_level, risk_code, review_status, resolution, resolution_note,
+        reviewer_id, reviewed_at, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)`,
       [
         event.id,
         event.userId,
@@ -1596,7 +1621,13 @@ async function saveNormalizedRows(client, rows) {
         event.speedMps,
         event.riskLevel,
         event.riskCode,
-        event.createdAt
+        event.reviewStatus,
+        event.resolution,
+        event.resolutionNote,
+        event.reviewerId,
+        event.reviewedAt,
+        event.createdAt,
+        event.updatedAt
       ]
     )
   }
@@ -2062,12 +2093,35 @@ async function ensureNormalizedSchema(client) {
       speed_mps NUMERIC(12, 2),
       risk_level TEXT NOT NULL DEFAULT 'normal',
       risk_code TEXT NOT NULL DEFAULT '',
-      created_at BIGINT NOT NULL
+      review_status TEXT NOT NULL DEFAULT 'not_required',
+      resolution TEXT NOT NULL DEFAULT '',
+      resolution_note TEXT NOT NULL DEFAULT '',
+      reviewer_id TEXT NOT NULL DEFAULT '',
+      reviewed_at BIGINT,
+      created_at BIGINT NOT NULL,
+      updated_at BIGINT NOT NULL DEFAULT 0
     )
+  `)
+  await client.query("ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS review_status TEXT NOT NULL DEFAULT 'not_required'")
+  await client.query("ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS resolution TEXT NOT NULL DEFAULT ''")
+  await client.query("ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS resolution_note TEXT NOT NULL DEFAULT ''")
+  await client.query("ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS reviewer_id TEXT NOT NULL DEFAULT ''")
+  await client.query('ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS reviewed_at BIGINT')
+  await client.query('ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS updated_at BIGINT NOT NULL DEFAULT 0')
+  await client.query(`
+    UPDATE location_risk_events
+    SET review_status = 'pending_review',
+        updated_at = CASE WHEN updated_at > 0 THEN updated_at ELSE created_at END
+    WHERE risk_level = 'high'
+      AND review_status = 'not_required'
+      AND resolution = ''
+      AND reviewer_id = ''
+      AND reviewed_at IS NULL
   `)
   await client.query('CREATE INDEX IF NOT EXISTS idx_location_risk_events_user_created_at ON location_risk_events(user_id, created_at DESC)')
   await client.query('CREATE INDEX IF NOT EXISTS idx_location_risk_events_level_created_at ON location_risk_events(risk_level, created_at DESC)')
   await client.query("CREATE INDEX IF NOT EXISTS idx_location_risk_events_code_created_at ON location_risk_events(risk_code, created_at DESC) WHERE risk_code <> ''")
+  await client.query('CREATE INDEX IF NOT EXISTS idx_location_risk_events_review_status_created_at ON location_risk_events(review_status, created_at DESC)')
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS moderation_events (
@@ -2435,6 +2489,10 @@ function toNumber(value, fallback) {
 function toInteger(value, fallback) {
   const number = Number(value)
   return Number.isFinite(number) ? Math.trunc(number) : fallback
+}
+
+function defaultLocationRiskReviewStatus(event = {}) {
+  return (event.risk_level || event.riskLevel) === 'high' ? 'pending_review' : 'not_required'
 }
 
 function nullableInteger(value) {

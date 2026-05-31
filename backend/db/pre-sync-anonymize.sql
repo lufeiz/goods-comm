@@ -45,7 +45,9 @@ SET
   region_community_id = '',
   region_street_id = '',
   distance_meters = NULL,
-  speed_mps = NULL;
+  speed_mps = NULL,
+  resolution_note = '',
+  reviewer_id = '';
 
 UPDATE trade_reviews
 SET

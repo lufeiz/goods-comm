@@ -137,6 +137,18 @@
           {{ level.label }}
         </button>
       </view>
+      <view class="filter-row">
+        <button
+          v-for="status in riskReviewStatuses"
+          :key="status.value"
+          :class="['filter-button', riskReviewStatus === status.value ? 'selected' : '']"
+          data-testid="ops-location-risk-review-filter"
+          :data-status="status.value"
+          @tap="changeRiskReviewStatus(status.value)"
+        >
+          {{ status.label }}
+        </button>
+      </view>
       <view v-if="locationRiskEvents.length" class="case-list" data-testid="ops-location-risk-list">
         <view
           v-for="event in locationRiskEvents"
@@ -154,9 +166,16 @@
           <text class="case-meta">用户：{{ event.user?.nickname || event.userId || '-' }}</text>
           <text class="case-meta">目标：{{ event.targetType || '-' }} / {{ event.targetId || '-' }}</text>
           <text class="case-meta">区域：{{ event.regionCommunityId || event.regionStreetId || '-' }}</text>
+          <text class="case-meta">复核：{{ locationRiskReviewStatusText(event.reviewStatus) }}</text>
           <text class="case-meta">距离：{{ formatDistance(event.distanceMeters) }} · 速度：{{ formatSpeed(event.speedMetersPerSecond) }}</text>
           <text class="case-meta">{{ formatTime(event.createdAt) }}</text>
+          <input class="note-input" data-testid="ops-location-risk-note" :data-risk-id="event.id" :value="noteDraft(event.id)" placeholder="复核说明" @input="onNoteInput(event.id, $event)" />
           <button class="full-button danger" data-testid="ops-location-risk-prefill" :data-user-id="event.userId" :disabled="loading || !event.userId" @tap="prefillLocationRisk(event)">填入封禁</button>
+          <view class="action-row">
+            <button class="outline-button" data-testid="ops-location-risk-confirm" :data-risk-id="event.id" :disabled="loading" @tap="reviewLocationRisk(event, 'confirmed_risk')">确认风险</button>
+            <button class="outline-button" data-testid="ops-location-risk-false-positive" :data-risk-id="event.id" :disabled="loading" @tap="reviewLocationRisk(event, 'false_positive')">误报关闭</button>
+            <button class="outline-button" data-testid="ops-location-risk-escalate" :data-risk-id="event.id" :disabled="loading" @tap="reviewLocationRisk(event, 'escalated')">升级</button>
+          </view>
         </view>
       </view>
       <text v-else class="empty-text" data-testid="ops-location-risk-empty">暂无位置风险</text>
@@ -370,6 +389,7 @@ import {
   getStoredOpsSession,
   loginOpsSession,
   retryNotificationDeliveries,
+  reviewLocationRiskEvent,
   resolveOpsDispute,
   resolveOpsReport,
   reviewOpsItem,
@@ -449,6 +469,7 @@ export default {
         }
       ],
       riskLevel: 'high',
+      riskReviewStatus: 'pending_review',
       riskLevels: [
         {
           value: 'high',
@@ -457,6 +478,28 @@ export default {
         {
           value: 'normal',
           label: '正常'
+        },
+        {
+          value: '',
+          label: '全部'
+        }
+      ],
+      riskReviewStatuses: [
+        {
+          value: 'pending_review',
+          label: '待复核'
+        },
+        {
+          value: 'confirmed_risk',
+          label: '已确认'
+        },
+        {
+          value: 'false_positive',
+          label: '误报'
+        },
+        {
+          value: 'escalated',
+          label: '升级'
         },
         {
           value: '',
@@ -585,6 +628,7 @@ export default {
         try {
           const risks = await fetchLocationRiskEvents(this.secret, {
             riskLevel: this.riskLevel,
+            reviewStatus: this.riskReviewStatus,
             limit: 50
           })
           this.locationRiskEvents = Array.isArray(risks.events) ? risks.events : []
@@ -748,6 +792,10 @@ export default {
       this.riskLevel = level
       this.refresh()
     },
+    changeRiskReviewStatus(status) {
+      this.riskReviewStatus = status
+      this.refresh()
+    },
     changeUserStatus(status) {
       this.userStatus = status
       this.refresh()
@@ -766,6 +814,22 @@ export default {
       this.userRiskTarget = event.userId || ''
       this.userRiskReason = `位置风控复核：${event.riskCode || event.riskLevel || 'location_risk'}`
     },
+    async reviewLocationRisk(event, reviewStatus) {
+      const confirmed = await this.confirmAction(`确认${this.locationRiskReviewStatusText(reviewStatus)}？`)
+
+      if (!confirmed) {
+        return
+      }
+
+      await this.runAction(async () => {
+        await reviewLocationRiskEvent(event.id, {
+          reviewStatus,
+          actorId: this.currentActorId(),
+          note: this.noteDraft(event.id)
+        }, this.secret)
+        showToast('位置风险已复核', 'success')
+      })
+    },
     noteDraft(id) {
       return this.noteDrafts[id] || ''
     },
@@ -777,6 +841,9 @@ export default {
         ...this.noteDrafts,
         [id]: event.detail?.value || ''
       }
+    },
+    onNoteInput(id, event) {
+      this.updateNote(id, event)
     },
     disputeResolutionDraft(id) {
       return this.disputeResolutionDrafts[id] || 'release_item'
@@ -826,7 +893,8 @@ export default {
         'ops.media.review': '图片审核',
         'ops.dispute.resolve': '争议处理',
         'ops.notification.retry': '通知重试',
-        'ops.user.status': '用户风控'
+        'ops.user.status': '用户风控',
+        'ops.location_risk.review': '位置风险复核'
       }
 
       return map[action] || action || '操作'
@@ -838,6 +906,17 @@ export default {
       }
 
       return map[action] || action || '位置事件'
+    },
+    locationRiskReviewStatusText(status) {
+      const map = {
+        pending_review: '待复核',
+        confirmed_risk: '确认风险',
+        false_positive: '误报关闭',
+        escalated: '升级处理',
+        not_required: '无需复核'
+      }
+
+      return map[status] || status || '-'
     },
     userStatusText(status) {
       const map = {
@@ -974,9 +1053,17 @@ export default {
   margin-top: 18rpx;
 }
 
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
 .mini-button,
 .filter-button,
 .segment-button,
+.outline-button,
 .full-button {
   min-height: 68rpx;
   color: #5f6c64;
@@ -1067,8 +1154,13 @@ export default {
 }
 
 .filter-button,
+.outline-button,
 .segment-button {
   min-width: 150rpx;
+}
+
+.outline-button {
+  flex: 1;
 }
 
 .empty-text {

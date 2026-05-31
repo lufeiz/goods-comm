@@ -57,6 +57,14 @@ export const USER_STATUS = {
   DELETED: 'deleted'
 }
 
+export const LOCATION_RISK_REVIEW_STATUS = {
+  NOT_REQUIRED: 'not_required',
+  PENDING_REVIEW: 'pending_review',
+  CONFIRMED_RISK: 'confirmed_risk',
+  FALSE_POSITIVE: 'false_positive',
+  ESCALATED: 'escalated'
+}
+
 const ACTIVE_TRADE_STATUSES = [
   TRADE_STATUS.PENDING_SELLER_CONFIRM,
   TRADE_STATUS.PENDING_MEETUP
@@ -88,6 +96,7 @@ const IDEMPOTENT_PATHS = [
   /^\/reports$/,
   /^\/ops\/reports\/[^/]+\/resolve$/,
   /^\/ops\/users\/[^/]+\/status$/,
+  /^\/ops\/location-risk-events\/[^/]+\/review$/,
   /^\/moderation\/items\/[^/]+\/review$/,
   /^\/moderation\/media\/[^/]+\/review$/,
   /^\/moderation\/disputes\/[^/]+\/resolve$/
@@ -277,6 +286,11 @@ async function routeBffRequest(path, method, options = {}, state = createBffStat
 
   if (path === '/ops/location-risk-events' && method === 'GET') {
     return listOpsLocationRiskEvents(options, state)
+  }
+
+  const opsLocationRiskReviewMatch = path.match(/^\/ops\/location-risk-events\/([^/]+)\/review$/)
+  if (opsLocationRiskReviewMatch && ['POST', 'PATCH'].includes(method)) {
+    return reviewOpsLocationRiskEvent(opsLocationRiskReviewMatch[1], options, state)
   }
 
   if (path === '/ops/audit-events' && method === 'GET') {
@@ -1545,6 +1559,7 @@ function listOpsLocationRiskEvents(options = {}, state) {
   const filters = options.data || {}
   const riskLevel = String(filters.riskLevel || filters.level || '').trim()
   const riskCode = String(filters.riskCode || filters.code || '').trim()
+  const reviewStatus = String(filters.reviewStatus || filters.status || '').trim()
   const userId = String(filters.userId || '').trim()
   const action = String(filters.action || '').trim()
   const limit = normalizeLimit(filters.limit, 100)
@@ -1555,16 +1570,58 @@ function listOpsLocationRiskEvents(options = {}, state) {
     counts: {
       total: events.length,
       high: events.filter((event) => event.riskLevel === 'high').length,
-      normal: events.filter((event) => event.riskLevel === 'normal').length
+      normal: events.filter((event) => event.riskLevel === 'normal').length,
+      pendingReview: events.filter((event) => event.reviewStatus === LOCATION_RISK_REVIEW_STATUS.PENDING_REVIEW).length,
+      confirmedRisk: events.filter((event) => event.reviewStatus === LOCATION_RISK_REVIEW_STATUS.CONFIRMED_RISK).length,
+      falsePositive: events.filter((event) => event.reviewStatus === LOCATION_RISK_REVIEW_STATUS.FALSE_POSITIVE).length,
+      escalated: events.filter((event) => event.reviewStatus === LOCATION_RISK_REVIEW_STATUS.ESCALATED).length
     },
     events: events
       .filter((event) => !riskLevel || event.riskLevel === riskLevel)
       .filter((event) => !riskCode || event.riskCode === riskCode)
+      .filter((event) => !reviewStatus || event.reviewStatus === reviewStatus)
       .filter((event) => !userId || event.userId === userId)
       .filter((event) => !action || event.action === action)
       .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
       .slice(0, limit)
       .map((event) => sanitizeLocationRiskEventForOps(event, usersById.get(event.userId)))
+  }
+}
+
+function reviewOpsLocationRiskEvent(eventId, options = {}, state) {
+  const payload = options.data || {}
+  const events = normalizeLocationRiskEvents(state.locationRiskEvents)
+  const event = events.find((candidate) => candidate.id === eventId)
+
+  if (!event) {
+    throw new Error('位置风险事件不存在')
+  }
+
+  const reviewStatus = normalizeLocationRiskReviewStatus(payload.reviewStatus || payload.status || payload.resolution)
+  const actorId = String(payload.actorId || payload.operatorId || 'risk').trim().slice(0, 80)
+  const note = String(payload.note || payload.resolutionNote || '').trim().slice(0, 500)
+  const now = Date.now()
+
+  if (reviewStatus !== LOCATION_RISK_REVIEW_STATUS.PENDING_REVIEW && !note) {
+    throw new Error('请填写位置风险复核说明')
+  }
+
+  event.reviewStatus = reviewStatus
+  event.resolution = reviewStatus
+  event.resolutionNote = note
+  event.reviewerId = actorId
+  event.reviewedAt = reviewStatus === LOCATION_RISK_REVIEW_STATUS.PENDING_REVIEW ? null : now
+  event.updatedAt = now
+
+  state.locationRiskEvents = [
+    event,
+    ...events.filter((candidate) => candidate.id !== event.id)
+  ].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+
+  const user = Array.isArray(state.users) ? state.users.find((candidate) => candidate.id === event.userId) : null
+
+  return {
+    event: sanitizeLocationRiskEventForOps(event, user)
   }
 }
 
@@ -2498,7 +2555,13 @@ function sanitizeLocationRiskEventForOps(event = {}, user = {}) {
     speedMetersPerSecond: normalizeOptionalNumber(event.speedMetersPerSecond),
     riskLevel: event.riskLevel || 'normal',
     riskCode: event.riskCode || '',
-    createdAt: event.createdAt || Date.now()
+    reviewStatus: normalizeLocationRiskReviewStatus(event.reviewStatus || event.review_status || defaultLocationRiskReviewStatus(event)),
+    resolution: event.resolution || '',
+    resolutionNote: event.resolutionNote || '',
+    reviewerId: event.reviewerId || '',
+    reviewedAt: event.reviewedAt || null,
+    createdAt: event.createdAt || Date.now(),
+    updatedAt: event.updatedAt || event.createdAt || Date.now()
   }
 }
 
@@ -2651,7 +2714,13 @@ function recordTrustedLocationUse(state = {}, options = {}) {
     speedMetersPerSecond: null,
     riskLevel: 'normal',
     riskCode: '',
-    createdAt: now
+    reviewStatus: LOCATION_RISK_REVIEW_STATUS.NOT_REQUIRED,
+    resolution: '',
+    resolutionNote: '',
+    reviewerId: '',
+    reviewedAt: null,
+    createdAt: now,
+    updatedAt: now
   }
   const previous = findPreviousLocationRiskEvent(events, event)
 
@@ -2670,6 +2739,7 @@ function recordTrustedLocationUse(state = {}, options = {}) {
     if (isImpossibleLocationTravel(event)) {
       event.riskLevel = 'high'
       event.riskCode = 'IMPOSSIBLE_TRAVEL'
+      event.reviewStatus = LOCATION_RISK_REVIEW_STATUS.PENDING_REVIEW
       pushLocationRiskClientEvent(state, event, previous)
     }
   }
@@ -2702,7 +2772,13 @@ function normalizeLocationRiskEvents(events = []) {
           speedMetersPerSecond: normalizeOptionalNumber(event.speedMetersPerSecond),
           riskLevel: event.riskLevel || 'normal',
           riskCode: event.riskCode || '',
-          createdAt: Number.isFinite(Number(event.createdAt)) ? Number(event.createdAt) : Date.now()
+          reviewStatus: normalizeLocationRiskReviewStatus(event.reviewStatus || event.review_status || defaultLocationRiskReviewStatus(event)),
+          resolution: event.resolution || '',
+          resolutionNote: event.resolutionNote || event.resolution_note || '',
+          reviewerId: event.reviewerId || event.reviewer_id || '',
+          reviewedAt: Number.isFinite(Number(event.reviewedAt ?? event.reviewed_at)) ? Number(event.reviewedAt ?? event.reviewed_at) : null,
+          createdAt: Number.isFinite(Number(event.createdAt)) ? Number(event.createdAt) : Date.now(),
+          updatedAt: Number.isFinite(Number(event.updatedAt ?? event.updated_at)) ? Number(event.updatedAt ?? event.updated_at) : Number(event.createdAt || Date.now())
         }))
         .filter((event) =>
           event.id &&
@@ -2710,6 +2786,23 @@ function normalizeLocationRiskEvents(events = []) {
           Number.isFinite(event.capturedAt)
         )
     : []
+}
+
+function defaultLocationRiskReviewStatus(event = {}) {
+  return event.riskLevel === 'high'
+    ? LOCATION_RISK_REVIEW_STATUS.PENDING_REVIEW
+    : LOCATION_RISK_REVIEW_STATUS.NOT_REQUIRED
+}
+
+function normalizeLocationRiskReviewStatus(value = '') {
+  const normalized = String(value || '').trim()
+  const allowed = new Set(Object.values(LOCATION_RISK_REVIEW_STATUS))
+
+  if (allowed.has(normalized)) {
+    return normalized
+  }
+
+  throw new Error('位置风险复核状态无效')
 }
 
 function normalizeLocationRiskPoint(location = {}) {

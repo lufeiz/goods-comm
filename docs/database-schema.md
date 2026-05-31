@@ -21,13 +21,13 @@
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema`、`20260531_auth_session_last_seen` 和 `20260531_location_risk_events` |
+| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema`、`20260531_auth_session_last_seen`、`20260531_location_risk_events` 和 `20260531_location_risk_review` |
 | `name` | string | 迁移名称 |
 | `checksum` | string | 当前 schema 基线标识，后续可替换为真实文件校验值 |
 | `source` | string | 迁移来源文件 |
 | `applied_at` | datetime | 首次应用时间 |
 
-`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`、`20260531_auth_session_last_seen` 与 `20260531_location_risk_events`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
+`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`、`20260531_auth_session_last_seen`、`20260531_location_risk_events` 与 `20260531_location_risk_review`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
 
 ### `users`
 
@@ -295,15 +295,22 @@
 | `speed_mps` | decimal nullable | 推算移动速度 |
 | `risk_level` | enum/string | `normal` / `high` |
 | `risk_code` | string | 风险码，例如 `IMPOSSIBLE_TRAVEL` |
+| `review_status` | enum/string | `not_required` / `pending_review` / `confirmed_risk` / `false_positive` / `escalated` |
+| `resolution` | string | 复核结论，通常等于 `review_status` |
+| `resolution_note` | string | 复核说明，prod 同步到 pre 时会清空 |
+| `reviewer_id` | string | 运营复核账号，prod 同步到 pre 时会清空 |
+| `reviewed_at` | datetime nullable | 复核时间 |
 | `created_at` | datetime | 服务端记录时间 |
+| `updated_at` | datetime | 最近复核更新时间 |
 
 索引：
 
 - index(`user_id`, `created_at`)
 - index(`risk_level`, `created_at`)
 - partial index(`risk_code`, `created_at`) where `risk_code <> ''`
+- index(`review_status`, `created_at`)
 
-发布商品和发起交易成功后会写入该表。若同一用户 30 分钟内出现超过阈值的远距离高速切换，服务端会额外写一条脱敏 `client_events(type=location_risk, level=warn)`，供运营排障和风控复核；该机制先审计不拦截，避免真机定位漂移造成主链路误伤。prod 同步到 pre 时会清空经纬度、精度、区域和速度字段，只保留结构性风险状态。
+发布商品和发起交易成功后会写入该表。若同一用户 30 分钟内出现超过阈值的远距离高速切换，服务端会额外写一条脱敏 `client_events(type=location_risk, level=warn)`，供运营排障和风控复核；该机制先审计不拦截，避免真机定位漂移造成主链路误伤。高风险事件默认进入 `pending_review`，`20260531_location_risk_review` 迁移也会把尚未复核且无处理记录的历史高风险行 backfill 为 `pending_review`；运营可通过 `/ops/location-risk-events/:id/review` 标记为确认风险、误报关闭或升级处理，并写入 `ops_audit_events`。prod 同步到 pre 时会清空经纬度、精度、区域、速度、复核说明和复核账号字段，只保留结构性风险状态。
 
 ### `notifications`
 
@@ -473,7 +480,7 @@
 10. 退出登录：只吊销当前 `auth_sessions` 记录，不影响同一用户的其他有效 session。
 11. 幂等写请求：执行业务写入和 `idempotency_records` 响应快照必须处于同一事务；成功请求记录 `completed`，已提交审计的业务拒绝记录 `committed_error`；重复请求不能再次追加商品、交易时间线、站内通知、审核事件或平台通知 outbox。请求身份不包含服务端注入的 `serverRegion` 和 `moderation` 字段，发布重试应在外部内容安全调用前先命中幂等重放。
 12. 举报处理：运营通过 `uphold_report` 或 `dismiss_report` 处理 `pending_review` 举报；确认违规时下架商品并把活跃交易转争议，驳回误报时只在没有活跃 / 争议交易阻塞时恢复 `reported_removed` 商品为 `online`，同时写 `reports` 处理字段、`moderation_events` 和 `ops_audit_events`。
-13. 客户端遥测与位置风控：端侧登录、定位、发布、交易、举报等失败事件写入 `client_events`；发布和交易的可信定位使用会写入 `location_risk_events`，短时间远距离跳变会额外生成脱敏 `client_events(type=location_risk)`。这些记录不参与交易事务裁决，但必须脱敏并可供运营排障查询。
+13. 客户端遥测与位置风控：端侧登录、定位、发布、交易、举报等失败事件写入 `client_events`；发布和交易的可信定位使用会写入 `location_risk_events`，短时间远距离跳变会额外生成脱敏 `client_events(type=location_risk)`。这些记录不参与交易事务裁决，但必须脱敏、可供运营排障查询，并能复核关闭或升级处置。
 
 ## 3. 服务端不变量
 

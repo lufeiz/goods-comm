@@ -473,6 +473,41 @@ export function createGoodsCommServer(options = {}) {
           return
         }
 
+        const opsLocationRiskReviewMatch = url.pathname.match(/^\/ops\/location-risk-events\/([^/]+)\/review$/)
+        if (opsLocationRiskReviewMatch && ['POST', 'PATCH'].includes(method)) {
+          const opsActor = authenticateOpsRequest(opsAuth, request, url, ['risk', 'support'])
+          const reviewData = await parseRequestData(request, url, objectStore, contentSafety, maxRequestBytes)
+          const result = await runBffTransactionWithNotifications(store, platformNotifier, url.pathname, {
+            method,
+            data: injectOpsActor(reviewData, opsActor),
+            opsAudit: createOpsAuditEventData(opsActor, {
+              action: 'ops.location_risk.review',
+              targetType: 'location_risk_event',
+              targetId: opsLocationRiskReviewMatch[1],
+              context: {
+                reviewStatus: reviewData.reviewStatus || reviewData.status || reviewData.resolution || '',
+                note: reviewData.note || reviewData.resolutionNote || '',
+                idempotencyKey: getIdempotencyKeyFromRequest(request)
+              }
+            }),
+            header: {
+              'Idempotency-Key': request.headers['idempotency-key'] || request.headers['x-idempotency-key'] || ''
+            }
+          }, {
+            traceId,
+            environment: deploymentEnv,
+            opsAlerts
+          })
+          sendResponse(response, 200, {
+            data: result,
+            trace: {
+              traceId,
+              durationMs: Date.now() - startedAt
+            }
+          }, traceId, corsContext)
+          return
+        }
+
         if (url.pathname === '/ops/login' && method === 'POST') {
           const loginData = await parseRequestData(request, url, objectStore, contentSafety, maxRequestBytes)
           const result = opsAuth.login(loginData)

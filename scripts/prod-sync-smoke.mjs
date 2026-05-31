@@ -299,7 +299,7 @@ async function assertPreSyncAnonymizeSql() {
   assert.match(sql, /location = location - 'latitude' - 'longitude' - 'accuracy' - 'capturedAt'/)
   assert.match(sql, /UPDATE trade_intents[\s\S]*item_title = '预上线交易商品'[\s\S]*location_audit = location_audit - 'latitude' - 'longitude' - 'accuracy' - 'capturedAt'/)
   assert.match(sql, /UPDATE location_audits[\s\S]*latitude = NULL[\s\S]*longitude = NULL[\s\S]*accuracy = NULL/)
-  assert.match(sql, /UPDATE location_risk_events[\s\S]*latitude = NULL[\s\S]*longitude = NULL[\s\S]*accuracy = NULL[\s\S]*distance_meters = NULL[\s\S]*speed_mps = NULL/)
+  assert.match(sql, /UPDATE location_risk_events[\s\S]*latitude = NULL[\s\S]*longitude = NULL[\s\S]*accuracy = NULL[\s\S]*distance_meters = NULL[\s\S]*speed_mps = NULL[\s\S]*resolution_note = ''[\s\S]*reviewer_id = ''/)
   assert.match(sql, /UPDATE item_images[\s\S]*url = ''[\s\S]*storage_key = ''[\s\S]*checksum = ''[\s\S]*moderation_trace_id = ''/)
   assert.match(sql, /original_name = ''/)
   assert.match(sql, /UPDATE moderation_events[\s\S]*SET title = ''/)

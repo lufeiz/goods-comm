@@ -377,6 +377,31 @@ assert.equal(opsPublishRiskEvent.latitude, undefined)
 assert.equal(opsPublishRiskEvent.longitude, undefined)
 assert.equal(opsPublishRiskEvent.accuracy, undefined)
 assert.equal(JSON.stringify(opsPublishRiskEvent).includes('116.4074'), false)
+assert.equal(opsPublishRiskEvent.reviewStatus, 'pending_review')
+const reviewedLocationRisk = await handleBffRequest(`/ops/location-risk-events/${opsPublishRiskEvent.id}/review`, {
+  method: 'POST',
+  idempotencyKey: 'ops_location_risk_review_key_001',
+  data: {
+    reviewStatus: 'false_positive',
+    actorId: 'risk-smoke',
+    note: 'BFF smoke 定位漂移误报'
+  }
+}, state)
+assert.equal(reviewedLocationRisk.event.reviewStatus, 'false_positive')
+assert.equal(reviewedLocationRisk.event.resolutionNote, 'BFF smoke 定位漂移误报')
+assert.equal(reviewedLocationRisk.event.reviewerId, 'risk-smoke')
+assert.equal(reviewedLocationRisk.event.latitude, undefined)
+assert.equal(state.locationRiskEvents.find((event) => event.id === opsPublishRiskEvent.id).reviewStatus, 'false_positive')
+const replayedReviewedLocationRisk = await handleBffRequest(`/ops/location-risk-events/${opsPublishRiskEvent.id}/review`, {
+  method: 'POST',
+  idempotencyKey: 'ops_location_risk_review_key_001',
+  data: {
+    reviewStatus: 'false_positive',
+    actorId: 'risk-smoke',
+    note: 'BFF smoke 定位漂移误报'
+  }
+}, state)
+assert.equal(replayedReviewedLocationRisk.event.id, reviewedLocationRisk.event.id)
 await assert.rejects(
   () => handleBffRequest('/items', {
     method: 'POST',

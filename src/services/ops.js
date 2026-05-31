@@ -40,6 +40,25 @@ export const OPS_ITEM_REVIEW_STATUSES = [
   }
 ]
 
+export const OPS_LOCATION_RISK_REVIEW_STATUSES = [
+  {
+    value: 'confirmed_risk',
+    label: '确认风险'
+  },
+  {
+    value: 'false_positive',
+    label: '误报关闭'
+  },
+  {
+    value: 'escalated',
+    label: '升级处理'
+  },
+  {
+    value: 'pending_review',
+    label: '重新待审'
+  }
+]
+
 export function getStoredOpsSecret() {
   return typeof uni === 'undefined' ? '' : uni.getStorageSync(OPS_SECRET_KEY) || ''
 }
@@ -208,6 +227,20 @@ export async function fetchLocationRiskEvents(secret, filters = {}) {
   })
 }
 
+export async function reviewLocationRiskEvent(eventId, payload = {}, secret) {
+  const data = normalizeLocationRiskReviewPayload(payload)
+
+  return requestOps(`/ops/location-risk-events/${encodeURIComponent(eventId)}/review`, {
+    method: 'POST',
+    secret,
+    idempotencyKey: createIdempotencyKey('ops_location_risk_review', {
+      eventId,
+      payload: data
+    }),
+    data
+  })
+}
+
 export async function fetchOpsAuditEvents(secret, filters = {}) {
   return requestOps('/ops/audit-events', {
     method: 'GET',
@@ -335,9 +368,24 @@ function normalizeLocationRiskFilters(filters = {}) {
   return {
     riskLevel: String(filters.riskLevel || filters.level || '').trim(),
     riskCode: String(filters.riskCode || filters.code || '').trim(),
+    reviewStatus: String(filters.reviewStatus || filters.status || '').trim(),
     userId: String(filters.userId || '').trim(),
     action: String(filters.action || '').trim(),
     limit: normalizeLimit(filters.limit, 100)
+  }
+}
+
+function normalizeLocationRiskReviewPayload(payload = {}) {
+  const reviewStatus = String(payload.reviewStatus || payload.status || payload.resolution || '').trim()
+
+  if (!OPS_LOCATION_RISK_REVIEW_STATUSES.some((item) => item.value === reviewStatus)) {
+    throw new Error('位置风险复核状态无效')
+  }
+
+  return {
+    reviewStatus,
+    actorId: String(payload.actorId || 'ops-console').trim(),
+    note: String(payload.note || payload.resolutionNote || '').trim().slice(0, 500)
   }
 }
 

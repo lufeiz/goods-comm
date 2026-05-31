@@ -791,6 +791,42 @@ try {
   assert.equal(backendLocationRiskEvent.longitude, undefined)
   assert.equal(backendLocationRiskEvent.accuracy, undefined)
   assert.equal(JSON.stringify(backendLocationRiskEvent).includes('121.452'), false)
+  assert.equal(backendLocationRiskEvent.reviewStatus, 'pending_review')
+  const reviewedBackendLocationRisk = await request(`${baseUrl}/ops/location-risk-events/${backendLocationRiskEvent.id}/review`, {
+    method: 'POST',
+    data: {
+      reviewStatus: 'confirmed_risk',
+      note: 'HTTP smoke 确认位置异常'
+    },
+    header: {
+      'x-ops-session-token': opsLogin.token,
+      'Idempotency-Key': 'backend_location_risk_review_key_001'
+    }
+  })
+  assert.equal(reviewedBackendLocationRisk.event.reviewStatus, 'confirmed_risk')
+  assert.equal(reviewedBackendLocationRisk.event.reviewerId, 'backend-support-smoke')
+  assert.equal(reviewedBackendLocationRisk.event.latitude, undefined)
+  const replayedBackendLocationRisk = await request(`${baseUrl}/ops/location-risk-events/${backendLocationRiskEvent.id}/review`, {
+    method: 'POST',
+    data: {
+      reviewStatus: 'confirmed_risk',
+      note: 'HTTP smoke 确认位置异常'
+    },
+    header: {
+      'x-ops-session-token': opsLogin.token,
+      'Idempotency-Key': 'backend_location_risk_review_key_001'
+    }
+  })
+  assert.equal(replayedBackendLocationRisk.event.id, reviewedBackendLocationRisk.event.id)
+  const locationRiskReviewAudit = await request(`${baseUrl}/ops/audit-events?action=ops.location_risk.review&targetId=${encodeURIComponent(backendLocationRiskEvent.id)}`, {
+    method: 'GET',
+    header: {
+      'x-ops-session-token': opsLogin.token
+    }
+  })
+  assert.equal(locationRiskReviewAudit.events.filter((event) => event.action === 'ops.location_risk.review').length, 1)
+  assert.equal(locationRiskReviewAudit.events[0].actorId, 'backend-support-smoke')
+  assert.equal(locationRiskReviewAudit.events[0].context.reviewStatus, 'confirmed_risk')
   const riskTrade = await post(`${baseUrl}/trades`, {
     itemId: riskItem.id,
     buyerLocation: {

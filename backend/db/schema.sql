@@ -31,6 +31,13 @@ VALUES (
   'baseline:backend/db/schema.sql#location_risk_events',
   'backend/db/schema.sql',
   CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
+),
+(
+  '20260531_location_risk_review',
+  'location_risk_review',
+  'baseline:backend/db/schema.sql#location_risk_events.review',
+  'backend/db/schema.sql',
+  CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
 )
 ON CONFLICT (version) DO UPDATE
 SET name = EXCLUDED.name,
@@ -294,8 +301,30 @@ CREATE TABLE IF NOT EXISTS location_risk_events (
   speed_mps NUMERIC(12, 2),
   risk_level TEXT NOT NULL DEFAULT 'normal',
   risk_code TEXT NOT NULL DEFAULT '',
-  created_at BIGINT NOT NULL
+  review_status TEXT NOT NULL DEFAULT 'not_required',
+  resolution TEXT NOT NULL DEFAULT '',
+  resolution_note TEXT NOT NULL DEFAULT '',
+  reviewer_id TEXT NOT NULL DEFAULT '',
+  reviewed_at BIGINT,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL DEFAULT 0
 );
+
+ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS review_status TEXT NOT NULL DEFAULT 'not_required';
+ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS resolution TEXT NOT NULL DEFAULT '';
+ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS resolution_note TEXT NOT NULL DEFAULT '';
+ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS reviewer_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS reviewed_at BIGINT;
+ALTER TABLE location_risk_events ADD COLUMN IF NOT EXISTS updated_at BIGINT NOT NULL DEFAULT 0;
+
+UPDATE location_risk_events
+SET review_status = 'pending_review',
+    updated_at = CASE WHEN updated_at > 0 THEN updated_at ELSE created_at END
+WHERE risk_level = 'high'
+  AND review_status = 'not_required'
+  AND resolution = ''
+  AND reviewer_id = ''
+  AND reviewed_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_location_risk_events_user_created_at
 ON location_risk_events(user_id, created_at DESC);
@@ -306,6 +335,9 @@ ON location_risk_events(risk_level, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_location_risk_events_code_created_at
 ON location_risk_events(risk_code, created_at DESC)
 WHERE risk_code <> '';
+
+CREATE INDEX IF NOT EXISTS idx_location_risk_events_review_status_created_at
+ON location_risk_events(review_status, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,

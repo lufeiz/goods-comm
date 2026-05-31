@@ -898,13 +898,62 @@ GET /ops/location-risk-events?riskLevel=high&riskCode=IMPOSSIBLE_TRAVEL&limit=50
       "speedMetersPerSecond": 17811.2,
       "riskLevel": "high",
       "riskCode": "IMPOSSIBLE_TRAVEL",
-      "createdAt": 1770000000000
+      "reviewStatus": "pending_review",
+      "resolution": "",
+      "resolutionNote": "",
+      "reviewerId": "",
+      "reviewedAt": null,
+      "createdAt": 1770000000000,
+      "updatedAt": 1770000000000
     }
   ]
 }
 ```
 
 生产要求：该接口只返回运营复核所需的脱敏摘要，不返回 `latitude`、`longitude`、`accuracy`、详细地址或原始定位对象；完整经纬度只应保留在受控数据库中，并在 prod 同步到 pre 时通过脱敏 SQL 清理。
+
+### `POST /ops/location-risk-events/:id/review`
+
+请求需带 `x-ops-session-token` 或 `x-moderation-secret`，会校验 `risk` 或 `support` 角色。用于把高风险位置事件复核为确认风险、误报关闭或升级处理，并写入 `ops_audit_events`。
+
+请求：
+
+```json
+{
+  "reviewStatus": "confirmed_risk",
+  "note": "同账号 1 分钟内跨城发布，已确认需要封禁复核"
+}
+```
+
+`reviewStatus` 可为：
+
+| 值 | 含义 |
+| --- | --- |
+| `pending_review` | 重新放回待复核 |
+| `confirmed_risk` | 确认风险 |
+| `false_positive` | 定位漂移 / 误报关闭 |
+| `escalated` | 升级给客服或安全团队继续处理 |
+
+响应：
+
+```json
+{
+  "event": {
+    "id": "location_risk_...",
+    "userId": "user_...",
+    "riskLevel": "high",
+    "riskCode": "IMPOSSIBLE_TRAVEL",
+    "reviewStatus": "confirmed_risk",
+    "resolution": "confirmed_risk",
+    "resolutionNote": "同账号 1 分钟内跨城发布，已确认需要封禁复核",
+    "reviewerId": "risk-operator",
+    "reviewedAt": 1770000000000,
+    "updatedAt": 1770000000000
+  }
+}
+```
+
+生产要求：复核接口必须携带幂等键；Node HTTP 后端会把运营账号注入为 `reviewerId`，并写入 `ops.location_risk.review` 审计事件。确认风险后是否封禁用户仍走 `/ops/users/:id/status`，避免查询、复核和封禁三类动作混在一个不可回滚的隐式副作用中。
 
 ### `GET /ops/audit-events`
 

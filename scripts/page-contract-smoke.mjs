@@ -143,6 +143,7 @@ function verifyPageContracts() {
         'moderationQueue?.notificationDeliveries',
         'fetchOpsUsers',
         'fetchLocationRiskEvents',
+        'reviewLocationRiskEvent',
         'reviewOpsItem',
         'resolveOpsReport',
         'resolveOpsDispute',
@@ -157,7 +158,9 @@ function verifyPageContracts() {
         ':data-event-id="event.id"',
         ':data-audit-id="event.id"',
         ':data-action="event.action"',
-        'prefillLocationRisk'
+        'prefillLocationRisk',
+        'reviewLocationRisk',
+        'locationRiskReviewStatusText'
       ]
     },
     {
@@ -377,9 +380,14 @@ function verifyRenderedTestIdContracts() {
         'ops-client-event-empty',
         'ops-location-risk-panel',
         'ops-location-risk-level-filter',
+        'ops-location-risk-review-filter',
         'ops-location-risk-list',
         'ops-location-risk-card',
+        'ops-location-risk-note',
         'ops-location-risk-prefill',
+        'ops-location-risk-confirm',
+        'ops-location-risk-false-positive',
+        'ops-location-risk-escalate',
         'ops-location-risk-empty',
         'ops-audit-panel',
         'ops-audit-list',
