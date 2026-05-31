@@ -285,6 +285,7 @@ const flows = [
           "post('/trades'",
           'selfPurchaseTradeError',
           'duplicateActiveTrade',
+          'buyerConfirmTradeError',
           'assertOneTimeContactCode',
           'assertTradeContactHidden',
           'postSoldTradeError',

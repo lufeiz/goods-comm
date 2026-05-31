@@ -31,6 +31,7 @@ const idempotencyKeys = {
   tradeCreateSelf: `deployed:${smokeRunId}:trade:create-self`,
   tradeCreate: `deployed:${smokeRunId}:trade:create`,
   tradeCreateDuplicate: `deployed:${smokeRunId}:trade:create-duplicate`,
+  tradeConfirmByBuyer: `deployed:${smokeRunId}:trade:confirm-by-buyer`,
   tradeCreateAfterSold: `deployed:${smokeRunId}:trade:create-after-sold`,
   tradeConfirm: `deployed:${smokeRunId}:trade:confirm`,
   tradeComplete: `deployed:${smokeRunId}:trade:complete`,
@@ -156,6 +157,11 @@ assert(Boolean(readSellerTradeCreatedNotification.readAt), 'seller trade-created
 const confirmPayload = {
   status: 'pending_meetup'
 }
+const buyerConfirmTradeError = await patchExpectError(`/trades/${trade.id}/status`, confirmPayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeConfirmByBuyer))
+assertEqual(buyerConfirmTradeError.status, 409, 'buyer-confirm trade rejection status')
+assertEqual(buyerConfirmTradeError.code, 'CONFLICT', 'buyer-confirm trade rejection code')
+assert(/当前交易状态不允许/.test(buyerConfirmTradeError.message || ''), 'buyer-confirm trade rejection message')
+
 const confirmed = await patch(`/trades/${trade.id}/status`, confirmPayload, seller.token, idempotencyOptions(idempotencyKeys.tradeConfirm))
 const replayedConfirmed = await patch(`/trades/${trade.id}/status`, confirmPayload, seller.token, idempotencyOptions(idempotencyKeys.tradeConfirm))
 
@@ -502,6 +508,15 @@ async function post(path, data, token = '', options = {}) {
 async function postExpectError(path, data, token = '', options = {}) {
   return requestExpectError(path, {
     method: 'POST',
+    token,
+    data,
+    ...options
+  })
+}
+
+async function patchExpectError(path, data, token = '', options = {}) {
+  return requestExpectError(path, {
+    method: 'PATCH',
     token,
     data,
     ...options
