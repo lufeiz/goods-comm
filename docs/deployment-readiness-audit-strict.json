@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-05-31T11:51:56.860Z",
+  "generatedAt": "2026-05-31T11:59:54.408Z",
   "scope": [
     "pre",
     "prod"
   ],
   "status": "BLOCKED",
   "blockerCount": 52,
-  "warningCount": 7,
+  "warningCount": 8,
   "toolchain": [
     {
       "tool": "cloudbase/tcb",
@@ -745,6 +745,44 @@
         }
       ],
       "passes": []
+    },
+    "githubPushAutomation": {
+      "status": "WARN",
+      "blockers": [],
+      "warnings": [
+        {
+          "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-fail-until-gh-",
+          "area": "github_push_automation",
+          "severity": "warning",
+          "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed"
+        }
+      ],
+      "passes": [
+        {
+          "id": "github_push_automation.pass.1.origin-remote-targets-https-github-com-lufeiz-goods-comm",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "origin remote targets https://github.com/lufeiz/goods-comm"
+        },
+        {
+          "id": "github_push_automation.pass.2.current-branch-is-main",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "current branch is main"
+        },
+        {
+          "id": "github_push_automation.pass.3.branch-tracks-origin-main",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "branch tracks origin/main"
+        },
+        {
+          "id": "github_push_automation.pass.4.nightly-github-push-automation-is-active-at-21-00-and-runs-quick-gate-local-main",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push"
+        }
+      ]
     }
   },
   "blockers": [
@@ -1103,6 +1141,12 @@
       "area": "deployed_smoke",
       "severity": "warning",
       "message": "[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true"
+    },
+    {
+      "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-fail-until-gh-",
+      "area": "github_push_automation",
+      "severity": "warning",
+      "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed"
     }
   ],
   "passes": [
@@ -1399,6 +1443,30 @@
       "area": "build_artifacts",
       "severity": "pass",
       "message": "prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable"
+    },
+    {
+      "id": "github_push_automation.pass.1.origin-remote-targets-https-github-com-lufeiz-goods-comm",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "origin remote targets https://github.com/lufeiz/goods-comm"
+    },
+    {
+      "id": "github_push_automation.pass.2.current-branch-is-main",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "current branch is main"
+    },
+    {
+      "id": "github_push_automation.pass.3.branch-tracks-origin-main",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "branch tracks origin/main"
+    },
+    {
+      "id": "github_push_automation.pass.4.nightly-github-push-automation-is-active-at-21-00-and-runs-quick-gate-local-main",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push"
     }
   ]
 }

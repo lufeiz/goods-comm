@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-31T11:51:51.677Z
+Generated: 2026-05-31T11:59:46.646Z
 Scope: pre, prod
 Result: BLOCKED (50 blockers, 9 warnings)
 
@@ -17,6 +17,7 @@ Machine-readable JSON: `docs/deployment-readiness-audit.json`
 | pre/prod isolation | WARN | 0 blockers, 2 warnings |
 | Build artifacts | PASS | 0 blockers, 0 warnings |
 | Deployed smoke | BLOCKED | 2 blockers, 3 warnings |
+| GitHub push automation | PASS | 0 blockers, 0 warnings |
 
 ## Toolchain
 
@@ -199,6 +200,22 @@ Local override: not present
 ### Passes
 
 - None
+
+## GitHub push automation
+
+### Blockers
+
+- None
+### Warnings
+
+- None
+### Passes
+
+- origin remote targets https://github.com/lufeiz/goods-comm
+- current branch is main
+- branch tracks origin/main
+- nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push
+- GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight
 
 ## Release gate commands
 

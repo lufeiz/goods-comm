@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-31T11:51:51.677Z",
+  "generatedAt": "2026-05-31T11:59:46.646Z",
   "scope": [
     "pre",
     "prod"
@@ -745,6 +745,43 @@
         }
       ],
       "passes": []
+    },
+    "githubPushAutomation": {
+      "status": "PASS",
+      "blockers": [],
+      "warnings": [],
+      "passes": [
+        {
+          "id": "github_push_automation.pass.1.origin-remote-targets-https-github-com-lufeiz-goods-comm",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "origin remote targets https://github.com/lufeiz/goods-comm"
+        },
+        {
+          "id": "github_push_automation.pass.2.current-branch-is-main",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "current branch is main"
+        },
+        {
+          "id": "github_push_automation.pass.3.branch-tracks-origin-main",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "branch tracks origin/main"
+        },
+        {
+          "id": "github_push_automation.pass.4.nightly-github-push-automation-is-active-at-21-00-and-runs-quick-gate-local-main",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push"
+        },
+        {
+          "id": "github_push_automation.pass.5.github-cli-token-includes-repo-and-workflow-scopes-for-workflow-aware-push-prefl",
+          "area": "github_push_automation",
+          "severity": "pass",
+          "message": "GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight"
+        }
+      ]
     }
   },
   "blockers": [
@@ -1399,6 +1436,36 @@
       "area": "build_artifacts",
       "severity": "pass",
       "message": "prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable"
+    },
+    {
+      "id": "github_push_automation.pass.1.origin-remote-targets-https-github-com-lufeiz-goods-comm",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "origin remote targets https://github.com/lufeiz/goods-comm"
+    },
+    {
+      "id": "github_push_automation.pass.2.current-branch-is-main",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "current branch is main"
+    },
+    {
+      "id": "github_push_automation.pass.3.branch-tracks-origin-main",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "branch tracks origin/main"
+    },
+    {
+      "id": "github_push_automation.pass.4.nightly-github-push-automation-is-active-at-21-00-and-runs-quick-gate-local-main",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push"
+    },
+    {
+      "id": "github_push_automation.pass.5.github-cli-token-includes-repo-and-workflow-scopes-for-workflow-aware-push-prefl",
+      "area": "github_push_automation",
+      "severity": "pass",
+      "message": "GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight"
     }
   ]
 }

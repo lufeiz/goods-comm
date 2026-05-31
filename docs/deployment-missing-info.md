@@ -50,7 +50,7 @@
 
 当前已提供可执行计划脚本：
 
-- `npm run audit:production-readiness`：生成上线前审计报告，汇总本机工具、pre/prod 真实配置、后端部署包完整性、三端构建产物、部署 smoke 输入和 prod 到 pre 同步条件，默认写入 `docs/deployment-readiness-audit.md` 和机器可读的 `docs/deployment-readiness-audit.json`。
+- `npm run audit:production-readiness`：生成上线前审计报告，汇总本机工具、pre/prod 真实配置、后端部署包完整性、三端构建产物、部署 smoke 输入、prod 到 pre 同步条件、每晚 GitHub 推送自动化和 `gh` workflow-aware preflight 授权状态，默认写入 `docs/deployment-readiness-audit.md` 和机器可读的 `docs/deployment-readiness-audit.json`。
 - `npm run audit:production-readiness -- --check-only`：只做检查并在存在上线 blocker 时返回非 0，可放入发布门禁或 CI。
 - `npm run audit:production-readiness:strict`：生成严格上线审计报告，额外把部署后主链路 smoke 输入缺失视为 blocker，默认写入 `docs/deployment-readiness-audit-strict.md` 和 `docs/deployment-readiness-audit-strict.json`。
 - `npm run audit:production-readiness:strict-check`：只做严格上线检查并在存在 blocker 时返回非 0；`verify:release:strict` 使用同一口径。

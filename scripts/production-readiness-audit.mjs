@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { access, mkdir, stat, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { isIP } from 'node:net'
 import { dirname, resolve } from 'node:path'
 import { createArtifactChecks } from './artifact-checks.mjs'
@@ -94,6 +94,12 @@ const PRODUCTION_MODE_EXPECTATIONS = {
 const POSTGRES_SNAPSHOT_LIMIT_KEY = 'GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS'
 const POSTGRES_ADVISORY_LOCK_KEY = 'GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY'
 const POSTGRES_AUTO_SCHEMA_KEY = 'GOODS_COMM_POSTGRES_AUTO_SCHEMA'
+const EXPECTED_GITHUB_REMOTE_URL = 'https://github.com/lufeiz/goods-comm'
+const EXPECTED_GITHUB_BRANCH = 'main'
+const NIGHTLY_GITHUB_PUSH_AUTOMATION_PATH = resolve(
+  process.env.CODEX_HOME || resolve(process.env.HOME || '', '.codex'),
+  'automations/goods-comm-nightly-github-push/automation.toml'
+)
 
 const REAL_VALUE_KEYS = [
   'VITE_API_BASE_URL',
@@ -174,16 +180,19 @@ async function createAudit() {
   const artifactReport = await auditArtifacts(environments)
   const toolReport = auditTools()
   const smokeReport = await auditSmokeInputs(environments, valuesByEnvironment)
+  const githubPushReport = await auditGithubPushAutomation()
   const blockerCount = countItems(toolReport.blockers) +
     countItems(environmentReports.flatMap((report) => report.blockers)) +
     countItems(crossEnvironment.blockers) +
     countItems(artifactReport.blockers) +
-    countItems(smokeReport.blockers)
+    countItems(smokeReport.blockers) +
+    countItems(githubPushReport.blockers)
   const warningCount = countItems(toolReport.warnings) +
     countItems(environmentReports.flatMap((report) => report.warnings)) +
     countItems(crossEnvironment.warnings) +
     countItems(artifactReport.warnings) +
-    countItems(smokeReport.warnings)
+    countItems(smokeReport.warnings) +
+    countItems(githubPushReport.warnings)
 
   return {
     generatedAt: new Date().toISOString(),
@@ -193,6 +202,7 @@ async function createAudit() {
     crossEnvironment,
     artifactReport,
     smokeReport,
+    githubPushReport,
     blockerCount,
     warningCount
   }
@@ -651,6 +661,116 @@ async function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
   }
 }
 
+async function auditGithubPushAutomation() {
+  const blockers = []
+  const warnings = []
+  const passes = []
+
+  const remote = runCommand('git', ['remote', 'get-url', 'origin'])
+  if (remote.status !== 0) {
+    warnings.push(`origin remote is not readable; nightly GitHub push cannot be proven for ${EXPECTED_GITHUB_REMOTE_URL}`)
+  } else if (normalizeRemoteUrl(remote.stdout) !== EXPECTED_GITHUB_REMOTE_URL) {
+    warnings.push(`origin remote should be ${EXPECTED_GITHUB_REMOTE_URL}, got ${remote.stdout.trim() || '(empty)'}`)
+  } else {
+    passes.push(`origin remote targets ${EXPECTED_GITHUB_REMOTE_URL}`)
+  }
+
+  const branch = runCommand('git', ['rev-parse', '--abbrev-ref', 'HEAD'])
+  if (branch.status === 0 && branch.stdout.trim() === EXPECTED_GITHUB_BRANCH) {
+    passes.push(`current branch is ${EXPECTED_GITHUB_BRANCH}`)
+  } else {
+    warnings.push(`current branch should be ${EXPECTED_GITHUB_BRANCH} before nightly push, got ${branch.stdout.trim() || '(unknown)'}`)
+  }
+
+  const upstream = runCommand('git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
+  if (upstream.status === 0 && upstream.stdout.trim() === `origin/${EXPECTED_GITHUB_BRANCH}`) {
+    passes.push(`branch tracks origin/${EXPECTED_GITHUB_BRANCH}`)
+  } else {
+    warnings.push(`branch should track origin/${EXPECTED_GITHUB_BRANCH} before nightly push`)
+  }
+
+  if (await pathExists(NIGHTLY_GITHUB_PUSH_AUTOMATION_PATH)) {
+    const raw = await readFile(NIGHTLY_GITHUB_PUSH_AUTOMATION_PATH, 'utf8')
+    const missingContract = [
+      ['status = "ACTIVE"', 'nightly automation is ACTIVE'],
+      ['FREQ=DAILY;BYHOUR=21;BYMINUTE=0;BYSECOND=0', 'nightly automation runs at 21:00'],
+      ['npm run verify:release:quick -- --skip-http-backend', 'nightly automation runs the quick release gate'],
+      ['npm run smoke:deployed:local-main', 'nightly automation runs the local deployed main-flow smoke'],
+      ['npm run github:push:preflight', 'nightly automation runs GitHub push preflight'],
+      [EXPECTED_GITHUB_REMOTE_URL, 'nightly automation targets the expected GitHub remote'],
+      [process.cwd(), 'nightly automation cwd points at this checkout']
+    ].filter(([snippet]) => !raw.includes(snippet))
+
+    if (missingContract.length) {
+      warnings.push(`nightly GitHub push automation contract is incomplete: ${missingContract.map(([, label]) => label).join(', ')}`)
+    } else {
+      passes.push('nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push')
+    }
+  } else {
+    warnings.push(`nightly GitHub push automation is not installed at ${NIGHTLY_GITHUB_PUSH_AUTOMATION_PATH}`)
+  }
+
+  const ghAuth = inspectGithubCliAuth()
+  if (!ghAuth.available) {
+    warnings.push('GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed')
+  } else {
+    const missingScopes = ['repo', 'workflow'].filter((scope) => !ghAuth.scopes.includes(scope))
+
+    if (missingScopes.length) {
+      warnings.push(`GitHub CLI token is missing scope(s) for workflow-aware push preflight: ${missingScopes.join(', ')}`)
+    } else {
+      passes.push('GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight')
+    }
+  }
+
+  return {
+    blockers,
+    warnings,
+    passes
+  }
+}
+
+function inspectGithubCliAuth() {
+  const result = runCommand('gh', ['auth', 'status', '-h', 'github.com'])
+
+  if (result.status !== 0) {
+    return {
+      available: false,
+      scopes: []
+    }
+  }
+
+  return {
+    available: true,
+    scopes: parseGhAuthScopes(`${result.stdout}\n${result.stderr}`)
+  }
+}
+
+function parseGhAuthScopes(output = '') {
+  const clean = stripAnsi(String(output || ''))
+  const match = clean.match(/Token scopes:\s*([^\n]+)/i)
+  if (!match) {
+    return []
+  }
+
+  return match[1]
+    .replace(/['"`]/g, '')
+    .split(',')
+    .map((scope) => scope.trim())
+    .filter(Boolean)
+}
+
+function stripAnsi(value = '') {
+  return String(value || '').replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '')
+}
+
+function normalizeRemoteUrl(value = '') {
+  return String(value || '')
+    .trim()
+    .replace(/\.git$/, '')
+    .replace(/\/$/, '')
+}
+
 function getSmokeInputValue(values, key) {
   if (process.env[key] !== undefined && process.env[key] !== '') {
     return process.env[key]
@@ -748,6 +868,20 @@ function commandAvailable(command) {
   return !result.error && result.status === 0
 }
 
+function runCommand(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    stdio: 'pipe'
+  })
+
+  return {
+    status: result.status ?? 1,
+    stdout: result.stdout || '',
+    stderr: result.stderr || ''
+  }
+}
+
 function hasTencentCloudApiCredential() {
   return Boolean(
     (process.env.TENCENTCLOUD_SECRET_ID || process.env.TENCENTCLOUD_SECRETID) &&
@@ -799,6 +933,12 @@ function renderAudit(report) {
     renderSection('Warnings', report.smokeReport.warnings),
     renderSection('Passes', report.smokeReport.passes),
     '',
+    '## GitHub push automation',
+    '',
+    renderSection('Blockers', report.githubPushReport.blockers),
+    renderSection('Warnings', report.githubPushReport.warnings),
+    renderSection('Passes', report.githubPushReport.passes),
+    '',
     '## Release gate commands',
     '',
     '```bash',
@@ -846,6 +986,10 @@ function createMachineReadableAudit(report) {
     deployedSmoke: {
       status: statusLabel(report.smokeReport),
       ...normalizeAuditGroup(report.smokeReport, 'deployed_smoke')
+    },
+    githubPushAutomation: {
+      status: statusLabel(report.githubPushReport),
+      ...normalizeAuditGroup(report.githubPushReport, 'github_push_automation')
     }
   }
 
@@ -947,7 +1091,8 @@ function renderSummaryTable(report) {
     }), `${report.environmentReports.length} environments checked`],
     ['pre/prod isolation', statusLabel(report.crossEnvironment), `${report.crossEnvironment.blockers.length} blockers, ${report.crossEnvironment.warnings.length} warnings`],
     ['Build artifacts', statusLabel(report.artifactReport), `${report.artifactReport.blockers.length} blockers, ${report.artifactReport.warnings.length} warnings`],
-    ['Deployed smoke', statusLabel(report.smokeReport), `${report.smokeReport.blockers.length} blockers, ${report.smokeReport.warnings.length} warnings`]
+    ['Deployed smoke', statusLabel(report.smokeReport), `${report.smokeReport.blockers.length} blockers, ${report.smokeReport.warnings.length} warnings`],
+    ['GitHub push automation', statusLabel(report.githubPushReport), `${report.githubPushReport.blockers.length} blockers, ${report.githubPushReport.warnings.length} warnings`]
   ]
 
   return renderTable(rows)
