@@ -38,6 +38,13 @@ VALUES (
   'baseline:backend/db/schema.sql#location_risk_events.review',
   'backend/db/schema.sql',
   CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
+),
+(
+  '20260531_account_deletion_tombstone',
+  'account_deletion_tombstone',
+  'baseline:backend/db/schema.sql#users.deleted_tombstone',
+  'backend/db/schema.sql',
+  CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
 )
 ON CONFLICT (version) DO UPDATE
 SET name = EXCLUDED.name,
@@ -72,6 +79,16 @@ CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 CREATE INDEX IF NOT EXISTS idx_users_agreement_version
 ON users(agreement_version)
 WHERE agreement_version <> '';
+
+UPDATE users
+SET
+  platform_id = 'deleted_' || substr(md5(provider || ':' || id || ':' || platform_id), 1, 16),
+  union_id = '',
+  nickname = '已注销用户',
+  avatar_url = '',
+  contact_code = ''
+WHERE status = 'deleted'
+  AND platform_id NOT LIKE 'deleted_%';
 
 CREATE TABLE IF NOT EXISTS auth_sessions (
   id TEXT PRIMARY KEY,

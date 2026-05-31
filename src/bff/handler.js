@@ -556,7 +556,9 @@ function login(payload = {}, state) {
   const provider = platformIdentity.provider || payload.provider || 'unknown'
   const platformId = platformIdentity.platformId || payload.code || `${provider}_${Date.now()}`
   const unionId = platformIdentity.unionId || ''
+  const userId = `user_${hashText(`${provider}_${platformId}`)}`
   const existing = state.users.find((user) => user.provider === provider && user.platformId === platformId)
+    || state.users.find((user) => user.provider === provider && user.id === userId && user.status === USER_STATUS.DELETED)
   const now = Date.now()
   const agreement = normalizeUserAgreement(payload.agreement, now)
 
@@ -569,7 +571,7 @@ function login(payload = {}, state) {
   }
 
   const user = existing || {
-    id: `user_${hashText(`${provider}_${platformId}`)}`,
+    id: userId,
     provider,
     platformId,
     unionId,
@@ -636,6 +638,10 @@ function hasCurrentUserAgreement(user = {}) {
   )
 }
 
+function createDeletedPlatformTombstone(user = {}) {
+  return `deleted_${hashText(`${user.provider || 'unknown'}:${user.id || ''}:${user.platformId || ''}`)}`
+}
+
 function isProtectedRuntime() {
   return PROTECTED_ENVIRONMENTS.includes(String(process.env.GOODS_COMM_ENV || '').trim().toLowerCase())
 }
@@ -645,6 +651,8 @@ function deleteAccount(options = {}, state) {
   const now = Date.now()
 
   user.status = 'deleted'
+  user.platformId = createDeletedPlatformTombstone(user)
+  user.unionId = ''
   user.nickname = '已注销用户'
   user.avatarUrl = ''
   user.contactCode = ''

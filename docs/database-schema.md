@@ -21,13 +21,13 @@
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema`、`20260531_auth_session_last_seen`、`20260531_location_risk_events` 和 `20260531_location_risk_review` |
+| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema`、`20260531_auth_session_last_seen`、`20260531_location_risk_events`、`20260531_location_risk_review` 和 `20260531_account_deletion_tombstone` |
 | `name` | string | 迁移名称 |
 | `checksum` | string | 当前 schema 基线标识，后续可替换为真实文件校验值 |
 | `source` | string | 迁移来源文件 |
 | `applied_at` | datetime | 首次应用时间 |
 
-`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`、`20260531_auth_session_last_seen`、`20260531_location_risk_events` 与 `20260531_location_risk_review`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
+`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`、`20260531_auth_session_last_seen`、`20260531_location_risk_events`、`20260531_location_risk_review` 与 `20260531_account_deletion_tombstone`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
 
 ### `users`
 
@@ -60,6 +60,8 @@
 - partial index(`agreement_version`) where not empty
 
 `pre/prod` 登录时服务端会要求新用户或未确认当前版本协议的用户提交当前 `agreement_version` 和 `agreement_accepted_at`，并把确认事实写入 `users` 表，避免只依赖端侧本地存储作为合规证据。
+
+账号注销会保留 `users.id` 作为交易、评价和审计关联 tombstone，但会把 `platform_id` 改写为 `deleted_<hash>`、清空 `union_id`、昵称、头像和联系码；`20260531_account_deletion_tombstone` 迁移也会 backfill 已有 `deleted` 用户；后续同一平台身份登录会命中该 tombstone 并返回账号不可用，避免重新创建同 ID 用户或恢复已注销账号。
 
 运营端可通过 `/ops/users/:id/status` 将用户调整为 `blocked` 或恢复为 `active`。封禁会吊销该用户所有 session、下架其活跃发布、把相关活跃交易转入争议，并写入 `moderation_events` 与 `ops_audit_events`。
 
@@ -476,7 +478,7 @@
 6. 争议创建：用户发起争议、高风险举报或内容安全拒绝时，交易置为 `disputed`、清空一次性联系码、创建 `trade_disputes`、写 `trade_timeline`、`notifications` 和 `notification_deliveries`。
 7. 争议处理：校验工单 `open` 且交易仍为 `disputed`，按裁决结果把交易改为 `cancelled` 或 `completed`，商品恢复 `online`、变为 `sold` 或下架为 `removed`，写 `trade_disputes`、`trade_timeline`、`notifications` 和 `notification_deliveries`。
 8. 交易评价：校验交易已完成、评价人属于该交易、同一交易同一评价人未评价，写 `trade_reviews`，并给对方写 `notifications` 和 `notification_deliveries`。
-9. 账号注销：用户置为 `deleted`、吊销 `auth_sessions`、下架用户活跃商品、取消用户活跃交易、匿名化该用户历史评价快照、写 `account_deletions`。
+9. 账号注销：用户置为 `deleted`、伪匿名化 `platform_id`、清空 `union_id` / 昵称 / 头像 / 联系码、吊销 `auth_sessions`、下架用户活跃商品、取消用户活跃交易、匿名化该用户历史评价快照、写 `account_deletions`，并拒绝同一平台身份重新登录。
 10. 退出登录：只吊销当前 `auth_sessions` 记录，不影响同一用户的其他有效 session。
 11. 幂等写请求：执行业务写入和 `idempotency_records` 响应快照必须处于同一事务；成功请求记录 `completed`，已提交审计的业务拒绝记录 `committed_error`；重复请求不能再次追加商品、交易时间线、站内通知、审核事件或平台通知 outbox。请求身份不包含服务端注入的 `serverRegion` 和 `moderation` 字段，发布重试应在外部内容安全调用前先命中幂等重放。
 12. 举报处理：运营通过 `uphold_report` 或 `dismiss_report` 处理 `pending_review` 举报；确认违规时下架商品并把活跃交易转争议，驳回误报时只在没有活跃 / 争议交易阻塞时恢复 `reported_removed` 商品为 `online`，同时写 `reports` 处理字段、`moderation_events` 和 `ops_audit_events`。

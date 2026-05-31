@@ -49,6 +49,12 @@ export const REQUIRED_SCHEMA_MIGRATIONS = [
     name: 'location_risk_review',
     checksum: 'baseline:backend/db/schema.sql#location_risk_events.review',
     source: 'backend/db/schema.sql'
+  },
+  {
+    version: '20260531_account_deletion_tombstone',
+    name: 'account_deletion_tombstone',
+    checksum: 'baseline:backend/db/schema.sql#users.deleted_tombstone',
+    source: 'backend/db/schema.sql'
   }
 ]
 export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
@@ -1854,6 +1860,17 @@ async function ensureNormalizedSchema(client) {
   await client.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS unblocked_by TEXT NOT NULL DEFAULT ''")
   await client.query('CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)')
   await client.query("CREATE INDEX IF NOT EXISTS idx_users_agreement_version ON users(agreement_version) WHERE agreement_version <> ''")
+  await client.query(`
+    UPDATE users
+    SET
+      platform_id = 'deleted_' || substr(md5(provider || ':' || id || ':' || platform_id), 1, 16),
+      union_id = '',
+      nickname = '已注销用户',
+      avatar_url = '',
+      contact_code = ''
+    WHERE status = 'deleted'
+      AND platform_id NOT LIKE 'deleted_%'
+  `)
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS auth_sessions (

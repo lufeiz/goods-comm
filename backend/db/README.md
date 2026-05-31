@@ -1,6 +1,6 @@
 # goods-comm database operations
 
-`schema.sql` is the canonical PostgreSQL / TencentDB schema for all four environments. It creates the `schema_migrations` table and records the required migrations `20260531_normalized_schema`, `20260531_auth_session_last_seen`, `20260531_location_risk_events`, and `20260531_location_risk_review`.
+`schema.sql` is the canonical PostgreSQL / TencentDB schema for all four environments. It creates the `schema_migrations` table and records the required migrations `20260531_normalized_schema`, `20260531_auth_session_last_seen`, `20260531_location_risk_events`, `20260531_location_risk_review`, and `20260531_account_deletion_tombstone`.
 
 `backend/src/postgres-state-store.mjs` uses the normalized tables in this schema for `pre/prod` state persistence. The legacy `bff_state_snapshots` table remains in `schema.sql` only as a migration bridge for older test deployments and should stay empty in new deployments.
 

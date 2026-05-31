@@ -1385,6 +1385,11 @@ const deletion = await handleBffRequest('/auth/delete-account', {
 }, state)
 
 assert.equal(deletion.ok, true)
+const deletedSellerUser = state.users.find((user) => user.id === deleteSellerSession.user.id)
+assert.equal(deletedSellerUser.status, 'deleted')
+assert.match(deletedSellerUser.platformId, /^deleted_/)
+assert.notEqual(deletedSellerUser.platformId, 'delete-seller-code')
+assert.equal(deletedSellerUser.unionId, '')
 assert.equal(
   state.sessions
     .filter((session) => session.userId === deleteSellerSession.user.id)
@@ -1403,6 +1408,20 @@ await assert.rejects(
     method: 'GET'
   }, state),
   /物品不存在或已下架/
+)
+await assert.rejects(
+  () => handleBffRequest('/auth/login', {
+    method: 'POST',
+    data: {
+      provider: 'weixin',
+      code: 'delete-seller-code',
+      userInfo: {
+        nickname: '注销后重登',
+        avatarUrl: ''
+      }
+    }
+  }, state),
+  /账号状态不可用/
 )
 
 const deleteBuyerSession = await handleBffRequest('/auth/login', {

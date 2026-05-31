@@ -1218,6 +1218,17 @@ try {
   const hiddenDeletedSellerItem = await getExpectError(`${baseUrl}/items/${deleteItem.id}`)
   assert.equal(hiddenDeletedSellerItem.status, 404)
   assert.equal(hiddenDeletedSellerItem.code, 'NOT_FOUND')
+  const reloginDeletedSeller = await postExpectError(`${baseUrl}/auth/login`, {
+    provider: 'weixin',
+    code: 'backend-delete-seller-code',
+    userInfo: {
+      nickname: '后端注销后重登',
+      avatarUrl: ''
+    }
+  })
+  assert.equal(reloginDeletedSeller.status, 403)
+  assert.equal(reloginDeletedSeller.code, 'FORBIDDEN')
+  assert.match(reloginDeletedSeller.message, /账号状态不可用/)
 
   const deleteBuyer = await post(`${baseUrl}/auth/login`, {
     provider: 'weixin',
