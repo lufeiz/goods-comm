@@ -2170,6 +2170,8 @@ function requireSession(options = {}, state) {
     throw new Error('登录态无效，请重新登录')
   }
 
+  session.lastSeenAt = now
+
   return {
     user,
     session
@@ -2185,6 +2187,7 @@ function createSession(user, state, now = Date.now()) {
     provider: user.provider || '',
     createdAt: now,
     expiresAt: now + AUTH_SESSION_TTL_MS,
+    lastSeenAt: now,
     revokedAt: null
   }
 

@@ -67,6 +67,7 @@ const flows = [
           "path === '/auth/logout' && method === 'POST'",
           "path === '/auth/delete-account' && method === 'POST'",
           'tokenHash',
+          'lastSeenAt',
           'revokedAt'
         ]
       },

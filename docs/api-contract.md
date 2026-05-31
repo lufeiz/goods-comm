@@ -66,7 +66,7 @@
 - BFF `login` 只用服务端注入的 `platformIdentity.platformId` 作为正式平台身份；没有该身份时仅用于本地/测试演示。
 - token 必须写入服务端 session 记录，可过期、可吊销，并绑定用户状态。
 - 服务端 session 记录只保存 `tokenHash`，登录响应只返回一次明文 token；当前 BFF 使用随机 session token，并以 `GOODS_COMM_SESSION_SECRET` 计算 HMAC-SHA256 后持久化。
-- BFF 示例已维护 `sessions` 状态；`requireUser` 会按 token hash 查找 session，并拒绝不存在、已过期、已吊销或用户状态非 `active` 的 token。`pre/prod` 缺失真实 `GOODS_COMM_SESSION_SECRET` 时不得签发 session。
+- BFF 示例已维护 `sessions` 状态；`requireUser` 会按 token hash 查找 session，刷新 `lastSeenAt` 最近使用时间，并拒绝不存在、已过期、已吊销或用户状态非 `active` 的 token。`pre/prod` 缺失真实 `GOODS_COMM_SESSION_SECRET` 时不得签发 session。
 - 端侧登录前必须确认用户协议和隐私政策；`pre/prod` 服务端会拒绝未提交当前协议版本的新用户或未确认当前版本协议的用户，并把 `agreement` 版本、确认时间和来源落到 `users` 表作为账号合规审计字段。
 
 ### `POST /auth/logout`

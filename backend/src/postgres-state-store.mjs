@@ -30,6 +30,12 @@ export const REQUIRED_SCHEMA_MIGRATIONS = [
     name: 'goods_comm_normalized_schema',
     checksum: 'baseline:backend/db/schema.sql',
     source: 'backend/db/schema.sql'
+  },
+  {
+    version: '20260531_auth_session_last_seen',
+    name: 'auth_session_last_seen',
+    checksum: 'baseline:backend/db/schema.sql#auth_sessions.last_seen_at',
+    source: 'backend/db/schema.sql'
   }
 ]
 export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
@@ -68,6 +74,7 @@ export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
     'token_hash',
     'created_at',
     'expires_at',
+    'last_seen_at',
     'revoked_at'
   ],
   idempotency_records: [
@@ -843,6 +850,7 @@ export function serializeStateToRows(state = {}, seedItems) {
         tokenHash: session.tokenHash || '',
         createdAt: toInteger(session.createdAt, Date.now()),
         expiresAt: toInteger(session.expiresAt, Date.now()),
+        lastSeenAt: nullableInteger(session.lastSeenAt),
         revokedAt: nullableInteger(session.revokedAt)
       }
     })
@@ -1037,6 +1045,7 @@ export function deserializeRowsToState(rows = {}, seedItems) {
     provider: row.provider || '',
     createdAt: toInteger(row.created_at ?? row.createdAt, Date.now()),
     expiresAt: toInteger(row.expires_at ?? row.expiresAt, Date.now()),
+    lastSeenAt: nullableInteger(row.last_seen_at ?? row.lastSeenAt),
     revokedAt: nullableInteger(row.revoked_at ?? row.revokedAt)
   }))
 
@@ -1254,8 +1263,8 @@ async function saveNormalizedRows(client, rows) {
   for (const session of rows.sessions) {
     await client.query(
       `INSERT INTO auth_sessions (
-        id, user_id, provider, token_hash, created_at, expires_at, revoked_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        id, user_id, provider, token_hash, created_at, expires_at, last_seen_at, revoked_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         session.id,
         session.userId,
@@ -1263,6 +1272,7 @@ async function saveNormalizedRows(client, rows) {
         session.tokenHash,
         session.createdAt,
         session.expiresAt,
+        session.lastSeenAt,
         session.revokedAt
       ]
     )
@@ -1706,11 +1716,15 @@ async function ensureNormalizedSchema(client) {
       token_hash TEXT NOT NULL UNIQUE,
       created_at BIGINT NOT NULL,
       expires_at BIGINT NOT NULL,
+      last_seen_at BIGINT,
       revoked_at BIGINT
     )
   `)
+  await client.query('ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS last_seen_at BIGINT')
   await client.query('CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id)')
+  await client.query('CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_expires_at ON auth_sessions(user_id, expires_at)')
   await client.query('CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_hash ON auth_sessions(token_hash)')
+  await client.query('CREATE INDEX IF NOT EXISTS idx_auth_sessions_revoked_at ON auth_sessions(revoked_at)')
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS idempotency_records (

@@ -1,6 +1,6 @@
 # goods-comm database operations
 
-`schema.sql` is the canonical PostgreSQL / TencentDB schema for all four environments. It creates the `schema_migrations` table and records the required baseline migration `20260531_normalized_schema`.
+`schema.sql` is the canonical PostgreSQL / TencentDB schema for all four environments. It creates the `schema_migrations` table and records the required migrations `20260531_normalized_schema` and `20260531_auth_session_last_seen`.
 
 `backend/src/postgres-state-store.mjs` uses the normalized tables in this schema for `pre/prod` state persistence. The legacy `bff_state_snapshots` table remains in `schema.sql` only as a migration bridge for older test deployments and should stay empty in new deployments.
 
@@ -13,7 +13,7 @@ Environment rules:
 - `pre` and `prod` must never share the same database or object storage bucket.
 - `pre` and `prod` must run the same schema version before a release candidate is validated.
 - `pre` and `prod` must keep `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`; backend readiness validates this schema instead of creating tables at runtime.
-- `/health/ready` fails when the target database is missing `schema_migrations` or the required baseline migration record, so a stale database cannot serve traffic just because individual tables happen to exist.
+- `/health/ready` fails when the target database is missing `schema_migrations` or a required migration record, so a stale database cannot serve traffic just because individual tables happen to exist.
 
 Prod to pre data sync:
 

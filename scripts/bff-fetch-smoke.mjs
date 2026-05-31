@@ -47,8 +47,17 @@ assert.equal(state.sessions.length, 3)
 assert.equal(state.sessions.every((session) => session.token === undefined), true)
 assert.equal(state.sessions.every((session) => session.tokenHash), true)
 assert.equal(state.sessions.every((session) => /^[a-f0-9]{64}$/.test(session.tokenHash)), true)
+assert.equal(state.sessions.every((session) => Number.isFinite(Number(session.lastSeenAt))), true)
 assert.equal(sellerSession.token.startsWith('session_'), true)
 assert.equal(sellerSession.token.length > 40, true)
+
+const sellerStateSession = findSessionForUser(state, sellerSession.user.id)
+sellerStateSession.lastSeenAt = 1
+await raw('/items/mine', {
+  method: 'GET',
+  token: sellerSession.token
+})
+assert.ok(sellerStateSession.lastSeenAt > 1)
 
 const region = await post('/lbs/resolve-region', {
   latitude: 31.22945,

@@ -21,13 +21,13 @@
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `version` | string | 迁移版本，当前必需基线为 `20260531_normalized_schema` |
+| `version` | string | 迁移版本，当前必需记录包括 `20260531_normalized_schema` 和 `20260531_auth_session_last_seen` |
 | `name` | string | 迁移名称 |
 | `checksum` | string | 当前 schema 基线标识，后续可替换为真实文件校验值 |
 | `source` | string | 迁移来源文件 |
 | `applied_at` | datetime | 首次应用时间 |
 
-`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查该基线记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
+`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema` 与 `20260531_auth_session_last_seen`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查这些迁移记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
 
 ### `users`
 

@@ -17,6 +17,13 @@ VALUES (
   'baseline:backend/db/schema.sql',
   'backend/db/schema.sql',
   CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
+),
+(
+  '20260531_auth_session_last_seen',
+  'auth_session_last_seen',
+  'baseline:backend/db/schema.sql#auth_sessions.last_seen_at',
+  'backend/db/schema.sql',
+  CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
 )
 ON CONFLICT (version) DO UPDATE
 SET name = EXCLUDED.name,
@@ -59,11 +66,16 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
   token_hash TEXT NOT NULL UNIQUE,
   created_at BIGINT NOT NULL,
   expires_at BIGINT NOT NULL,
+  last_seen_at BIGINT,
   revoked_at BIGINT
 );
 
+ALTER TABLE auth_sessions ADD COLUMN IF NOT EXISTS last_seen_at BIGINT;
+
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_id ON auth_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user_expires_at ON auth_sessions(user_id, expires_at);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_token_hash ON auth_sessions(token_hash);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_revoked_at ON auth_sessions(revoked_at);
 
 CREATE TABLE IF NOT EXISTS idempotency_records (
   id TEXT PRIMARY KEY,
