@@ -50,6 +50,7 @@ async function runDeployedMainFlowSmoke(apiBaseUrl, smokeRunId) {
       GOODS_COMM_SMOKE_ACCURACY: '35',
       GOODS_COMM_SMOKE_CAPTURED_AT: String(Date.now()),
       GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE: `${smokeRunId}:account-delete`,
+      GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE: `${smokeRunId}:account-delete`,
       GOODS_COMM_SMOKE_RUN_ID: smokeRunId
     },
     stdio: 'inherit'

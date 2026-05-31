@@ -19,7 +19,8 @@ const buyerProvider = process.env.GOODS_COMM_SMOKE_BUYER_PROVIDER || sellerProvi
 const sellerCode = process.env.GOODS_COMM_SMOKE_SELLER_CODE || ''
 const buyerCode = process.env.GOODS_COMM_SMOKE_BUYER_CODE || ''
 const accountDeleteProvider = process.env.GOODS_COMM_SMOKE_ACCOUNT_DELETE_PROVIDER || sellerProvider
-const accountDeleteCode = process.env.GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE || ''
+const accountDeleteCode = normalizeOptionalSmokeInput(process.env.GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE || '')
+const accountDeleteReloginCode = normalizeOptionalSmokeInput(process.env.GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE || '')
 const shouldRunAccountDeleteSmoke = Boolean(accountDeleteCode)
 const scopeType = process.env.GOODS_COMM_SMOKE_SCOPE_TYPE || 'community'
 const radiusMeters = parseOptionalNumber('GOODS_COMM_SMOKE_RADIUS_METERS', scopeType === 'street' ? 4000 : 1200)
@@ -272,6 +273,26 @@ function validateInputs() {
     missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE must use a disposable account different from GOODS_COMM_SMOKE_BUYER_CODE')
   }
 
+  if (accountDeleteReloginCode && !accountDeleteCode) {
+    missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE requires GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE')
+  }
+
+  if (
+    accountDeleteReloginCode &&
+    accountDeleteProvider === sellerProvider &&
+    accountDeleteReloginCode === sellerCode
+  ) {
+    missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE must use the disposable delete account, not GOODS_COMM_SMOKE_SELLER_CODE')
+  }
+
+  if (
+    accountDeleteReloginCode &&
+    accountDeleteProvider === buyerProvider &&
+    accountDeleteReloginCode === buyerCode
+  ) {
+    missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE must use the disposable delete account, not GOODS_COMM_SMOKE_BUYER_CODE')
+  }
+
   if (missing.length) {
     throw new Error(`Deployed main-flow smoke preconditions are missing:\n- ${missing.join('\n- ')}`)
   }
@@ -327,6 +348,20 @@ async function runAccountDeletionSmoke() {
   const hiddenDeletedItem = await getExpectError(`/items/${encodeURIComponent(deleteItem.id)}`)
   assertEqual(hiddenDeletedItem.status, 404, 'account deletion hidden item status')
   assertEqual(hiddenDeletedItem.code, 'NOT_FOUND', 'account deletion hidden item code')
+
+  if (accountDeleteReloginCode) {
+    const reloginDeletedAccount = await postExpectError('/auth/login', {
+      provider: accountDeleteProvider,
+      code: accountDeleteReloginCode,
+      agreement: createAgreement('deployed-main-flow:account-delete-relogin'),
+      userInfo: {
+        nickname: `部署烟测注销重登-${environment}`,
+        avatarUrl: ''
+      }
+    })
+    assertEqual(reloginDeletedAccount.status, 403, 'account deletion relogin status')
+    assertEqual(reloginDeletedAccount.code, 'FORBIDDEN', 'account deletion relogin code')
+  }
 }
 
 function selectPublishImage(uploadedImage) {
@@ -610,6 +645,12 @@ function normalizeSmokeRunId(value = '') {
     .slice(0, 64)
 
   return normalized || `${environment}-${Date.now()}`
+}
+
+function normalizeOptionalSmokeInput(value = '') {
+  const normalized = String(value || '').trim()
+
+  return containsPlaceholder(normalized) ? '' : normalized
 }
 
 function createAgreement(source) {

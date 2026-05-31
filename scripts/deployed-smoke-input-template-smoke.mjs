@@ -21,7 +21,8 @@ const REQUIRED_MAIN_FLOW_KEYS = [
   'GOODS_COMM_SMOKE_APPROVED_IMAGE_MIME_TYPE',
   'GOODS_COMM_SMOKE_APPROVED_IMAGE_CHECKSUM',
   'GOODS_COMM_SMOKE_ACCOUNT_DELETE_PROVIDER',
-  'GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE'
+  'GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE',
+  'GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE'
 ]
 
 const REQUIRED_HEALTH_KEYS = [
@@ -63,6 +64,9 @@ for (const [environment, file] of Object.entries(environmentTemplates)) {
   assert.notEqual(values.GOODS_COMM_SMOKE_SELLER_CODE, values.GOODS_COMM_SMOKE_BUYER_CODE, `${file}: seller and buyer code placeholders must differ`)
   assert.notEqual(values.GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE, values.GOODS_COMM_SMOKE_SELLER_CODE, `${file}: account delete code placeholder must differ from seller code`)
   assert.notEqual(values.GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE, values.GOODS_COMM_SMOKE_BUYER_CODE, `${file}: account delete code placeholder must differ from buyer code`)
+  assert.notEqual(values.GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE, values.GOODS_COMM_SMOKE_SELLER_CODE, `${file}: account delete relogin code placeholder must differ from seller code`)
+  assert.notEqual(values.GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE, values.GOODS_COMM_SMOKE_BUYER_CODE, `${file}: account delete relogin code placeholder must differ from buyer code`)
+  assert.notEqual(values.GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE, values.GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE, `${file}: account delete relogin code should be a second one-time code`)
 
   if (environment === 'prod') {
     assert.ok(hasKey(values, 'GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION'), `${file}: missing GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION`)
