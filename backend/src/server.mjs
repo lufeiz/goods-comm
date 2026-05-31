@@ -312,6 +312,29 @@ export function createGoodsCommServer(options = {}) {
           return
         }
 
+        if (url.pathname === '/ops/location-risk-events' && method === 'GET') {
+          authenticateOpsRequest(opsAuth, request, url, ['risk', 'support'])
+          const result = await runBffTransactionWithNotifications(store, platformNotifier, url.pathname, {
+            method,
+            data: Object.fromEntries(url.searchParams.entries()),
+            header: {
+              'Idempotency-Key': request.headers['idempotency-key'] || request.headers['x-idempotency-key'] || ''
+            }
+          }, {
+            traceId,
+            environment: deploymentEnv,
+            opsAlerts
+          })
+          sendResponse(response, 200, {
+            data: result,
+            trace: {
+              traceId,
+              durationMs: Date.now() - startedAt
+            }
+          }, traceId, corsContext)
+          return
+        }
+
         if (url.pathname === '/ops/audit-events' && method === 'GET') {
           authenticateOpsRequest(opsAuth, request, url, ['telemetry', 'support'])
           const result = await runBffTransactionWithNotifications(store, platformNotifier, url.pathname, {

@@ -166,6 +166,23 @@ assert.equal(state.clientEvents.some((event) =>
   event.context.distanceMeters &&
   !JSON.stringify(event.context).includes('latitude')
 ), true)
+const fetchOpsLocationRiskEvents = await get(`/ops/location-risk-events?riskLevel=high&riskCode=IMPOSSIBLE_TRAVEL&userId=${encodeURIComponent(sellerSession.user.id)}`, '', {
+  header: {
+    'x-moderation-secret': 'fetch-moderation-secret'
+  }
+})
+assert.equal(fetchOpsLocationRiskEvents.counts.high >= 1, true)
+const fetchOpsPublishRiskEvent = fetchOpsLocationRiskEvents.events.find((event) =>
+  event.targetId === item.id &&
+  event.riskCode === 'IMPOSSIBLE_TRAVEL' &&
+  event.userId === sellerSession.user.id
+)
+assert.equal(Boolean(fetchOpsPublishRiskEvent), true)
+assert.equal(fetchOpsPublishRiskEvent.user.id, sellerSession.user.id)
+assert.equal(fetchOpsPublishRiskEvent.latitude, undefined)
+assert.equal(fetchOpsPublishRiskEvent.longitude, undefined)
+assert.equal(fetchOpsPublishRiskEvent.accuracy, undefined)
+assert.equal(JSON.stringify(fetchOpsPublishRiskEvent).includes('116.4074'), false)
 
 const duplicateItem = await raw('/items', {
   method: 'POST',

@@ -142,6 +142,7 @@ function verifyPageContracts() {
         'let moderationQueue = null',
         'moderationQueue?.notificationDeliveries',
         'fetchOpsUsers',
+        'fetchLocationRiskEvents',
         'reviewOpsItem',
         'resolveOpsReport',
         'resolveOpsDispute',
@@ -155,7 +156,8 @@ function verifyPageContracts() {
         ':data-delivery-id="delivery.id"',
         ':data-event-id="event.id"',
         ':data-audit-id="event.id"',
-        ':data-action="event.action"'
+        ':data-action="event.action"',
+        'prefillLocationRisk'
       ]
     },
     {
@@ -373,6 +375,12 @@ function verifyRenderedTestIdContracts() {
         'ops-client-event-list',
         'ops-client-event-card',
         'ops-client-event-empty',
+        'ops-location-risk-panel',
+        'ops-location-risk-level-filter',
+        'ops-location-risk-list',
+        'ops-location-risk-card',
+        'ops-location-risk-prefill',
+        'ops-location-risk-empty',
         'ops-audit-panel',
         'ops-audit-list',
         'ops-audit-card',

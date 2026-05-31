@@ -17,12 +17,14 @@ const files = await readFiles([
   'src/pages/home/home.vue',
   'src/pages/mine/mine.vue',
   'src/pages/orders/orders.vue',
+  'src/pages/ops/ops.vue',
   'src/pages/publish/publish.vue',
   'src/services/auth.js',
   'src/services/compliance.js',
   'src/services/goods.js',
   'src/services/location.js',
-  'src/services/media.js'
+  'src/services/media.js',
+  'src/services/ops.js'
 ])
 
 const flows = [
@@ -149,7 +151,26 @@ const flows = [
         tokens: [
           'location_risk_prior_seller',
           "event.type === 'location_risk'",
-          "event.code === 'IMPOSSIBLE_TRAVEL'"
+          "event.code === 'IMPOSSIBLE_TRAVEL'",
+          "'/ops/location-risk-events'",
+          'opsLocationRiskEvents'
+        ]
+      },
+      {
+        file: 'src/services/ops.js',
+        tokens: [
+          'fetchLocationRiskEvents',
+          "'/ops/location-risk-events'",
+          'normalizeLocationRiskFilters'
+        ]
+      },
+      {
+        file: 'src/pages/ops/ops.vue',
+        tokens: [
+          'fetchLocationRiskEvents',
+          'ops-location-risk-panel',
+          'ops-location-risk-card',
+          'prefillLocationRisk'
         ]
       }
     ]

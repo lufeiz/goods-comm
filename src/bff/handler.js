@@ -275,6 +275,10 @@ async function routeBffRequest(path, method, options = {}, state = createBffStat
     return listOpsClientEvents(options, state)
   }
 
+  if (path === '/ops/location-risk-events' && method === 'GET') {
+    return listOpsLocationRiskEvents(options, state)
+  }
+
   if (path === '/ops/audit-events' && method === 'GET') {
     return listOpsAuditEvents(options, state)
   }
@@ -1537,6 +1541,33 @@ function listOpsClientEvents(options = {}, state) {
   }
 }
 
+function listOpsLocationRiskEvents(options = {}, state) {
+  const filters = options.data || {}
+  const riskLevel = String(filters.riskLevel || filters.level || '').trim()
+  const riskCode = String(filters.riskCode || filters.code || '').trim()
+  const userId = String(filters.userId || '').trim()
+  const action = String(filters.action || '').trim()
+  const limit = normalizeLimit(filters.limit, 100)
+  const events = normalizeLocationRiskEvents(state.locationRiskEvents)
+  const usersById = new Map((Array.isArray(state.users) ? state.users : []).map((user) => [user.id, user]))
+
+  return {
+    counts: {
+      total: events.length,
+      high: events.filter((event) => event.riskLevel === 'high').length,
+      normal: events.filter((event) => event.riskLevel === 'normal').length
+    },
+    events: events
+      .filter((event) => !riskLevel || event.riskLevel === riskLevel)
+      .filter((event) => !riskCode || event.riskCode === riskCode)
+      .filter((event) => !userId || event.userId === userId)
+      .filter((event) => !action || event.action === action)
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+      .slice(0, limit)
+      .map((event) => sanitizeLocationRiskEventForOps(event, usersById.get(event.userId)))
+  }
+}
+
 function listOpsAuditEvents(options = {}, state) {
   const filters = options.data || {}
   const action = String(filters.action || '').trim()
@@ -2447,6 +2478,27 @@ function sanitizeUserForOps(user = {}) {
     unblockedBy: user.unblockedBy || '',
     createdAt: user.createdAt || Date.now(),
     deletedAt: user.deletedAt || null
+  }
+}
+
+function sanitizeLocationRiskEventForOps(event = {}, user = {}) {
+  return {
+    id: event.id || '',
+    userId: event.userId || '',
+    user: user?.id ? sanitizeUserForOps(user) : null,
+    action: event.action || '',
+    targetType: event.targetType || '',
+    targetId: event.targetId || '',
+    regionCommunityId: event.regionCommunityId || '',
+    regionStreetId: event.regionStreetId || '',
+    capturedAt: event.capturedAt || null,
+    previousEventId: event.previousEventId || '',
+    distanceMeters: normalizeOptionalNumber(event.distanceMeters),
+    elapsedMs: Number.isFinite(Number(event.elapsedMs)) ? Math.trunc(Number(event.elapsedMs)) : null,
+    speedMetersPerSecond: normalizeOptionalNumber(event.speedMetersPerSecond),
+    riskLevel: event.riskLevel || 'normal',
+    riskCode: event.riskCode || '',
+    createdAt: event.createdAt || Date.now()
   }
 }
 

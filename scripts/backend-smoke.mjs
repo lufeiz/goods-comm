@@ -744,6 +744,53 @@ try {
     },
     location: sellerLocation
   }, riskSeller.token)
+  const riskFarUpload = await uploadFile(`${baseUrl}/uploads/items`, uploadBytes, riskSeller.token)
+  const riskFarItem = await post(`${baseUrl}/items`, {
+    title: '后端位置异常商品',
+    price: 59,
+    category: 'home',
+    condition: 'good',
+    description: '同账号短时间远距离发布应进入位置风险队列',
+    images: [riskFarUpload],
+    tradeScope: {
+      type: 'street',
+      label: '同街道',
+      radiusMeters: 4000
+    },
+    location: {
+      latitude: 31.182,
+      longitude: 121.452,
+      accuracy: 60,
+      capturedAt: Date.now()
+    }
+  }, riskSeller.token)
+  assert.equal(riskFarItem.seller.id, riskSeller.user.id)
+  const rejectedLocationRiskEvents = await requestExpectError(`${baseUrl}/ops/location-risk-events?riskLevel=high`, {
+    method: 'GET',
+    header: {
+      'x-ops-session-token': observerLogin.token
+    }
+  })
+  assert.equal(rejectedLocationRiskEvents.status, 403)
+  assert.equal(rejectedLocationRiskEvents.code, 'FORBIDDEN')
+  const opsLocationRiskEvents = await request(`${baseUrl}/ops/location-risk-events?riskLevel=high&riskCode=IMPOSSIBLE_TRAVEL&userId=${encodeURIComponent(riskSeller.user.id)}`, {
+    method: 'GET',
+    header: {
+      'x-ops-session-token': opsLogin.token
+    }
+  })
+  assert.equal(opsLocationRiskEvents.counts.high >= 1, true)
+  const backendLocationRiskEvent = opsLocationRiskEvents.events.find((event) =>
+    event.targetId === riskFarItem.id &&
+    event.riskCode === 'IMPOSSIBLE_TRAVEL' &&
+    event.userId === riskSeller.user.id
+  )
+  assert.equal(Boolean(backendLocationRiskEvent), true)
+  assert.equal(backendLocationRiskEvent.user.id, riskSeller.user.id)
+  assert.equal(backendLocationRiskEvent.latitude, undefined)
+  assert.equal(backendLocationRiskEvent.longitude, undefined)
+  assert.equal(backendLocationRiskEvent.accuracy, undefined)
+  assert.equal(JSON.stringify(backendLocationRiskEvent).includes('121.452'), false)
   const riskTrade = await post(`${baseUrl}/trades`, {
     itemId: riskItem.id,
     buyerLocation: {
@@ -767,7 +814,7 @@ try {
   })
   assert.equal(blockedRiskSeller.user.status, 'blocked')
   assert.equal(blockedRiskSeller.affected.revokedSessions, 1)
-  assert.equal(blockedRiskSeller.affected.removedItems, 1)
+  assert.equal(blockedRiskSeller.affected.removedItems, 2)
   assert.equal(blockedRiskSeller.affected.disputedTrades, 1)
   const replayedBlockedRiskSeller = await request(`${baseUrl}/ops/users/${riskSeller.user.id}/status`, {
     method: 'POST',
@@ -780,7 +827,7 @@ try {
       'Idempotency-Key': 'backend_user_block_key_001'
     }
   })
-  assert.equal(replayedBlockedRiskSeller.affected.removedItems, 1)
+  assert.equal(replayedBlockedRiskSeller.affected.removedItems, 2)
   const blockedUsers = await request(`${baseUrl}/ops/users?status=blocked`, {
     method: 'GET',
     header: {

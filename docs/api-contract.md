@@ -858,6 +858,54 @@ GET /ops/notification-deliveries?status=failed&limit=20
 GET /ops/client-events?level=error&limit=50
 ```
 
+### `GET /ops/location-risk-events`
+
+请求需带 `x-ops-session-token` 或 `x-moderation-secret`，会校验 `risk` 或 `support` 角色。支持用 `riskLevel`、`riskCode`、`userId`、`action` 和 `limit` 查询服务端记录的位置风险事件。
+
+示例：
+
+```http
+GET /ops/location-risk-events?riskLevel=high&riskCode=IMPOSSIBLE_TRAVEL&limit=50
+```
+
+响应：
+
+```json
+{
+  "counts": {
+    "total": 8,
+    "high": 1,
+    "normal": 7
+  },
+  "events": [
+    {
+      "id": "location_risk_...",
+      "userId": "user_...",
+      "user": {
+        "id": "user_...",
+        "platformId": "openid...tail",
+        "nickname": "社区用户",
+        "status": "active"
+      },
+      "action": "item_publish",
+      "targetType": "item",
+      "targetId": "item_...",
+      "regionCommunityId": "sh-jingan-shimen",
+      "regionStreetId": "sh-jingan-nanjingxi",
+      "previousEventId": "location_risk_...",
+      "distanceMeters": 1068671,
+      "elapsedMs": 60000,
+      "speedMetersPerSecond": 17811.2,
+      "riskLevel": "high",
+      "riskCode": "IMPOSSIBLE_TRAVEL",
+      "createdAt": 1770000000000
+    }
+  ]
+}
+```
+
+生产要求：该接口只返回运营复核所需的脱敏摘要，不返回 `latitude`、`longitude`、`accuracy`、详细地址或原始定位对象；完整经纬度只应保留在受控数据库中，并在 prod 同步到 pre 时通过脱敏 SQL 清理。
+
 ### `GET /ops/audit-events`
 
 请求需带 `x-ops-session-token` 或 `x-moderation-secret`，会校验 `telemetry` 或 `support` 角色。支持用 `actorId`、`action`、`targetType`、`targetId` 和 `limit` 查询运营操作审计。
@@ -910,7 +958,7 @@ npm run smoke:bff:fetch
 - `pre/prod` 下直接访问轻量 Fetch adapter 会返回 `503 SERVICE_UNAVAILABLE`，避免被误部署为生产 BFF。
 - `/uploads/items` 的 HTTP `POST` 会映射到核心 handler 的 `UPLOAD` 方法。
 - `Authorization: Bearer <token>` 透传给核心鉴权逻辑。
-- `/ops/*` 和 `/moderation/*` 在 Fetch Runtime 仍使用 `x-moderation-secret` 保护；Node HTTP 后端接受运营会话或 `x-moderation-secret`，缺失或不匹配时返回 `401 UNAUTHENTICATED`。Node HTTP 后端额外校验 `GOODS_COMM_OPS_ACCOUNTS` 中的角色，`moderation` 处理审核，`support` 处理举报 / 争议，`notifications` 处理通知重试，`telemetry` 查询端侧事件和操作审计，`risk` 处理用户封禁 / 解封。
+- `/ops/*` 和 `/moderation/*` 在 Fetch Runtime 仍使用 `x-moderation-secret` 保护；Node HTTP 后端接受运营会话或 `x-moderation-secret`，缺失或不匹配时返回 `401 UNAUTHENTICATED`。Node HTTP 后端额外校验 `GOODS_COMM_OPS_ACCOUNTS` 中的角色，`moderation` 处理审核，`support` 处理举报 / 争议 / 位置风险复核，`notifications` 处理通知重试，`telemetry` 查询端侧事件和操作审计，`risk` 处理用户封禁 / 解封和位置风险查询。
 - `OPTIONS` 返回 CORS 预检响应，便于 H5 或网关调试；`allowedOrigins` / `GOODS_COMM_ALLOWED_ORIGINS` 可限制合法 Origin，未配置时本地开发默认 `*`。`pre/prod` 后端启动时拒绝空值或 `*`，非法 Origin 返回 HTTP `403` 和 `FORBIDDEN`。
 - Node HTTP 后端执行三层基础进程内限流：客户端 IP 窗口默认 `GOODS_COMM_RATE_LIMIT_MAX_REQUESTS=300` / `GOODS_COMM_RATE_LIMIT_WINDOW_MS=60000`，接口级窗口默认 `GOODS_COMM_ROUTE_RATE_LIMIT_MAX_REQUESTS=120` / `GOODS_COMM_ROUTE_RATE_LIMIT_WINDOW_MS=60000`，认证主体写请求窗口默认 `GOODS_COMM_USER_RATE_LIMIT_MAX_REQUESTS=80` / `GOODS_COMM_USER_RATE_LIMIT_WINDOW_MS=60000`。认证主体限流只保存 Authorization / 运营 token / 审核密钥的 SHA-256 哈希，不保存明文 token。超限返回 HTTP `429` 和 `TOO_MANY_REQUESTS`。服务位于 CloudBase、CDN、WAF 或负载均衡后方时，只有 `GOODS_COMM_TRUSTED_PROXY_IPS` 命中的直连代理才能提供 `x-forwarded-for`；未命中时后端忽略该头并按 socket 远端地址限流。该能力用于降低裸服务暴露风险，真实公网仍应叠加云网关 / WAF / 分布式限流。
 - CORS 允许头包含 `x-moderation-secret`、`x-ops-session-token` 和 `x-ops-actor-id`，供受控 H5 / 内部运营入口调用运营接口。

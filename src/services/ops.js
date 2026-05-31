@@ -200,6 +200,14 @@ export async function fetchClientEvents(secret, filters = {}) {
   })
 }
 
+export async function fetchLocationRiskEvents(secret, filters = {}) {
+  return requestOps('/ops/location-risk-events', {
+    method: 'GET',
+    secret,
+    data: normalizeLocationRiskFilters(filters)
+  })
+}
+
 export async function fetchOpsAuditEvents(secret, filters = {}) {
   return requestOps('/ops/audit-events', {
     method: 'GET',
@@ -319,6 +327,16 @@ function normalizeClientEventFilters(filters = {}) {
     type: String(filters.type || '').trim(),
     level: String(filters.level || '').trim(),
     userId: String(filters.userId || '').trim(),
+    limit: normalizeLimit(filters.limit, 100)
+  }
+}
+
+function normalizeLocationRiskFilters(filters = {}) {
+  return {
+    riskLevel: String(filters.riskLevel || filters.level || '').trim(),
+    riskCode: String(filters.riskCode || filters.code || '').trim(),
+    userId: String(filters.userId || '').trim(),
+    action: String(filters.action || '').trim(),
     limit: normalizeLimit(filters.limit, 100)
   }
 }

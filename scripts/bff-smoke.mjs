@@ -356,6 +356,27 @@ assert.equal(state.clientEvents.some((event) =>
   event.context.distanceMeters &&
   !JSON.stringify(event.context).includes('latitude')
 ), true)
+const opsLocationRiskEvents = await handleBffRequest('/ops/location-risk-events', {
+  method: 'GET',
+  data: {
+    riskLevel: 'high',
+    riskCode: 'IMPOSSIBLE_TRAVEL',
+    userId: sellerSession.user.id,
+    limit: 10
+  }
+}, state)
+assert.equal(opsLocationRiskEvents.counts.high >= 1, true)
+const opsPublishRiskEvent = opsLocationRiskEvents.events.find((event) =>
+  event.targetId === item.id &&
+  event.riskCode === 'IMPOSSIBLE_TRAVEL' &&
+  event.userId === sellerSession.user.id
+)
+assert.equal(Boolean(opsPublishRiskEvent), true)
+assert.equal(opsPublishRiskEvent.user.id, sellerSession.user.id)
+assert.equal(opsPublishRiskEvent.latitude, undefined)
+assert.equal(opsPublishRiskEvent.longitude, undefined)
+assert.equal(opsPublishRiskEvent.accuracy, undefined)
+assert.equal(JSON.stringify(opsPublishRiskEvent).includes('116.4074'), false)
 await assert.rejects(
   () => handleBffRequest('/items', {
     method: 'POST',

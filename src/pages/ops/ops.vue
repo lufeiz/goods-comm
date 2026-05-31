@@ -54,6 +54,10 @@
         <text class="stat-value">{{ clientEvents.length }}</text>
         <text class="stat-label">端侧事件</text>
       </view>
+      <view class="stat-card" data-testid="ops-stat-card" data-stat="locationRiskEvents">
+        <text class="stat-value">{{ locationRiskEvents.length }}</text>
+        <text class="stat-label">位置风险</text>
+      </view>
       <view class="stat-card" data-testid="ops-stat-card" data-stat="auditEvents">
         <text class="stat-value">{{ auditEvents.length }}</text>
         <text class="stat-label">操作审计</text>
@@ -114,6 +118,48 @@
         </view>
       </view>
       <text v-else class="empty-text" data-testid="ops-user-empty">暂无匹配用户</text>
+    </view>
+
+    <view class="panel" data-testid="ops-location-risk-panel">
+      <view class="panel-head">
+        <text class="panel-title">位置风险</text>
+        <text class="count-text">{{ locationRiskEvents.length }}</text>
+      </view>
+      <view class="filter-row">
+        <button
+          v-for="level in riskLevels"
+          :key="level.value"
+          :class="['filter-button', riskLevel === level.value ? 'selected' : '']"
+          data-testid="ops-location-risk-level-filter"
+          :data-level="level.value"
+          @tap="changeRiskLevel(level.value)"
+        >
+          {{ level.label }}
+        </button>
+      </view>
+      <view v-if="locationRiskEvents.length" class="case-list" data-testid="ops-location-risk-list">
+        <view
+          v-for="event in locationRiskEvents"
+          :key="event.id"
+          class="case-card"
+          data-testid="ops-location-risk-card"
+          :data-risk-id="event.id"
+          :data-risk-level="event.riskLevel"
+          :data-risk-code="event.riskCode"
+        >
+          <view class="case-head">
+            <text class="case-title">{{ locationRiskActionText(event.action) }}</text>
+            <text class="case-badge">{{ event.riskCode || event.riskLevel }}</text>
+          </view>
+          <text class="case-meta">用户：{{ event.user?.nickname || event.userId || '-' }}</text>
+          <text class="case-meta">目标：{{ event.targetType || '-' }} / {{ event.targetId || '-' }}</text>
+          <text class="case-meta">区域：{{ event.regionCommunityId || event.regionStreetId || '-' }}</text>
+          <text class="case-meta">距离：{{ formatDistance(event.distanceMeters) }} · 速度：{{ formatSpeed(event.speedMetersPerSecond) }}</text>
+          <text class="case-meta">{{ formatTime(event.createdAt) }}</text>
+          <button class="full-button danger" data-testid="ops-location-risk-prefill" :data-user-id="event.userId" :disabled="loading || !event.userId" @tap="prefillLocationRisk(event)">填入封禁</button>
+        </view>
+      </view>
+      <text v-else class="empty-text" data-testid="ops-location-risk-empty">暂无位置风险</text>
     </view>
 
     <view class="panel" data-testid="ops-items-panel">
@@ -315,6 +361,7 @@ import {
   clearStoredOpsSecret,
   clearStoredOpsSession,
   fetchClientEvents,
+  fetchLocationRiskEvents,
   fetchNotificationDeliveries,
   fetchOpsAuditEvents,
   fetchOpsModerationQueue,
@@ -349,6 +396,7 @@ export default {
       notificationDeliveries: [],
       users: [],
       clientEvents: [],
+      locationRiskEvents: [],
       auditEvents: [],
       noteDrafts: {},
       disputeResolutionDrafts: {},
@@ -394,6 +442,21 @@ export default {
         {
           value: 'warn',
           label: '警告'
+        },
+        {
+          value: '',
+          label: '全部'
+        }
+      ],
+      riskLevel: 'high',
+      riskLevels: [
+        {
+          value: 'high',
+          label: '高风险'
+        },
+        {
+          value: 'normal',
+          label: '正常'
         },
         {
           value: '',
@@ -457,6 +520,7 @@ export default {
       this.notificationDeliveries = []
       this.users = []
       this.clientEvents = []
+      this.locationRiskEvents = []
       this.auditEvents = []
       showToast('密钥已清除')
     },
@@ -516,6 +580,16 @@ export default {
           this.clientEvents = Array.isArray(events.events) ? events.events : []
         } catch (error) {
           this.clientEvents = []
+        }
+
+        try {
+          const risks = await fetchLocationRiskEvents(this.secret, {
+            riskLevel: this.riskLevel,
+            limit: 50
+          })
+          this.locationRiskEvents = Array.isArray(risks.events) ? risks.events : []
+        } catch (error) {
+          this.locationRiskEvents = []
         }
 
         try {
@@ -670,6 +744,10 @@ export default {
       this.eventLevel = level
       this.refresh()
     },
+    changeRiskLevel(level) {
+      this.riskLevel = level
+      this.refresh()
+    },
     changeUserStatus(status) {
       this.userStatus = status
       this.refresh()
@@ -683,6 +761,10 @@ export default {
     prefillUserRisk(user) {
       this.userRiskTarget = user.id || ''
       this.userRiskReason = user.blockReason || ''
+    },
+    prefillLocationRisk(event) {
+      this.userRiskTarget = event.userId || ''
+      this.userRiskReason = `位置风控复核：${event.riskCode || event.riskLevel || 'location_risk'}`
     },
     noteDraft(id) {
       return this.noteDrafts[id] || ''
@@ -749,6 +831,14 @@ export default {
 
       return map[action] || action || '操作'
     },
+    locationRiskActionText(action) {
+      const map = {
+        item_publish: '发布位置',
+        trade_create: '交易位置'
+      }
+
+      return map[action] || action || '位置事件'
+    },
     userStatusText(status) {
       const map = {
         active: '正常',
@@ -760,6 +850,24 @@ export default {
     },
     reasonListText(reasons = []) {
       return Array.isArray(reasons) && reasons.length ? reasons.join('、') : '-'
+    },
+    formatDistance(value) {
+      const distance = Number(value)
+
+      if (!Number.isFinite(distance)) {
+        return '-'
+      }
+
+      return distance >= 1000 ? `${(distance / 1000).toFixed(1)}km` : `${Math.round(distance)}m`
+    },
+    formatSpeed(value) {
+      const speed = Number(value)
+
+      if (!Number.isFinite(speed)) {
+        return '-'
+      }
+
+      return `${Math.round(speed)}m/s`
     },
     formatTime(timestamp) {
       if (!timestamp) {
