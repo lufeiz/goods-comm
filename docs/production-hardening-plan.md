@@ -1,6 +1,19 @@
 # goods-comm 生产化问题逐项解决方案
 
-更新日期：2026-05-30
+更新日期：2026-06-01
+
+## 0. 当前状态更新
+
+2026-06-01 已基于 `docs/first-principles-objective-assessment-20260531.md` 和 `docs/first-principles-objective-assessment-20260601.md` 重新整理生产整改矩阵，见 `docs/production-remediation-matrix-20260601.md`。
+
+当前审计口径：
+
+| 审计 | 结果 | 说明 |
+| --- | --- | --- |
+| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 已刷新 `docs/deployment-readiness-audit.md` / JSON。 |
+| 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 已刷新 `docs/deployment-readiness-audit-strict.md` / JSON；真实上线前仍需补齐 deployed main-flow smoke 输入。 |
+
+当前主要 blocker 仍来自真实 pre/prod API、数据库、COS/CDN、腾讯地图、平台凭据、session/ops secret、告警 Webhook、部署工具链、云部署凭据和 deployed smoke 一次性输入。工程开发可以继续使用占位值推进，但生产放行必须以 strict gate 和真实 deployed smoke 为准。
 
 ## 1. 本轮结论
 
