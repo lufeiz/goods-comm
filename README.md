@@ -111,7 +111,7 @@ npm run github:push:preflight
 git push origin main
 ```
 
-`github:push:preflight` 会检查 `origin=https://github.com/lufeiz/goods-comm`、`main` 跟踪 `origin/main`、工作区干净，以及 GitHub CLI token 具备 `repo` 和 `workflow` scope，避免 `.github/workflows/*.yml` 因权限不足推送失败。
+`github:push:preflight` 会检查 `origin=https://github.com/lufeiz/goods-comm`、`main` 跟踪 `origin/main`、工作区干净；当待推送提交包含 `.github/workflows/*.yml` / `.yaml` 时，还会强制检查 GitHub CLI token 具备 `repo` 和 `workflow` scope，避免 workflow 文件因权限不足推送失败。普通代码 / 文档变更在 `gh` auth 不可用时只输出 warning，不阻断可由 Git 凭据完成的推送；如需每次都强制检查 `gh` auth，可设置 `GOODS_COMM_GITHUB_PREFLIGHT_STRICT_GH_AUTH=true`。
 
 真实部署后 smoke 可先加载对应环境的一次性输入模板：
 

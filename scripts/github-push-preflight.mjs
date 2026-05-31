@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process'
 const EXPECTED_REMOTE_URL = process.env.GOODS_COMM_GITHUB_REMOTE_URL || 'https://github.com/lufeiz/goods-comm'
 const EXPECTED_BRANCH = process.env.GOODS_COMM_GITHUB_BRANCH || 'main'
 const REQUIRED_SCOPES = ['repo', 'workflow']
+const STRICT_GH_AUTH = process.env.GOODS_COMM_GITHUB_PREFLIGHT_STRICT_GH_AUTH === 'true'
 
 if (process.argv.includes('--self-test')) {
   runSelfTest()
@@ -12,6 +13,7 @@ if (process.argv.includes('--self-test')) {
 
 const allowDirty = process.argv.includes('--allow-dirty')
 const failures = []
+const warnings = []
 
 checkRemoteUrl()
 checkBranchAndUpstream()
@@ -24,6 +26,13 @@ if (failures.length > 0) {
     console.error(`- ${failure}`)
   }
   process.exit(1)
+}
+
+if (warnings.length > 0) {
+  console.warn('GitHub push preflight warnings:')
+  for (const warning of warnings) {
+    console.warn(`- ${warning}`)
+  }
 }
 
 console.log('GitHub push preflight passed')
@@ -82,18 +91,40 @@ function checkWorkingTree() {
 }
 
 function checkGithubCliScopes() {
+  const workflowPush = pushTouchesWorkflowFiles()
+  const strictAuth = STRICT_GH_AUTH || workflowPush
   const gh = run('gh', ['auth', 'status', '-h', 'github.com'])
   if (gh.status !== 0) {
-    failures.push('GitHub CLI auth is unavailable; run `gh auth login` or `gh auth refresh -h github.com -s workflow`')
+    const message = 'GitHub CLI auth is unavailable; run `gh auth login` or `gh auth refresh -h github.com -s workflow`'
+    if (strictAuth) {
+      failures.push(message)
+    } else {
+      warnings.push(`${message}; continuing because no pending workflow file changes were detected`)
+    }
     return
   }
 
   const scopes = parseGhAuthScopes(`${gh.stdout}\n${gh.stderr}`)
   for (const scope of REQUIRED_SCOPES) {
     if (!scopes.includes(scope)) {
-      failures.push(`GitHub token must include ${scope} scope; run \`gh auth refresh -h github.com -s ${scope}\``)
+      const message = `GitHub token must include ${scope} scope; run \`gh auth refresh -h github.com -s ${scope}\``
+      if (strictAuth) {
+        failures.push(message)
+      } else {
+        warnings.push(`${message}; continuing because no pending workflow file changes were detected`)
+      }
     }
   }
+}
+
+function pushTouchesWorkflowFiles() {
+  const changed = run('git', ['diff', '--name-only', '@{u}...HEAD'])
+  if (changed.status !== 0) {
+    failures.push('cannot inspect pending commits against upstream for workflow file changes')
+    return true
+  }
+
+  return parseChangedFiles(changed.stdout).some(isWorkflowFile)
 }
 
 function run(command, args) {
@@ -130,6 +161,17 @@ function parseGhAuthScopes(output = '') {
     .filter(Boolean)
 }
 
+function parseChangedFiles(output = '') {
+  return String(output || '')
+    .split('\n')
+    .map((file) => file.trim())
+    .filter(Boolean)
+}
+
+function isWorkflowFile(file = '') {
+  return /^\.github\/workflows\/[^/]+\.ya?ml$/i.test(String(file || '').trim())
+}
+
 function stripAnsi(value = '') {
   return String(value || '').replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '')
 }
@@ -144,5 +186,12 @@ function runSelfTest() {
     ['gist', 'read:org', 'repo', 'workflow']
   )
   assert.deepEqual(parseGhAuthScopes('missing scope line'), [])
+  assert.deepEqual(parseChangedFiles('README.md\n.github/workflows/ci.yml\n\n'), [
+    'README.md',
+    '.github/workflows/ci.yml'
+  ])
+  assert.equal(isWorkflowFile('.github/workflows/ci.yml'), true)
+  assert.equal(isWorkflowFile('.github/workflows/release-strict.yaml'), true)
+  assert.equal(isWorkflowFile('.github/actions/setup/action.yml'), false)
   console.log('GitHub push preflight self-test passed')
 }
