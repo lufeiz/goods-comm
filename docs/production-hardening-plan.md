@@ -183,7 +183,7 @@ DONE  Build complete.  # H5 prod
 4. 接真实腾讯地图 Key 与社区网格数据：当前占位网格只用于保持配置格式和部署预检可运行，真实上线前必须替换为正式社区/街道标准编码数据。
 5. 在真实云环境替换 `.env.pre/.env.prod` 的 COS / CDN、微信内容安全、微信订阅消息模板、生产告警 Webhook、`GOODS_COMM_MODERATION_WEBHOOK_SECRET` 和 `GOODS_COMM_SESSION_SECRET` 占位值，并接好云侧 stdout 日志采集与保留策略；发布先进入审核，再通过微信异步回调或后台复核上架，交易事件通过平台通知适配器投递订阅消息，通知投递失败通过告警 Webhook 外发。
 6. 配置 prod 到 pre 定时同步任务，执行前校验 pre/prod 关键拓扑变量一致，执行后跑预上线 health smoke；真实候选发布前开启 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，同步后继续跑 pre 主链路 smoke；可直接使用 `.github/workflows/prod-to-pre-sync.yml`，或迁移到腾讯云定时任务 / 内部 runner。
-7. 将 GitHub Actions 或内部 CI 绑定到受保护分支，至少运行 `npm run verify:release`；真实上线前配置 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN`，运行 `npm run verify:release:strict` 或手动触发 `.github/workflows/release-strict.yml`，并上传普通生产审计与 strict 审计 Markdown / JSON 作为发布证据；strict gate 会先刷新 strict 审计产物，再通过 `--require-deployed-smoke-inputs` 把部署后 smoke 输入缺失升级为 blocker，避免失败时只留下普通审计口径；如果 workflow 启用 `run_backend_deploy=true`，必须保持 `run_deployed_smoke=true`，否则直接失败，避免部署后跳过 health / main-flow smoke。
+7. 将 GitHub Actions 或内部 CI 绑定到受保护分支，至少运行 `npm run verify:release`；真实上线前配置 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN`，运行 `npm run verify:release:strict` 或手动触发 `.github/workflows/release-strict.yml`，并上传普通生产审计与 strict 审计 Markdown / JSON 作为发布证据；strict gate 会先刷新 strict 审计产物，再通过 `--require-deployed-smoke-inputs` 把部署后 smoke 输入缺失升级为 blocker，避免失败时只留下普通审计口径；如果 workflow 启用 `run_backend_deploy=true`，必须保持 `run_deployed_smoke=true`，否则直接失败，避免部署后跳过 health / main-flow smoke；如果同一次 workflow 也启用 `run_frontend_deploy=true`，前端部署必须排在后端迁移、后端部署和 deployed smoke 之后，避免新前端先指向旧后端。
 8. 接平台合规：真实 AppID、合法域名、正式协议法务审核、平台隐私配置和数据删除材料。
 
 ## 6. 部署尝试状态

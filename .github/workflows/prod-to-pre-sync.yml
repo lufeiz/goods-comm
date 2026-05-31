@@ -95,12 +95,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install PostgreSQL client tools
-        if: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation == 'execute') || (github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_AUTO_ENABLED == 'true') }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-
       - name: Materialize protected env overrides
         shell: bash
         env:

@@ -5,6 +5,7 @@ const EXPECTED_REMOTE_URL = process.env.GOODS_COMM_GITHUB_REMOTE_URL || 'https:/
 const EXPECTED_BRANCH = process.env.GOODS_COMM_GITHUB_BRANCH || 'main'
 const REQUIRED_SCOPES = ['repo', 'workflow']
 const STRICT_GH_AUTH = process.env.GOODS_COMM_GITHUB_PREFLIGHT_STRICT_GH_AUTH === 'true'
+const ALLOW_GIT_DRY_RUN = process.env.GOODS_COMM_GITHUB_PREFLIGHT_ALLOW_GIT_DRY_RUN !== 'false'
 
 if (process.argv.includes('--self-test')) {
   runSelfTest()
@@ -96,6 +97,10 @@ function checkGithubCliScopes() {
   const gh = run('gh', ['auth', 'status', '-h', 'github.com'])
   if (gh.status !== 0) {
     const message = 'GitHub CLI auth is unavailable; run `gh auth login` or `gh auth refresh -h github.com -s workflow`'
+    if (strictAuth && workflowPush && canVerifyPushWithGitDryRun(message)) {
+      return
+    }
+
     if (strictAuth) {
       failures.push(message)
     } else {
@@ -108,6 +113,10 @@ function checkGithubCliScopes() {
   for (const scope of REQUIRED_SCOPES) {
     if (!scopes.includes(scope)) {
       const message = `GitHub token must include ${scope} scope; run \`gh auth refresh -h github.com -s ${scope}\``
+      if (strictAuth && workflowPush && canVerifyPushWithGitDryRun(message)) {
+        continue
+      }
+
       if (strictAuth) {
         failures.push(message)
       } else {
@@ -127,10 +136,29 @@ function pushTouchesWorkflowFiles() {
   return parseChangedFiles(changed.stdout).some(isWorkflowFile)
 }
 
+function canVerifyPushWithGitDryRun(authMessage) {
+  if (!ALLOW_GIT_DRY_RUN) {
+    return false
+  }
+
+  const dryRun = run('git', ['push', '--dry-run', 'origin', `HEAD:${EXPECTED_BRANCH}`])
+  if (dryRun.status !== 0) {
+    failures.push(`${authMessage}; git push --dry-run also failed: ${firstOutputLine(dryRun.stderr || dryRun.stdout) || 'unknown error'}`)
+    return false
+  }
+
+  warnings.push(`${authMessage}; git push --dry-run succeeded with the configured Git credential`)
+  return true
+}
+
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: process.cwd(),
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0'
+    }
   })
 
   return {
@@ -172,6 +200,10 @@ function isWorkflowFile(file = '') {
   return /^\.github\/workflows\/[^/]+\.ya?ml$/i.test(String(file || '').trim())
 }
 
+function firstOutputLine(output = '') {
+  return String(output || '').split('\n').map((line) => line.trim()).find(Boolean) || ''
+}
+
 function stripAnsi(value = '') {
   return String(value || '').replace(/\u001B\[[0-?]*[ -/]*[@-~]/g, '')
 }
@@ -193,5 +225,6 @@ function runSelfTest() {
   assert.equal(isWorkflowFile('.github/workflows/ci.yml'), true)
   assert.equal(isWorkflowFile('.github/workflows/release-strict.yaml'), true)
   assert.equal(isWorkflowFile('.github/actions/setup/action.yml'), false)
+  assert.equal(firstOutputLine('\n  fatal: no credential\nnext line\n'), 'fatal: no credential')
   console.log('GitHub push preflight self-test passed')
 }

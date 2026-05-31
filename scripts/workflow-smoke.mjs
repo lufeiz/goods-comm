@@ -188,8 +188,12 @@ function assertStrictReleaseGate() {
     'Backend deployment requires run_deployed_smoke=true',
     'Backend deployment to prod requires allow_prod_deploy=true',
     'Frontend deployment to prod requires allow_prod_deploy=true',
+    'Deploy pre backend',
+    'Deploy prod backend',
     'Deploy pre frontend',
     'Deploy prod frontend',
+    'args=(scripts/deploy-backend.mjs --env pre --provider',
+    'args=(scripts/deploy-backend.mjs --env prod --provider',
     'node scripts/deploy-frontend.mjs --env pre --target',
     'node scripts/deploy-frontend.mjs --env prod --target',
     'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-pre',
@@ -205,6 +209,27 @@ function assertStrictReleaseGate() {
     'docs/deployment-readiness-audit-strict.md',
     'docs/deployment-readiness-audit-strict.json',
     'Fail when strict gate failed'
+  ])
+
+  assert.doesNotMatch(
+    content,
+    /postgresql-client/,
+    'release-strict.yml: release workflow should use the project pg dependency instead of installing PostgreSQL client tools'
+  )
+
+  assertWorkflowStepOrder('release-strict.yml', content, [
+    'Deploy pre backend',
+    'Run pre deployed health smoke',
+    'Run pre deployed main-flow smoke',
+    'Deploy pre frontend'
+  ])
+
+  assertWorkflowStepOrder('release-strict.yml', content, [
+    'Deploy prod backend',
+    'Run prod deployed health smoke',
+    'Require prod mutation opt-in for prod main-flow smoke',
+    'Run prod deployed main-flow smoke',
+    'Deploy prod frontend'
   ])
 }
 
@@ -268,6 +293,12 @@ function assertProdToPreSyncWorkflow() {
     /path:\s*\$\{\{\s*runner\.temp\s*\}\/goods-comm-prod-to-pre\.dump/,
     'prod-to-pre-sync.yml: production dump must not be uploaded as an artifact'
   )
+
+  assert.doesNotMatch(
+    content,
+    /postgresql-client/,
+    'prod-to-pre-sync.yml: prod-to-pre sync workflow should use the project pg dependency instead of installing PostgreSQL client tools'
+  )
 }
 
 function assertDirectBackendDeployProtection() {
@@ -316,5 +347,18 @@ function assertIncludesAll(label, content, snippets) {
       content.includes(snippet),
       `${label}: expected workflow snippet is missing: ${snippet}`
     )
+  }
+}
+
+function assertWorkflowStepOrder(label, content, stepNames) {
+  let previousIndex = -1
+
+  for (const stepName of stepNames) {
+    const index = content.indexOf(`- name: ${stepName}`)
+
+    assert.ok(index >= 0, `${label}: expected workflow step is missing: ${stepName}`)
+    assert.ok(index > previousIndex, `${label}: workflow step ${stepName} must run after the previous protected deployment step`)
+
+    previousIndex = index
   }
 }

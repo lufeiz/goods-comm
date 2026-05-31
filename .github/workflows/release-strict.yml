@@ -132,8 +132,6 @@ jobs:
       - name: Install release toolchain
         shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
           npm install -g @cloudbase/cli
           python -m pip install --upgrade pip
           python -m pip install --user tccli
@@ -192,18 +190,6 @@ jobs:
           echo "Frontend deployment to prod requires allow_prod_deploy=true."
           exit 1
 
-      - name: Deploy pre frontend
-        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
-        env:
-          GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-pre
-        run: node scripts/deploy-frontend.mjs --env pre --target "${{ inputs.frontend_targets }}" --execute
-
-      - name: Deploy prod frontend
-        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
-        env:
-          GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-prod
-        run: node scripts/deploy-frontend.mjs --env prod --target "${{ inputs.frontend_targets }}" --execute
-
       - name: Deploy pre backend
         if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
         shell: bash
@@ -251,6 +237,18 @@ jobs:
       - name: Run prod deployed main-flow smoke
         if: ${{ steps.strict.outcome == 'success' && inputs.run_deployed_smoke && inputs.allow_prod_mutation && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
         run: npm run smoke:deployed:prod:main
+
+      - name: Deploy pre frontend
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
+        env:
+          GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-pre
+        run: node scripts/deploy-frontend.mjs --env pre --target "${{ inputs.frontend_targets }}" --execute
+
+      - name: Deploy prod frontend
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        env:
+          GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-prod
+        run: node scripts/deploy-frontend.mjs --env prod --target "${{ inputs.frontend_targets }}" --execute
 
       - name: Refresh readiness artifacts
         if: always()

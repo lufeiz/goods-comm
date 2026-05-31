@@ -714,7 +714,7 @@ async function auditGithubPushAutomation() {
 
   const ghAuth = inspectGithubCliAuth()
   if (!ghAuth.available) {
-    warnings.push('GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed')
+    warnings.push('GitHub CLI auth is unavailable; workflow-aware push preflight will use git push --dry-run for pending workflow changes, or pass directly after `gh auth login` / `gh auth refresh -h github.com -s workflow`')
   } else {
     const missingScopes = ['repo', 'workflow'].filter((scope) => !ghAuth.scopes.includes(scope))
 
@@ -1095,12 +1095,12 @@ function renderAudit(report) {
     'npm run audit:production-readiness:strict-check',
     'npm run db:migrate:plan -- --env pre',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
-    'npm run deploy:frontend:pre:plan',
-    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre',
     'npm run deploy:backend:pre:plan',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre',
     'npm run smoke:deployed:pre',
     'npm run smoke:deployed:pre:main',
+    'npm run deploy:frontend:pre:plan',
+    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre',
     'npm run sync:prod-to-pre:plan',
     'GOODS_COMM_SYNC_RUN_PRE_SMOKE=true GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto',
     '```',

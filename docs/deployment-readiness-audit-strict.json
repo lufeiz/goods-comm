@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-31T14:00:13.961Z",
+  "generatedAt": "2026-05-31T14:16:34.129Z",
   "scope": [
     "pre",
     "prod"
@@ -736,10 +736,10 @@
       "blockers": [],
       "warnings": [
         {
-          "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-fail-until-gh-",
+          "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-use-git-push-d",
           "area": "github_push_automation",
           "severity": "warning",
-          "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed"
+          "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will use git push --dry-run for pending workflow changes, or pass directly after `gh auth login` / `gh auth refresh -h github.com -s workflow`"
         }
       ],
       "passes": [
@@ -1116,10 +1116,10 @@
       "message": "[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true"
     },
     {
-      "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-fail-until-gh-",
+      "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-use-git-push-d",
       "area": "github_push_automation",
       "severity": "warning",
-      "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed"
+      "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will use git push --dry-run for pending workflow changes, or pass directly after `gh auth login` / `gh auth refresh -h github.com -s workflow`"
     }
   ],
   "passes": [
