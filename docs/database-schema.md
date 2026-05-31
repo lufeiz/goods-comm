@@ -1,6 +1,6 @@
 # goods-comm 数据库边界设计
 
-更新日期：2026-05-28
+更新日期：2026-05-31
 
 本文件用于把 `src/bff/handler.js` 的内存状态和 `backend/src/file-state-store.mjs` 的本地文件状态迁移成真实数据库。核心原则：客户端只提交意图，身份、审核、位置裁决、交易状态必须由服务端持久化并在事务中更新。可执行 PostgreSQL / TencentDB DDL 已放在 `backend/db/schema.sql`。
 
@@ -11,11 +11,23 @@
 - `prod` 数据支持自动或手动同步到 `pre`，同步入口为 `scripts/sync-prod-to-pre.mjs`；恢复到 `pre` 后会执行 `backend/db/pre-sync-anonymize.sql` 脱敏和吊销 session。
 - 每次发布前先在 `pre` 连接 `goods_comm_pre` 验证，验证通过后再发布 `prod`。
 
-当前后端已提供 PostgreSQL 事务边界：`backend/src/postgres-state-store.mjs` 会把 BFF 状态读写到下方规范化实体表，让 `pre/prod` 不再依赖文件 store 或单行 JSON 快照。需要注意：当前 store 仍以“加载完整状态 -> 在事务内写回规范化表”的桥接模式运行，不是最终的按聚合根增量 SQL 仓储；写事务会先获取 `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY` 对应的 PostgreSQL transaction-level advisory lock，确保多实例 snapshot rewrite 不会并发覆盖。为避免真实数据规模超出该桥接模式的安全范围，`GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS` 默认限制为 `20000`；超过限制时写事务会失败，并要求先迁移到增量 SQL 写入。`pre/prod` 还要求 `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`：schema 必须先由 `npm run db:migrate:pre` / `npm run db:migrate:prod` 显式初始化；后端 readiness 会检查所有规范化表和关键列是否齐全，防止迁移漏列时启动探针误通过，并返回当前行数、限制、auto schema 状态和 snapshot write lock 类型。`bff_state_snapshots` 只保留为早期测试部署的迁移桥，新的部署不应写入该表。
+当前后端已提供 PostgreSQL 事务边界：`backend/src/postgres-state-store.mjs` 会把 BFF 状态读写到下方规范化实体表，让 `pre/prod` 不再依赖文件 store 或单行 JSON 快照。需要注意：当前 store 仍以“加载完整状态 -> 在事务内写回规范化表”的桥接模式运行，不是最终的按聚合根增量 SQL 仓储；写事务会先获取 `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY` 对应的 PostgreSQL transaction-level advisory lock，确保多实例 snapshot rewrite 不会并发覆盖。为避免真实数据规模超出该桥接模式的安全范围，`GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS` 默认限制为 `20000`；超过限制时写事务会失败，并要求先迁移到增量 SQL 写入。`pre/prod` 还要求 `GOODS_COMM_POSTGRES_AUTO_SCHEMA=false`：schema 必须先由 `npm run db:migrate:pre` / `npm run db:migrate:prod` 显式初始化；后端 readiness 会检查 `schema_migrations`、所需基线迁移记录、所有规范化表和关键列是否齐全，防止迁移漏跑或漏列时启动探针误通过，并返回当前行数、限制、auto schema 状态和 snapshot write lock 类型。`bff_state_snapshots` 只保留为早期测试部署的迁移桥，新的部署不应写入该表。
 
 本地 `FileStateStore` 和 PostgreSQL store 的事务语义保持一致：普通业务 callback 抛错时回滚，不保存部分状态。少数必须留痕但仍对客户端返回错误的业务拒绝，例如商品发布内容安全拒绝，会通过显式 `commitStateOnError` 标记提交 `moderation_events` 后继续返回错误，避免不同 store 对审核审计产生分叉。
 
 ## 1. 表清单
+
+### `schema_migrations`
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `version` | string | 迁移版本，当前必需基线为 `20260531_normalized_schema` |
+| `name` | string | 迁移名称 |
+| `checksum` | string | 当前 schema 基线标识，后续可替换为真实文件校验值 |
+| `source` | string | 迁移来源文件 |
+| `applied_at` | datetime | 首次应用时间 |
+
+`backend/db/schema.sql` 会创建该表并插入 `20260531_normalized_schema`。`pre/prod` 后端 readiness 不只检查业务表和列，还会检查该基线记录，避免目标库停在旧 schema 或手工补表但未执行正式迁移。
 
 ### `users`
 

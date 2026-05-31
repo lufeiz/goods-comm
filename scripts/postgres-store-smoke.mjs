@@ -12,6 +12,7 @@ import {
   NORMALIZED_TABLE_COLUMN_REQUIREMENTS,
   normalizePostgresAdvisoryLockKey,
   normalizeSnapshotRowLimit,
+  REQUIRED_SCHEMA_MIGRATIONS,
   serializeStateToRows
 } from '../backend/src/postgres-state-store.mjs'
 
@@ -323,6 +324,12 @@ assert.deepEqual(lockClient.queries, [{
 await assert.doesNotReject(() => assertNormalizedSchemaReady(schemaReadyClient(), 'pre'))
 await assert.rejects(
   () => assertNormalizedSchemaReady(schemaReadyClient({
+    missingTables: new Set(['schema_migrations'])
+  }), 'prod'),
+  /PostgreSQL schema is not migrated for prod: missing tables schema_migrations; run npm run db:migrate:prod/
+)
+await assert.rejects(
+  () => assertNormalizedSchemaReady(schemaReadyClient({
     missingTables: new Set(['users'])
   }), 'prod'),
   /PostgreSQL schema is not migrated for prod: missing tables users; run npm run db:migrate:prod/
@@ -332,6 +339,12 @@ await assert.rejects(
     missingColumns: new Set(['users.status', 'idempotency_records.idempotency_key'])
   }), 'prod'),
   /PostgreSQL schema is outdated for prod: missing columns users.status, idempotency_records.idempotency_key; run npm run db:migrate:prod/
+)
+await assert.rejects(
+  () => assertNormalizedSchemaReady(schemaReadyClient({
+    missingMigrations: new Set([REQUIRED_SCHEMA_MIGRATIONS[0].version])
+  }), 'pre'),
+  new RegExp(`PostgreSQL schema is not at required baseline for pre: missing migrations ${REQUIRED_SCHEMA_MIGRATIONS[0].version}; run npm run db:migrate:pre`)
 )
 
 assert.equal(rows.users.length, 2)
@@ -470,6 +483,7 @@ function createAgreement(source) {
 function schemaReadyClient(options = {}) {
   const missingTables = options.missingTables || new Set()
   const missingColumns = options.missingColumns || new Set()
+  const missingMigrations = options.missingMigrations || new Set()
 
   return {
     query: async (sql, args) => {
@@ -490,6 +504,18 @@ function schemaReadyClient(options = {}) {
             .map((column_name) => ({
               column_name
             }))
+        }
+      }
+
+      if (String(sql).includes('FROM schema_migrations')) {
+        const version = args[0]
+
+        return {
+          rows: missingMigrations.has(version)
+            ? []
+            : [{
+                version
+              }]
         }
       }
 

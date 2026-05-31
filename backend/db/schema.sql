@@ -2,6 +2,27 @@
 -- The local Node backend uses a file store for smoke testing; production should
 -- persist these same entities with transactions around item/trade state changes.
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  checksum TEXT NOT NULL DEFAULT '',
+  source TEXT NOT NULL DEFAULT '',
+  applied_at BIGINT NOT NULL
+);
+
+INSERT INTO schema_migrations (version, name, checksum, source, applied_at)
+VALUES (
+  '20260531_normalized_schema',
+  'goods_comm_normalized_schema',
+  'baseline:backend/db/schema.sql',
+  'backend/db/schema.sql',
+  CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT)
+)
+ON CONFLICT (version) DO UPDATE
+SET name = EXCLUDED.name,
+    checksum = EXCLUDED.checksum,
+    source = EXCLUDED.source;
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   provider TEXT NOT NULL,

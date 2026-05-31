@@ -5,6 +5,7 @@ export const DEFAULT_POSTGRES_ADVISORY_LOCK_KEY = 'goods_comm_state_store_v1'
 const DEFAULT_MAX_SNAPSHOT_ROWS = 20000
 const PROTECTED_ENVIRONMENTS = new Set(['pre', 'prod'])
 const NORMALIZED_TABLES = [
+  'schema_migrations',
   'users',
   'auth_sessions',
   'idempotency_records',
@@ -23,7 +24,22 @@ const NORMALIZED_TABLES = [
   'ops_audit_events',
   'account_deletions'
 ]
+export const REQUIRED_SCHEMA_MIGRATIONS = [
+  {
+    version: '20260531_normalized_schema',
+    name: 'goods_comm_normalized_schema',
+    checksum: 'baseline:backend/db/schema.sql',
+    source: 'backend/db/schema.sql'
+  }
+]
 export const NORMALIZED_TABLE_COLUMN_REQUIREMENTS = {
+  schema_migrations: [
+    'version',
+    'name',
+    'checksum',
+    'source',
+    'applied_at'
+  ],
   users: [
     'id',
     'provider',
@@ -1637,9 +1653,14 @@ export async function assertNormalizedSchemaReady(client, environment = 'prod') 
   if (missingColumns.length) {
     throw new Error(`PostgreSQL schema is outdated for ${environment}: missing columns ${missingColumns.join(', ')}; run npm run db:migrate:${environment}`)
   }
+
+  await assertRequiredSchemaMigrationsReady(client, environment)
 }
 
 async function ensureNormalizedSchema(client) {
+  await ensureSchemaMigrationTable(client)
+  await recordRequiredSchemaMigrations(client)
+
   await client.query(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -1990,6 +2011,55 @@ async function ensureNormalizedSchema(client) {
       created_at BIGINT NOT NULL
     )
   `)
+}
+
+async function assertRequiredSchemaMigrationsReady(client, environment) {
+  const missingMigrations = []
+
+  for (const migration of REQUIRED_SCHEMA_MIGRATIONS) {
+    const result = await client.query(
+      'SELECT version FROM schema_migrations WHERE version = $1 LIMIT 1',
+      [migration.version]
+    )
+
+    if (!result.rows?.[0]?.version) {
+      missingMigrations.push(migration.version)
+    }
+  }
+
+  if (missingMigrations.length) {
+    throw new Error(`PostgreSQL schema is not at required baseline for ${environment}: missing migrations ${missingMigrations.join(', ')}; run npm run db:migrate:${environment}`)
+  }
+}
+
+async function ensureSchemaMigrationTable(client) {
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      checksum TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT '',
+      applied_at BIGINT NOT NULL
+    )
+  `)
+  await client.query("ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT ''")
+  await client.query("ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT NOT NULL DEFAULT ''")
+  await client.query("ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT ''")
+  await client.query('ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS applied_at BIGINT NOT NULL DEFAULT 0')
+}
+
+async function recordRequiredSchemaMigrations(client) {
+  for (const migration of REQUIRED_SCHEMA_MIGRATIONS) {
+    await client.query(
+      `INSERT INTO schema_migrations (version, name, checksum, source, applied_at)
+       VALUES ($1, $2, $3, $4, CAST(EXTRACT(EPOCH FROM now()) * 1000 AS BIGINT))
+       ON CONFLICT (version) DO UPDATE
+       SET name = EXCLUDED.name,
+           checksum = EXCLUDED.checksum,
+           source = EXCLUDED.source`,
+      [migration.version, migration.name, migration.checksum, migration.source]
+    )
+  }
 }
 
 function ensureRowUser(usersById, user = {}, fallbackId = '', defaults = {}) {
