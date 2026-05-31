@@ -37,6 +37,7 @@ const idempotencyKeys = {
   tradeComplete: `deployed:${smokeRunId}:trade:complete`,
   tradeReviewPremature: `deployed:${smokeRunId}:trade:review-premature`,
   tradeReview: `deployed:${smokeRunId}:trade:review`,
+  tradeReviewDuplicate: `deployed:${smokeRunId}:trade:review-duplicate`,
   accountDeleteItem: `deployed:${smokeRunId}:account-delete:item:create`
 }
 
@@ -222,6 +223,10 @@ const replayedReview = await post(`/trades/${trade.id}/review`, reviewPayload, b
 assertEqual(review.tradeId, trade.id, 'created review trade id')
 assertEqual(replayedReview.id, review.id, 'replayed review id')
 assertEqual(review.reviewee.id, seller.user.id, 'created review reviewee')
+const duplicateReview = await postExpectError(`/trades/${trade.id}/review`, reviewPayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeReviewDuplicate))
+assertEqual(duplicateReview.status, 409, 'duplicate review rejection status')
+assertEqual(duplicateReview.code, 'CONFLICT', 'duplicate review rejection code')
+assert(/不能重复评价/.test(duplicateReview.message || ''), 'duplicate review rejection message')
 const reviews = await get(`/reviews?itemId=${encodeURIComponent(item.id)}`)
 assert(toArray(reviews.reviews).some((candidate) => candidate.id === review.id), 'created review did not appear in item review list')
 const sellerNotificationsAfterReview = await get('/notifications', seller.token)

@@ -291,6 +291,7 @@ const flows = [
           'assertTradeContactHidden',
           'postSoldTradeError',
           "post(`/trades/${trade.id}/review`",
+          'duplicateReview',
           'sold item still appears in public list'
         ]
       }
