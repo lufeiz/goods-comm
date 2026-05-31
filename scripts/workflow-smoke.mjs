@@ -73,6 +73,7 @@ function assertReleaseGateProfileBoundary() {
     "'docs/deployment-readiness-audit-strict.json'",
     "args: ['scripts/production-readiness-audit.mjs', '--check-only', '--require-deployed-smoke-inputs']",
     "args: ['scripts/production-readiness-audit.mjs']",
+    "const planEnvironments = ['dev', 'test', 'pre', 'prod']",
     "if (profile !== 'release')",
     "'smoke:location-permissions'",
     "'smoke:environment-commands'",

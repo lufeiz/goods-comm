@@ -5,6 +5,7 @@ import { join, relative, resolve } from 'node:path'
 const root = process.cwd()
 const profile = getArgValue('--profile') || 'full'
 const validProfiles = new Set(['quick', 'full', 'release'])
+const planEnvironments = ['dev', 'test', 'pre', 'prod']
 
 if (!validProfiles.has(profile)) {
   throw new Error(`Unknown release gate profile: ${profile}`)
@@ -124,7 +125,7 @@ function addPlanChecks() {
     return
   }
 
-  for (const env of ['pre', 'prod']) {
+  for (const env of planEnvironments) {
     steps.push({
       name: `db migration plan ${env}`,
       command: process.execPath,

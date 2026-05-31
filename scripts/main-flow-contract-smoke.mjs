@@ -314,8 +314,18 @@ const flows = [
         ]
       },
       {
+        file: 'package.json',
+        tokens: [
+          '"deploy:backend:dev:plan": "node scripts/deploy-backend.mjs --env dev"',
+          '"deploy:backend:test:plan": "node scripts/deploy-backend.mjs --env test"',
+          '"deploy:frontend:dev:plan": "node scripts/deploy-frontend.mjs --env dev"',
+          '"deploy:frontend:test:plan": "node scripts/deploy-frontend.mjs --env test"'
+        ]
+      },
+      {
         file: 'scripts/verify-release-gate.mjs',
         tokens: [
+          "const planEnvironments = ['dev', 'test', 'pre', 'prod']",
           "'smoke:location-permissions'",
           "'smoke:environment-commands'",
           "'smoke:main-flow-contract'",
