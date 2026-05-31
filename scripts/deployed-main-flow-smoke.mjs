@@ -319,6 +319,13 @@ function validateInputs() {
 
   if (
     accountDeleteReloginCode &&
+    accountDeleteReloginCode === accountDeleteCode
+  ) {
+    missing.push('GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE must be a second one-time code different from GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE')
+  }
+
+  if (
+    accountDeleteReloginCode &&
     accountDeleteProvider === sellerProvider &&
     accountDeleteReloginCode === sellerCode
   ) {

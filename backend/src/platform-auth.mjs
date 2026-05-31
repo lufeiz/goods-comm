@@ -160,13 +160,21 @@ async function resolveAlipayIdentity(code, config) {
 function createDemoIdentity(payload = {}) {
   const provider = payload.provider || 'unknown'
   const code = payload.code || `${provider}_${Date.now()}`
+  const identitySeed = normalizeDemoIdentitySeed(code)
 
   return {
     provider,
-    platformId: `demo_${provider}_${hashText(code)}`,
+    platformId: `demo_${provider}_${hashText(identitySeed)}`,
     unionId: '',
     authSource: 'demo'
   }
+}
+
+function normalizeDemoIdentitySeed(code = '') {
+  const normalized = String(code || '')
+  const oneTimeCodeMatch = normalized.match(/^(.*):one-time:[^:]+$/)
+
+  return oneTimeCodeMatch ? oneTimeCodeMatch[1] : normalized
 }
 
 function assertConfigured(label, value) {

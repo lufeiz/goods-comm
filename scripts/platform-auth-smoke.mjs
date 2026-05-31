@@ -19,6 +19,15 @@ const h5DemoLogin = await demo.resolveLoginData({
 assert.equal(h5DemoLogin.platformIdentity.provider, 'h5')
 assert.equal(h5DemoLogin.platformIdentity.platformId.startsWith('demo_h5_'), true)
 assert.equal(h5DemoLogin.platformIdentity.authSource, 'demo')
+const firstDemoOneTimeLogin = await demo.resolveLoginData({
+  provider: 'weixin',
+  code: 'same-demo-account:one-time:first'
+})
+const secondDemoOneTimeLogin = await demo.resolveLoginData({
+  provider: 'weixin',
+  code: 'same-demo-account:one-time:second'
+})
+assert.equal(firstDemoOneTimeLogin.platformIdentity.platformId, secondDemoOneTimeLogin.platformIdentity.platformId)
 
 assert.throws(() => createPlatformAuthResolver({
   environment: 'pre',

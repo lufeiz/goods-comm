@@ -630,8 +630,10 @@ async function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
       passes.push(`[${environment}] loaded .env.smoke.${environment}.local deployed smoke inputs`)
     }
 
-    if (containsPlaceholder(apiBaseUrl || '')) {
+    if (!hasRealValue(apiBaseUrl)) {
       blockers.push(`[${environment}] deployed smoke cannot run until VITE_API_BASE_URL or GOODS_COMM_SMOKE_API_BASE_URL points to a real API`)
+    } else if (['test', 'pre', 'prod'].includes(environment) && !startsWithHttps(apiBaseUrl)) {
+      blockers.push(`[${environment}] deployed smoke API target must be HTTPS`)
     } else {
       passes.push(`[${environment}] deployed smoke API target is configured`)
     }
@@ -648,6 +650,11 @@ async function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
     } else {
       passes.push(`[${environment}] main-flow smoke runtime inputs are present in current shell or .env.smoke.${environment}.local`)
     }
+
+    const smokeInputQuality = auditSmokeInputQuality(environment, smokeInputValues, missingRuntimeInputs)
+    blockers.push(...smokeInputQuality.blockers)
+    warnings.push(...smokeInputQuality.warnings)
+    passes.push(...smokeInputQuality.passes)
 
     if (environment === 'prod' && getSmokeInputValue(smokeInputValues, 'GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION') !== 'true') {
       warnings.push('[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true')
@@ -728,6 +735,151 @@ async function auditGithubPushAutomation() {
     warnings,
     passes
   }
+}
+
+function auditSmokeInputQuality(environment, values, missingRuntimeInputs) {
+  const blockers = []
+  const warnings = []
+  const passes = []
+  const sellerProvider = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_SELLER_PROVIDER') || 'weixin'
+  const buyerProvider = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_BUYER_PROVIDER') || sellerProvider
+  const accountDeleteProvider = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_ACCOUNT_DELETE_PROVIDER') || sellerProvider
+  const sellerCode = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_SELLER_CODE')
+  const buyerCode = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_BUYER_CODE')
+  const accountDeleteCode = normalizeOptionalSmokeInputValue(getSmokeInputValue(values, 'GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE'))
+  const accountDeleteReloginCode = normalizeOptionalSmokeInputValue(getSmokeInputValue(values, 'GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE'))
+  const scopeType = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_SCOPE_TYPE') || 'community'
+  const approvedImageUrl = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_APPROVED_IMAGE_URL')
+
+  for (const [key, value] of [
+    ['GOODS_COMM_SMOKE_SELLER_PROVIDER', sellerProvider],
+    ['GOODS_COMM_SMOKE_BUYER_PROVIDER', buyerProvider],
+    ['GOODS_COMM_SMOKE_ACCOUNT_DELETE_PROVIDER', accountDeleteProvider]
+  ]) {
+    if (!['weixin', 'alipay'].includes(value)) {
+      blockers.push(`[${environment}] ${key} must be weixin or alipay`)
+    }
+  }
+
+  const latitude = parseFiniteNumber(getSmokeInputValue(values, 'GOODS_COMM_SMOKE_LATITUDE'))
+  if (hasRealValue(getSmokeInputValue(values, 'GOODS_COMM_SMOKE_LATITUDE')) && (!latitude.valid || latitude.value < -90 || latitude.value > 90)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_LATITUDE must be a number between -90 and 90`)
+  }
+
+  const longitude = parseFiniteNumber(getSmokeInputValue(values, 'GOODS_COMM_SMOKE_LONGITUDE'))
+  if (hasRealValue(getSmokeInputValue(values, 'GOODS_COMM_SMOKE_LONGITUDE')) && (!longitude.valid || longitude.value < -180 || longitude.value > 180)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_LONGITUDE must be a number between -180 and 180`)
+  }
+
+  const accuracy = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_ACCURACY')
+  if (hasRealValue(accuracy) && !isPositiveFiniteNumber(accuracy)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCURACY must be a positive number when provided`)
+  }
+
+  const capturedAt = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_CAPTURED_AT')
+  if (hasRealValue(capturedAt) && !isPositiveFiniteNumber(capturedAt)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_CAPTURED_AT must be a positive timestamp when provided`)
+  }
+
+  if (!['community', 'street'].includes(scopeType)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_SCOPE_TYPE must be community or street`)
+  }
+
+  const radiusMeters = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_RADIUS_METERS')
+  if (hasRealValue(radiusMeters) && !isPositiveFiniteNumber(radiusMeters)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_RADIUS_METERS must be a positive number when provided`)
+  }
+
+  if (hasRealValue(approvedImageUrl)) {
+    if (!startsWithHttps(approvedImageUrl)) {
+      blockers.push(`[${environment}] GOODS_COMM_SMOKE_APPROVED_IMAGE_URL must be HTTPS when provided`)
+    } else {
+      passes.push(`[${environment}] approved smoke image fallback is configured`)
+    }
+  } else if (missingRuntimeInputs.length === 0) {
+    warnings.push(`[${environment}] GOODS_COMM_SMOKE_APPROVED_IMAGE_URL is not configured; WeChat async image moderation can still block the full publish/trade smoke`)
+  }
+
+  const approvedImageSize = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_APPROVED_IMAGE_SIZE')
+  if (hasRealValue(approvedImageSize) && !isPositiveFiniteNumber(approvedImageSize)) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_APPROVED_IMAGE_SIZE must be a positive number when provided`)
+  }
+
+  const approvedImageMimeType = getSmokeInputValue(values, 'GOODS_COMM_SMOKE_APPROVED_IMAGE_MIME_TYPE')
+  if (hasRealValue(approvedImageMimeType) && approvedImageMimeType !== 'image/jpeg') {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_APPROVED_IMAGE_MIME_TYPE must be image/jpeg when provided`)
+  }
+
+  if (
+    accountDeleteCode &&
+    accountDeleteProvider === sellerProvider &&
+    accountDeleteCode === sellerCode
+  ) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE must use a disposable account different from GOODS_COMM_SMOKE_SELLER_CODE`)
+  }
+
+  if (
+    accountDeleteCode &&
+    accountDeleteProvider === buyerProvider &&
+    accountDeleteCode === buyerCode
+  ) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE must use a disposable account different from GOODS_COMM_SMOKE_BUYER_CODE`)
+  }
+
+  if (accountDeleteReloginCode && !accountDeleteCode) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE requires GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`)
+  }
+
+  if (accountDeleteReloginCode && accountDeleteReloginCode === accountDeleteCode) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE must be a second one-time code different from GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`)
+  }
+
+  if (
+    accountDeleteReloginCode &&
+    accountDeleteProvider === sellerProvider &&
+    accountDeleteReloginCode === sellerCode
+  ) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE must use the disposable delete account, not GOODS_COMM_SMOKE_SELLER_CODE`)
+  }
+
+  if (
+    accountDeleteReloginCode &&
+    accountDeleteProvider === buyerProvider &&
+    accountDeleteReloginCode === buyerCode
+  ) {
+    blockers.push(`[${environment}] GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE must use the disposable delete account, not GOODS_COMM_SMOKE_BUYER_CODE`)
+  }
+
+  if (!blockers.length && missingRuntimeInputs.length === 0) {
+    passes.push(`[${environment}] deployed main-flow smoke input quality checks passed`)
+  }
+
+  return {
+    blockers,
+    warnings,
+    passes
+  }
+}
+
+function normalizeOptionalSmokeInputValue(value = '') {
+  const normalized = String(value || '').trim()
+
+  return containsPlaceholder(normalized) ? '' : normalized
+}
+
+function parseFiniteNumber(value = '') {
+  const parsed = Number(value)
+
+  return {
+    valid: Number.isFinite(parsed),
+    value: parsed
+  }
+}
+
+function isPositiveFiniteNumber(value = '') {
+  const parsed = Number(value)
+
+  return Number.isFinite(parsed) && parsed > 0
 }
 
 function inspectGithubCliAuth() {
