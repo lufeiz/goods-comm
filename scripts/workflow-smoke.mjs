@@ -317,6 +317,12 @@ function assertProdToPreSyncWorkflow() {
 
   assert.doesNotMatch(
     content,
+    /^      GOODS_COMM_SYNC_(DUMP|LOCK|AUDIT)_PATH:\s+\$\{\{\s*runner\.temp\s*\}\}/m,
+    'prod-to-pre-sync.yml: runner.temp is only available in step scope, not job-level env'
+  )
+
+  assert.doesNotMatch(
+    content,
     /postgresql-client/,
     'prod-to-pre-sync.yml: prod-to-pre sync workflow should use the project pg dependency instead of installing PostgreSQL client tools'
   )

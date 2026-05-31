@@ -52,9 +52,6 @@ jobs:
     timeout-minutes: 45
 
     env:
-      GOODS_COMM_SYNC_DUMP_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.dump
-      GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
-      GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
       GOODS_COMM_SYNC_AUTO_ENABLED: ${{ vars.GOODS_COMM_SYNC_AUTO_ENABLED }}
       GOODS_COMM_SMOKE_API_BASE_URL: ${{ secrets.GOODS_COMM_SMOKE_API_BASE_URL }}
       GOODS_COMM_SMOKE_SELLER_CODE: ${{ secrets.GOODS_COMM_SMOKE_SELLER_CODE }}
@@ -115,6 +112,9 @@ jobs:
       - name: Print sync plan
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.operation == 'plan' }}
         env:
+          GOODS_COMM_SYNC_DUMP_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.dump
+          GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
+          GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
           GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event.inputs.run_pre_smoke }}
           GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ github.event.inputs.health_attempts }}
           GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ github.event.inputs.health_interval_ms }}
@@ -124,6 +124,9 @@ jobs:
       - name: Execute manual sync
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.operation == 'execute' }}
         env:
+          GOODS_COMM_SYNC_DUMP_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.dump
+          GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
+          GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
           GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event.inputs.run_pre_smoke }}
           GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ github.event.inputs.health_attempts }}
           GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ github.event.inputs.health_interval_ms }}
@@ -134,6 +137,9 @@ jobs:
       - name: Execute scheduled auto sync
         if: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_AUTO_ENABLED == 'true' }}
         env:
+          GOODS_COMM_SYNC_DUMP_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.dump
+          GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
+          GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
           GOODS_COMM_SYNC_RUN_PRE_SMOKE: 'true'
           GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ vars.GOODS_COMM_SYNC_HEALTH_ATTEMPTS || '12' }}
           GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ vars.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || '10000' }}
