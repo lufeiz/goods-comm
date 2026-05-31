@@ -283,6 +283,7 @@ const flows = [
         file: 'scripts/deployed-main-flow-smoke.mjs',
         tokens: [
           "post('/trades'",
+          'selfPurchaseTradeError',
           'assertOneTimeContactCode',
           'assertTradeContactHidden',
           'postSoldTradeError',

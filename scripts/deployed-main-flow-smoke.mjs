@@ -28,6 +28,7 @@ const smokeRunId = normalizeSmokeRunId(process.env.GOODS_COMM_SMOKE_RUN_ID || `$
 const itemTitle = `部署主链路烟测-${smokeRunId}`
 const idempotencyKeys = {
   itemCreate: `deployed:${smokeRunId}:item:create`,
+  tradeCreateSelf: `deployed:${smokeRunId}:trade:create-self`,
   tradeCreate: `deployed:${smokeRunId}:trade:create`,
   tradeCreateAfterSold: `deployed:${smokeRunId}:trade:create-after-sold`,
   tradeConfirm: `deployed:${smokeRunId}:trade:confirm`,
@@ -125,6 +126,11 @@ const tradePayload = {
     capturedAt: smokeCapturedAt.value
   }
 }
+const selfPurchaseTradeError = await postExpectError('/trades', tradePayload, seller.token, idempotencyOptions(idempotencyKeys.tradeCreateSelf))
+assertEqual(selfPurchaseTradeError.status, 403, 'self-purchase trade rejection status')
+assertEqual(selfPurchaseTradeError.code, 'FORBIDDEN', 'self-purchase trade rejection code')
+assert(/不能购买自己/.test(selfPurchaseTradeError.message || ''), 'self-purchase trade rejection message')
+
 const trade = await post('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreate))
 const replayedTrade = await post('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreate))
 
