@@ -76,6 +76,7 @@ function assertReleaseGateProfileBoundary() {
     "if (profile !== 'release')",
     "'smoke:location-permissions'",
     "'smoke:frontend-deploy'",
+    "'smoke:mini-program-deploy-config'",
     "'smoke:main-flow-contract'",
     "steps.push(npmStep('build:h5'))",
     "name: 'smoke:h5:render'",

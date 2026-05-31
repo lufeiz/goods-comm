@@ -92,6 +92,7 @@ function addCoreSmokes() {
     'smoke:prod-sync',
     'smoke:github-push-preflight',
     'smoke:frontend-deploy',
+    'smoke:mini-program-deploy-config',
     'smoke:workflows',
     'smoke:pages',
     'smoke:main-flow-contract',

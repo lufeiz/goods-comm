@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { createArtifactChecks } from './artifact-checks.mjs'
 import {
@@ -8,6 +7,10 @@ import {
   normalizeEnvironmentName,
   readEnvironmentFile
 } from './env-files.mjs'
+import {
+  isRealMiniProgramAppId,
+  readMiniProgramAppId
+} from './mini-program-deploy-config.mjs'
 
 const VALID_TARGETS = ['h5', 'mp-weixin', 'mp-alipay']
 const execute = process.argv.includes('--execute')
@@ -100,19 +103,20 @@ function createPlan() {
     skipArtifactSmoke
       ? '3. Skip artifact smoke because --skip-artifact-smoke or GOODS_COMM_FRONTEND_DEPLOY_SKIP_ARTIFACT_SMOKE=true was provided.'
       : `3. Verify ${environment} frontend artifacts with artifact checks before upload.`,
-    `4. Release version: ${releaseVersion}.`
+    `4. Verify mini-program artifact AppID values against real ${environment} AppID configuration when provided.`,
+    `5. Release version: ${releaseVersion}.`
   ]
 
   if (targets.includes('h5')) {
-    lines.push(`5. Deploy H5 artifact ${artifactDirectory('h5', environment)} to CloudBase static hosting env ${values.GOODS_COMM_CLOUDBASE_ENV_ID || 'missing'}.`)
+    lines.push(`6. Deploy H5 artifact ${artifactDirectory('h5', environment)} to CloudBase static hosting env ${values.GOODS_COMM_CLOUDBASE_ENV_ID || 'missing'}.`)
   }
 
   if (targets.includes('mp-weixin')) {
-    lines.push(`6. Upload WeChat Mini Program artifact ${artifactDirectory('mp-weixin', environment)} with the WeChat DevTools CLI.`)
+    lines.push(`7. Upload WeChat Mini Program artifact ${artifactDirectory('mp-weixin', environment)} with the WeChat DevTools CLI.`)
   }
 
   if (targets.includes('mp-alipay')) {
-    lines.push(`7. Upload Alipay Mini Program artifact ${artifactDirectory('mp-alipay', environment)} with the Alipay mini program CLI.`)
+    lines.push(`8. Upload Alipay Mini Program artifact ${artifactDirectory('mp-alipay', environment)} with the Alipay mini program CLI.`)
   }
 
   return lines
@@ -171,7 +175,7 @@ function findMissingPreconditions() {
   }
 
   if (targets.includes('mp-weixin')) {
-    if (!values.GOODS_COMM_WECHAT_APP_ID || containsPlaceholder(values.GOODS_COMM_WECHAT_APP_ID)) {
+    if (!isRealMiniProgramAppId(values.GOODS_COMM_WECHAT_APP_ID)) {
       missingItems.push(`[${environment}] GOODS_COMM_WECHAT_APP_ID must be real before WeChat Mini Program upload`)
     }
 
@@ -183,7 +187,7 @@ function findMissingPreconditions() {
   }
 
   if (targets.includes('mp-alipay')) {
-    if (!values.GOODS_COMM_ALIPAY_APP_ID || containsPlaceholder(values.GOODS_COMM_ALIPAY_APP_ID)) {
+    if (!isRealMiniProgramAppId(values.GOODS_COMM_ALIPAY_APP_ID)) {
       missingItems.push(`[${environment}] GOODS_COMM_ALIPAY_APP_ID must be real before Alipay Mini Program upload`)
     }
 
@@ -217,17 +221,23 @@ async function verifyFrontendArtifacts() {
 }
 
 async function verifyMiniProgramDeployConfig() {
-  if (targets.includes('mp-weixin') && isReal(values.GOODS_COMM_WECHAT_APP_ID)) {
-    const projectConfig = JSON.parse(await readFile(resolve(artifactDirectory('mp-weixin', environment), 'project.config.json'), 'utf8'))
-    if (projectConfig.appid !== values.GOODS_COMM_WECHAT_APP_ID) {
-      throw new Error(`[${environment}] WeChat artifact appid ${projectConfig.appid || 'missing'} does not match GOODS_COMM_WECHAT_APP_ID`)
+  if (targets.includes('mp-weixin') && isRealMiniProgramAppId(values.GOODS_COMM_WECHAT_APP_ID)) {
+    const appid = await readMiniProgramAppId({
+      platform: 'mp-weixin',
+      directory: artifactDirectory('mp-weixin', environment)
+    })
+    if (appid !== values.GOODS_COMM_WECHAT_APP_ID) {
+      throw new Error(`[${environment}] WeChat artifact appid ${appid || 'missing'} does not match GOODS_COMM_WECHAT_APP_ID`)
     }
   }
 
-  if (targets.includes('mp-alipay') && isReal(values.GOODS_COMM_ALIPAY_APP_ID)) {
-    const miniProject = JSON.parse(await readFile(resolve(artifactDirectory('mp-alipay', environment), 'mini.project.json'), 'utf8'))
-    if (miniProject.appid !== values.GOODS_COMM_ALIPAY_APP_ID) {
-      throw new Error(`[${environment}] Alipay artifact appid ${miniProject.appid || 'missing'} does not match GOODS_COMM_ALIPAY_APP_ID`)
+  if (targets.includes('mp-alipay') && isRealMiniProgramAppId(values.GOODS_COMM_ALIPAY_APP_ID)) {
+    const appid = await readMiniProgramAppId({
+      platform: 'mp-alipay',
+      directory: artifactDirectory('mp-alipay', environment)
+    })
+    if (appid !== values.GOODS_COMM_ALIPAY_APP_ID) {
+      throw new Error(`[${environment}] Alipay artifact appid ${appid || 'missing'} does not match GOODS_COMM_ALIPAY_APP_ID`)
     }
   }
 }
@@ -327,10 +337,6 @@ function hasTencentCloudApiCredential() {
     (process.env.TENCENTCLOUD_SECRET_ID || process.env.TENCENTCLOUD_SECRETID) &&
     (process.env.TENCENTCLOUD_SECRET_KEY || process.env.TENCENTCLOUD_SECRETKEY)
   )
-}
-
-function isReal(value = '') {
-  return Boolean(value) && !containsPlaceholder(value)
 }
 
 function run(command, args) {

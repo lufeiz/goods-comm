@@ -5,12 +5,10 @@ import { readEnvironmentFile } from './env-files.mjs'
 import { patchMiniProgramAppId } from './mini-program-deploy-config.mjs'
 
 const mode = parseMode(process.argv.slice(2))
-const tempOutDir = resolve('/private/tmp', `goods-comm-mp-weixin-build${mode ? `-${mode}` : ''}`)
-const tempBuildDir = tempOutDir
-const targetBuildDir = mode ? resolve('dist/build', mode, 'mp-weixin') : resolve('dist/build/mp-weixin')
-const projectConfigFileName = 'project.config.json'
+const tempOutDir = resolve('/private/tmp', `goods-comm-mp-alipay-build${mode ? `-${mode}` : ''}`)
+const targetBuildDir = mode ? resolve('dist/build', mode, 'mp-alipay') : resolve('dist/build/mp-alipay')
 const uniBin = resolve('node_modules/.bin/uni')
-const args = ['build', '-p', 'mp-weixin', '--outDir', tempOutDir]
+const args = ['build', '-p', 'mp-alipay', '--outDir', tempOutDir]
 
 if (mode) {
   args.push('--mode', mode)
@@ -31,36 +29,29 @@ if (result.status !== 0) {
   process.exit(result.status || 1)
 }
 
-if (!existsSync(tempBuildDir)) {
-  console.error(`Build output not found: ${tempBuildDir}`)
+if (!existsSync(tempOutDir)) {
+  console.error(`Build output not found: ${tempOutDir}`)
   process.exit(1)
 }
 
+rmSync(targetBuildDir, { recursive: true, force: true })
 mkdirSync(targetBuildDir, { recursive: true })
-cpSync(tempBuildDir, targetBuildDir, {
-  recursive: true,
-  filter: (source) => !source.endsWith(`/${projectConfigFileName}`)
+cpSync(tempOutDir, targetBuildDir, {
+  recursive: true
 })
-
-const targetProjectConfigPath = resolve(targetBuildDir, projectConfigFileName)
-const generatedProjectConfigPath = resolve(tempBuildDir, projectConfigFileName)
-
-if (!existsSync(targetProjectConfigPath) && existsSync(generatedProjectConfigPath)) {
-  cpSync(generatedProjectConfigPath, targetProjectConfigPath)
-}
 
 const values = mode ? await readEnvironmentFile(mode) : process.env
 const appIdPatch = await patchMiniProgramAppId({
-  platform: 'mp-weixin',
+  platform: 'mp-alipay',
   directory: targetBuildDir,
   values
 })
 
 if (appIdPatch.patched) {
-  console.log(`Weixin project.config.json appid set to ${appIdPatch.appid}`)
+  console.log(`Alipay mini.project.json appid set to ${appIdPatch.appid}`)
 }
 
-console.log(`Weixin build artifact copied to ${targetBuildDir}`)
+console.log(`Alipay build artifact copied to ${targetBuildDir}`)
 
 function parseMode(args) {
   const modeIndex = args.findIndex((arg) => arg === '--mode')

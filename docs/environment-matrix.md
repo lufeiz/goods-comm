@@ -88,6 +88,8 @@ npm run verify:release
 
 `npm run verify:release` 是 CI / 发布候选门禁，会串行执行语法检查、核心 smoke、页面契约 smoke、主链路证据矩阵 smoke、workflow smoke、HTTP 后端 smoke、三端四环境构建、前端 / 后端部署 plan、迁移 / 同步 plan 和生产审计报告；quick/full profile 结束时会明确提示它们不是生产放行口径。`npm run verify:release:strict` 只适合真实上线前使用，会先刷新 strict 审计 Markdown / JSON，再把生产就绪审计作为强制 gate；当前占位配置下会因真实云资源、工具链和部署后 smoke 输入缺失失败。
 
+微信 / 支付宝小程序构建脚本会在对应环境存在真实 `GOODS_COMM_WECHAT_APP_ID` 或 `GOODS_COMM_ALIPAY_APP_ID` 时，把 AppID 写入 `project.config.json` / `mini.project.json`。真实上传前 `deploy:frontend:*` 会再次校验构建产物 AppID 与环境配置一致；占位 AppID 不会覆盖 tourist AppID，避免本地和 CI 构建被真实平台配置阻塞。
+
 部署后主链路 smoke 会对商品发布、交易创建、卖家确认、交易列表联系码、交易通知、通知已读、完成售出、售出后详情状态、售出后拒绝再次交易、交易评价、退出登录和退出后 token 拒绝访问带稳定 `Idempotency-Key` 或明确错误码断言。默认每次运行生成新的 `GOODS_COMM_SMOKE_RUN_ID`；如果 CI 需要跨进程复跑同一次写入链路，应同时固定 `GOODS_COMM_SMOKE_RUN_ID` 和 `GOODS_COMM_SMOKE_CAPTURED_AT`，且时间戳仍需在定位有效期内。
 
 GitHub Actions 已分成两类：

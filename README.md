@@ -78,6 +78,8 @@ GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:p
 GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre
 ```
 
+微信 / 支付宝环境构建会读取 `.env.<env>` 和 `.env.<env>.local`；当 `GOODS_COMM_WECHAT_APP_ID` 或 `GOODS_COMM_ALIPAY_APP_ID` 是真实值时，会自动写入 `project.config.json` / `mini.project.json`，部署脚本也会在上传前校验产物 AppID 与环境配置一致。占位值仍保留 tourist AppID，便于本地和 CI 构建。
+
 只有确认数据库已经由同一版本迁移过时，才使用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过这一步。
 
 纯逻辑烟测不依赖小程序运行时：

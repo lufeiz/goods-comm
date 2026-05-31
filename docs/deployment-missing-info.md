@@ -75,8 +75,9 @@
 - `npm run db:migrate:plan -- --env pre`：输出 pre 数据库 schema 初始化计划。
 - `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre`：真实执行 pre 数据库 schema 初始化，要求真实连接串和 `psql`；生产迁移还必须额外设置 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`。
 - `npm run deploy:frontend:pre:plan`：输出 pre H5、微信小程序、支付宝小程序前端部署计划和缺失前置条件；计划会要求真实 `VITE_API_BASE_URL`、H5 CloudBase 静态托管环境、微信 / 支付宝真实 AppID、微信开发者工具 CLI、支付宝小程序 CLI 和非交互云凭据。
-- `GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre`：真实执行 pre 前端部署；脚本先跑 `env:check:pre`，再构建目标前端产物、运行环境定向 artifact checks，之后才上传 H5 到 CloudBase 静态托管，并通过对应 CLI 上传微信 / 支付宝小程序；生产执行还必须额外设置 `GOODS_COMM_DEPLOY_ALLOW_PROD=true`。
+- `GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre`：真实执行 pre 前端部署；脚本先跑 `env:check:pre`，再构建目标前端产物、运行环境定向 artifact checks，之后校验微信 / 支付宝构建产物 AppID 与环境配置一致，最后才上传 H5 到 CloudBase 静态托管，并通过对应 CLI 上传微信 / 支付宝小程序；生产执行还必须额外设置 `GOODS_COMM_DEPLOY_ALLOW_PROD=true`。
 - `GOODS_COMM_FRONTEND_DEPLOY_TARGET=h5|mp-weixin|mp-alipay|all` 或 `--target h5,weixin,alipay`：限制前端部署目标，便于先单独验证 H5 或某个小程序端。
+- `npm run smoke:mini-program-deploy-config`：检查微信 `project.config.json` 和支付宝 `mini.project.json` 在存在真实 AppID 时会被构建脚本写入真实值，仍为占位值时保留 tourist AppID 供本地 / CI 构建使用。
 - `GOODS_COMM_WECHAT_DEVTOOLS_CLI` / `WECHAT_DEVTOOLS_CLI`：微信小程序上传 CLI 路径；真实上传还要求开发者工具登录态、项目成员权限、合法业务域名和真实 AppID。
 - `GOODS_COMM_ALIPAY_MINI_CLI` / `ALIPAY_MINI_CLI`：支付宝小程序上传 CLI 路径；真实上传还要求支付宝开放平台权限、合法域名和真实 AppID。
 - `npm run deploy:backend:pre:plan`：输出微信优先、腾讯 fallback 的后端部署计划和缺失前置条件；计划包含真实 HTTPS API、CORS Origin、数据库、COS/CDN、地图、内容安全、session、运营账号、可信代理、平台通知、生产告警和平台登录等运行时配置，也包含 `build:backend` 后的 `smoke:backend:artifact`，确保真实部署前先验证后端部署包。

@@ -108,7 +108,7 @@ export function parseEnvFile(raw = '') {
 }
 
 export function containsPlaceholder(value = '') {
-  return /REPLACE_WITH|placeholder|example\./i.test(String(value || ''))
+  return /REPLACE_WITH|placeholder|example\.|touristappid/i.test(String(value || ''))
 }
 
 export function maskConnectionString(value = '') {
