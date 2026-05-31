@@ -45,10 +45,10 @@ async function runMainFlow(page, baseUrl) {
   await page.navigate(`${baseUrl}/#/`)
   await page.waitForSelector('home-page')
   await page.assertText('home-page', '邻里旧货')
-  await page.assertVisibleAny(['home-good-list', 'home-empty-state'])
+  await page.assertVisibleAny(['home-good-list', 'home-location-required', 'home-empty-state'])
   await page.setInput('home-search-input', '折叠椅')
   await page.click('home-search-button')
-  await page.assertVisibleAny(['home-good-list', 'home-empty-state'])
+  await page.assertVisibleAny(['home-good-list', 'home-location-required', 'home-empty-state'])
 
   await page.navigateHash('/pages/mine/mine')
   await page.waitForSelector('mine-page')

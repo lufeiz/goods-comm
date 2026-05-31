@@ -66,7 +66,11 @@ function verifyPageContracts() {
         'this.refreshLocation({ silent: true })',
         '@confirm="loadItems"',
         '@tap="goPublish"',
-        '@open="openItem"'
+        '@open="openItem"',
+        'needsLocationToBrowse',
+        'home-location-required',
+        'home-location-refresh',
+        'home-location-choose'
       ]
     },
     {
@@ -226,6 +230,9 @@ function verifyRenderedTestIdContracts() {
         'home-search-input',
         'home-search-button',
         'home-good-list',
+        'home-location-required',
+        'home-location-refresh',
+        'home-location-choose',
         'home-empty-state'
       ]
     },
@@ -441,6 +448,12 @@ function verifyDisplayStateContracts() {
       tokens: [
         '{{ items.length }} 件',
         '暂无匹配物品',
+        '先确认当前位置',
+        '需要可用定位',
+        'locationRequiredDescription',
+        'hasCoordinateLocation(this.locationProfile?.location)',
+        '刷新定位',
+        '选择位置',
         '换个关键词',
         ':item="item"',
         '@open="openItem"',

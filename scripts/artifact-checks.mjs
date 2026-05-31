@@ -192,6 +192,9 @@ function createRequiredRenderedTestIds() {
         'home-search-input',
         'home-search-button',
         'home-good-list',
+        'home-location-required',
+        'home-location-refresh',
+        'home-location-choose',
         'home-empty-state'
       ],
       'pages/publish/publish': [

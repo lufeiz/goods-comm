@@ -55,6 +55,19 @@
       />
     </view>
 
+    <view v-else-if="needsLocationToBrowse" class="empty-state location-required" data-testid="home-location-required">
+      <text class="empty-title">{{ locationRequiredTitle }}</text>
+      <text class="empty-desc">{{ locationRequiredDescription }}</text>
+      <view class="location-required-actions">
+        <button class="location-required-button" data-testid="home-location-refresh" :disabled="locating" @tap="refreshLocation">
+          {{ locating ? '定位中' : '刷新定位' }}
+        </button>
+        <button class="location-required-button secondary" data-testid="home-location-choose" :disabled="locating" @tap="chooseLocation">
+          选择位置
+        </button>
+      </view>
+    </view>
+
     <view v-else class="empty-state" data-testid="home-empty-state">
       <text class="empty-title">暂无匹配物品</text>
       <text class="empty-desc">换个关键词，或发布一件邻里可自提的闲置物品。</text>
@@ -83,6 +96,24 @@ export default {
       items: [],
       locationProfile: null,
       locating: false
+    }
+  },
+  computed: {
+    hasBrowsableLocation() {
+      return !this.locationProfile?.error && hasCoordinateLocation(this.locationProfile?.location)
+    },
+    needsLocationToBrowse() {
+      return !this.items.length && !this.hasBrowsableLocation
+    },
+    locationRequiredTitle() {
+      return this.locationProfile?.error ? '需要可用定位' : '先确认当前位置'
+    },
+    locationRequiredDescription() {
+      if (this.locationProfile?.error?.message) {
+        return `${this.locationProfile.error.message}。刷新或选择位置后，才会展示同社区 / 同街道内可交易物品。`
+      }
+
+      return '邻里旧货只展示当前位置可交易范围内的物品，请先刷新定位或选择附近位置预估。'
     }
   },
   onShow() {
@@ -170,6 +201,14 @@ export default {
       })
     }
   }
+}
+
+function hasCoordinateLocation(location) {
+  if (!location || typeof location !== 'object') {
+    return false
+  }
+
+  return Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude))
 }
 </script>
 
@@ -313,5 +352,30 @@ export default {
   color: #6e7c73;
   font-size: 24rpx;
   line-height: 1.5;
+}
+
+.location-required {
+  text-align: left;
+}
+
+.location-required-actions {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 24rpx;
+}
+
+.location-required-button {
+  flex: 1;
+  height: 72rpx;
+  color: #ffffff;
+  background: #1f7a4d;
+  border: 0;
+  font-size: 24rpx;
+}
+
+.location-required-button.secondary {
+  color: #1f7a4d;
+  background: #edf6ef;
+  border: 1rpx solid #b9dbc4;
 }
 </style>
