@@ -72,6 +72,7 @@ function assertReleaseGateProfileBoundary() {
     "args: ['scripts/production-readiness-audit.mjs', '--check-only', '--require-deployed-smoke-inputs']",
     "args: ['scripts/production-readiness-audit.mjs']",
     "if (profile !== 'release')",
+    "'smoke:location-permissions'",
     "'smoke:main-flow-contract'",
     "name: 'smoke:h5:render'",
     "'scripts/h5-render-smoke.mjs'",

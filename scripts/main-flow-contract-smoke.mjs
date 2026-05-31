@@ -254,6 +254,7 @@ const flows = [
       {
         file: 'package.json',
         tokens: [
+          '"smoke:location-permissions": "node scripts/location-permission-smoke.mjs"',
           '"smoke:main-flow-contract": "node scripts/main-flow-contract-smoke.mjs"',
           '"smoke:deployed:local-main": "node scripts/deployed-main-flow-local-smoke.mjs"',
           '"smoke:deployed:pre:main": "node scripts/deployed-main-flow-smoke.mjs --env pre"',
@@ -263,6 +264,7 @@ const flows = [
       {
         file: 'scripts/verify-release-gate.mjs',
         tokens: [
+          "'smoke:location-permissions'",
           "'smoke:main-flow-contract'",
           "'smoke:pages'",
           "'smoke:bff'",

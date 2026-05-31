@@ -61,6 +61,7 @@
 - `npm run smoke:env-local-templates`：检查 `.env.pre.local.example` / `.env.prod.local.example` 是否覆盖真实上线需要替换的关键变量，并保持 pre/prod 的 PostgreSQL、COS、腾讯地图、微信内容安全、Webhook 告警、访问日志和平台登录/通知模式。
 - `npm run smoke:pages`：静态检查 `src/pages.json`、tabBar、页面文件、模板事件处理器、页面跳转路径，以及登录、定位、发布、交易、运营、协议等关键页面必须接入的 service 和关键显示状态；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:main-flow-contract`：检查登录协议与账号生命周期、定位解析与显示可信边界、发布与图片上传、交易售卖生命周期，以及 release gate 是否串联页面、BFF、HTTP 后端和部署后主链路 smoke 证据；`verify:release` / `verify:release:strict` 已接入该检查。
+- `npm run smoke:location-permissions`：用 mock `uni` 和浏览器 geolocation 覆盖定位授权拒绝、首次授权拒绝、系统定位关闭、超时、网络异常、无效坐标、低精度、区域解析失败、H5 浏览器权限、缓存过期和最终交易必须使用实时 GPS 的权限/质量矩阵；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:ops-alerts`：检查生产告警适配器的关闭态、Webhook 投递、鉴权头、敏感字段脱敏、占位 URL 拒绝、pre/prod HTTPS 要求和失败响应处理；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:request-logger`：检查结构化访问日志开关、JSON 输出、错误级别、query/header/body 不落日志，以及动态交易路径归一化；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:deployed-input-templates`：检查 `.env.smoke.pre.example` / `.env.smoke.prod.example` 是否覆盖部署后 health / main-flow smoke 所需 API、登录 code、坐标、范围、重试窗口、已审核测试图和可选账号注销输入，并强制生产模板默认 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=false`；`verify:release` / `verify:release:strict` 已接入该检查。
