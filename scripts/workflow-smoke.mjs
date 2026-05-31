@@ -302,6 +302,8 @@ function assertDirectBackendDeployProtection() {
 
 function assertDirectDatabaseMigrationProtection() {
   assertIncludesAll('scripts/migrate-database.mjs', migrateDatabaseScript, [
+    "await import('pg')",
+    'await client.query(schemaSql)',
     'GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
     'Refusing to migrate prod without GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-${environment}${prodOptIn}'

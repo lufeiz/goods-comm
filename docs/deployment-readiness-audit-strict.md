@@ -1,8 +1,8 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-31T13:37:28.424Z
+Generated: 2026-05-31T13:48:29.465Z
 Scope: pre, prod
-Result: BLOCKED (52 blockers, 8 warnings)
+Result: BLOCKED (51 blockers, 8 warnings)
 
 This report is generated from `.env.*` plus optional `.env.*.local` overrides. It does not execute deployment, database migration, or production data sync.
 
@@ -12,7 +12,7 @@ Machine-readable JSON: `docs/deployment-readiness-audit-strict.json`
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Tools | BLOCKED | 4 blockers, 2 warnings |
+| Tools | BLOCKED | 3 blockers, 2 warnings |
 | Environments | BLOCKED | 2 environments checked |
 | pre/prod isolation | WARN | 0 blockers, 2 warnings |
 | Build artifacts | PASS | 0 blockers, 0 warnings |
@@ -27,12 +27,12 @@ Machine-readable JSON: `docs/deployment-readiness-audit-strict.json`
 | docker | Tencent fallback image build/push | missing |
 | tccli | Tencent fallback deploy | missing |
 | TENCENTCLOUD_SECRET_ID/KEY | non-interactive CloudBase/Tencent deploy | missing |
-| psql | database migration and sync | missing |
+| pg npm package | database migration | declared |
+| psql | prod-to-pre reset/anonymize SQL | missing |
 | pg_dump | prod-to-pre export | missing |
 | pg_restore | prod-to-pre restore | missing |
 ### Tool blockers
 
-- psql is required to execute database migration locally
 - pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally
 - No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli
 - TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI
@@ -42,7 +42,7 @@ Machine-readable JSON: `docs/deployment-readiness-audit-strict.json`
 - Tencent fallback deploy tools are incomplete: docker and tccli are both required
 ### Tool passes
 
-- None
+- Node pg dependency is declared for database migration
 
 ## Environment details
 

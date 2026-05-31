@@ -231,9 +231,6 @@ function findMissingPreconditions(targetProvider) {
       missingItems.push('GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true is required because backend deploy applies production database migration')
     }
 
-    if (!commandAvailable('psql')) {
-      missingItems.push('psql is required because backend deploy applies database migration before starting the new backend')
-    }
   }
 
   if (environment === 'prod' && process.env.GOODS_COMM_DEPLOY_ALLOW_PROD !== 'true') {

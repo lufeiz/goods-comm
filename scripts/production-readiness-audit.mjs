@@ -131,6 +131,7 @@ const requireDeployedSmokeInputs = process.argv.includes('--require-deployed-smo
 const outputPath = resolve(process.cwd(), getArgValue('--output') || 'docs/deployment-readiness-audit.md')
 const jsonOutputPath = resolve(process.cwd(), getArgValue('--json-output') || defaultJsonOutputPath(outputPath))
 const environments = getRequestedEnvironments()
+const packageJson = JSON.parse(await readFile(resolve(process.cwd(), 'package.json'), 'utf8'))
 const commandStatus = inspectCommands()
 const audit = await createAudit()
 const markdown = renderAudit(audit)
@@ -575,10 +576,10 @@ function auditTools() {
     warnings.push('Tencent fallback deploy tools are incomplete: docker and tccli are both required')
   }
 
-  if (commandStatus.psql.available) {
-    passes.push('psql is available for database migration')
+  if (hasPackageDependency('pg')) {
+    passes.push('Node pg dependency is declared for database migration')
   } else {
-    blockers.push('psql is required to execute database migration locally')
+    blockers.push('pg dependency is required to execute database migration from Node')
   }
 
   if (commandStatus.pgDump.available && commandStatus.pgRestore.available && commandStatus.psql.available) {
@@ -988,7 +989,7 @@ function inspectCommands() {
     },
     docker: inspectCommand('docker', 'Tencent fallback image build/push'),
     tccli: inspectCommand('tccli', 'Tencent fallback deploy'),
-    psql: inspectCommand('psql', 'Database migration and sync'),
+    psql: inspectCommand('psql', 'Prod-to-pre reset/anonymize SQL'),
     pgDump: inspectCommand('pg_dump', 'Prod-to-pre export'),
     pgRestore: inspectCommand('pg_restore', 'Prod-to-pre restore')
   }
@@ -1039,6 +1040,10 @@ function hasTencentCloudApiCredential() {
     (process.env.TENCENTCLOUD_SECRET_ID || process.env.TENCENTCLOUD_SECRETID) &&
     (process.env.TENCENTCLOUD_SECRET_KEY || process.env.TENCENTCLOUD_SECRETKEY)
   )
+}
+
+function hasPackageDependency(name) {
+  return Boolean(packageJson.dependencies?.[name] || packageJson.devDependencies?.[name])
 }
 
 function renderAudit(report) {
@@ -1216,8 +1221,13 @@ function renderToolchainStatus() {
       status: hasTencentCloudApiCredential() ? 'present' : 'missing'
     },
     {
+      tool: 'pg npm package',
+      requiredFor: 'database migration',
+      status: hasPackageDependency('pg') ? 'declared' : 'missing'
+    },
+    {
       tool: 'psql',
-      requiredFor: 'database migration and sync',
+      requiredFor: 'prod-to-pre reset/anonymize SQL',
       status: commandStatus.psql.available ? 'available' : 'missing'
     },
     {
@@ -1257,7 +1267,8 @@ function renderToolTable() {
     ['docker', 'Tencent fallback image build/push', commandStatus.docker.available ? 'available' : 'missing'],
     ['tccli', 'Tencent fallback deploy', commandStatus.tccli.available ? 'available' : 'missing'],
     ['TENCENTCLOUD_SECRET_ID/KEY', 'non-interactive CloudBase/Tencent deploy', hasTencentCloudApiCredential() ? 'present' : 'missing'],
-    ['psql', 'database migration and sync', commandStatus.psql.available ? 'available' : 'missing'],
+    ['pg npm package', 'database migration', hasPackageDependency('pg') ? 'declared' : 'missing'],
+    ['psql', 'prod-to-pre reset/anonymize SQL', commandStatus.psql.available ? 'available' : 'missing'],
     ['pg_dump', 'prod-to-pre export', commandStatus.pgDump.available ? 'available' : 'missing'],
     ['pg_restore', 'prod-to-pre restore', commandStatus.pgRestore.available ? 'available' : 'missing']
   ]
