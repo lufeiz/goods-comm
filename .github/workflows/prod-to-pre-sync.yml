@@ -99,6 +99,15 @@ jobs:
             printf "%s\n" "${GOODS_COMM_PROD_ENV_LOCAL}" > .env.prod.local
           fi
 
+      - name: Materialize deployed smoke inputs
+        shell: bash
+        env:
+          GOODS_COMM_PRE_SMOKE_ENV_LOCAL: ${{ secrets.GOODS_COMM_PRE_SMOKE_ENV_LOCAL }}
+        run: |
+          if [ -n "${GOODS_COMM_PRE_SMOKE_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PRE_SMOKE_ENV_LOCAL}" > .env.smoke.pre.local
+          fi
+
       - name: Print sync plan
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'plan' }}
         run: npm run sync:prod-to-pre:plan

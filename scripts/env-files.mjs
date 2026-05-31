@@ -74,7 +74,7 @@ export async function loadSmokeEnvironmentFile(environment, options = {}) {
   const values = await readSmokeEnvironmentFile(environment)
 
   for (const [key, value] of Object.entries(values)) {
-    if (options.override || process.env[key] === undefined) {
+    if (options.override || process.env[key] === undefined || process.env[key] === '') {
       process.env[key] = value
     }
   }

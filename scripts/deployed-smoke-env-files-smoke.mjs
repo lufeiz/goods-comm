@@ -34,6 +34,7 @@ try {
   assert.equal(values.GOODS_COMM_SMOKE_BUYER_CODE, 'file-buyer-code')
 
   process.env.GOODS_COMM_SMOKE_SELLER_CODE = 'shell-seller-code'
+  process.env.GOODS_COMM_SMOKE_BUYER_CODE = ''
   await loadSmokeEnvironmentFile('pre')
 
   assert.equal(process.env.GOODS_COMM_SMOKE_SELLER_CODE, 'shell-seller-code')

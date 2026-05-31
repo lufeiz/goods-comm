@@ -66,7 +66,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 也可以使用 `.github/workflows/prod-to-pre-sync.yml`：
 
 - 手动触发 `plan`：只输出同步计划。
-- 手动触发 `execute`：需要输入 `confirm_sync=sync-prod-to-pre`，并依赖 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 提供真实数据库连接。
+- 手动触发 `execute`：需要输入 `confirm_sync=sync-prod-to-pre`，并依赖 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 提供真实数据库连接；如开启同步后 pre 主链路 smoke，可用 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` 多行 Secret 提供一次性 smoke 输入。
 - 定时触发：每天低峰执行；只有仓库变量 `GOODS_COMM_SYNC_AUTO_ENABLED=true` 时才会真正执行自动同步，否则只跳过并保留工作流记录。
 
 该工作流会在 runner 临时目录写 dump、lock 和审计日志，只上传脱敏后的同步审计日志，不上传生产 dump。
@@ -124,7 +124,7 @@ npm run smoke:deployed:pre:main
 GitHub Actions 中有两个门禁：
 
 - `.github/workflows/ci.yml`：PR / 主干日常门禁，运行 `npm run verify:release`，会生成生产审计但不因占位 pre/prod 阻断普通开发。
-- `.github/workflows/release-strict.yml`：真实上线前手动门禁，先在 runner 安装 `postgresql-client`、CloudBase CLI 和 Tencent `tccli`，再运行 `npm run verify:release:strict`；可选 `run_backend_deploy=true` 在通过后先迁移目标数据库并部署后端，再执行 `smoke:deployed:*`。它读取 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 生成 `.env.pre.local` / `.env.prod.local`，读取 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 执行非交互式 CloudBase / 腾讯云部署，同时读取 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 和可选 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL` 作为部署后主链路 smoke 输入；生产后端部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`，避免误发生产或误写生产测试数据。
+- `.github/workflows/release-strict.yml`：真实上线前手动门禁，先在 runner 安装 `postgresql-client`、CloudBase CLI 和 Tencent `tccli`，再运行 `npm run verify:release:strict`；可选 `run_backend_deploy=true` 在通过后先迁移目标数据库并部署后端，再执行 `smoke:deployed:*`。它读取 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 生成 `.env.pre.local` / `.env.prod.local`，读取 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 生成 `.env.smoke.pre.local` / `.env.smoke.prod.local`，读取 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 执行非交互式 CloudBase / 腾讯云部署；也可继续用单个 `GOODS_COMM_SMOKE_*` Secret 覆盖部署后 smoke 输入。生产后端部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`，避免误发生产或误写生产测试数据。
 
 ## 关键目录
 

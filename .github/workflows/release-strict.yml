@@ -118,6 +118,19 @@ jobs:
             printf "%s\n" "${GOODS_COMM_PROD_ENV_LOCAL}" > .env.prod.local
           fi
 
+      - name: Materialize deployed smoke inputs
+        shell: bash
+        env:
+          GOODS_COMM_PRE_SMOKE_ENV_LOCAL: ${{ secrets.GOODS_COMM_PRE_SMOKE_ENV_LOCAL }}
+          GOODS_COMM_PROD_SMOKE_ENV_LOCAL: ${{ secrets.GOODS_COMM_PROD_SMOKE_ENV_LOCAL }}
+        run: |
+          if [ -n "${GOODS_COMM_PRE_SMOKE_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PRE_SMOKE_ENV_LOCAL}" > .env.smoke.pre.local
+          fi
+          if [ -n "${GOODS_COMM_PROD_SMOKE_ENV_LOCAL}" ]; then
+            printf "%s\n" "${GOODS_COMM_PROD_SMOKE_ENV_LOCAL}" > .env.smoke.prod.local
+          fi
+
       - name: Run strict release gate
         id: strict
         continue-on-error: true

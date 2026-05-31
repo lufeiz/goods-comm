@@ -652,7 +652,7 @@ async function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
 }
 
 function getSmokeInputValue(values, key) {
-  if (process.env[key] !== undefined) {
+  if (process.env[key] !== undefined && process.env[key] !== '') {
     return process.env[key]
   }
 
