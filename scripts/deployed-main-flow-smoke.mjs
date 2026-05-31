@@ -30,6 +30,7 @@ const idempotencyKeys = {
   itemCreate: `deployed:${smokeRunId}:item:create`,
   tradeCreateSelf: `deployed:${smokeRunId}:trade:create-self`,
   tradeCreate: `deployed:${smokeRunId}:trade:create`,
+  tradeCreateDuplicate: `deployed:${smokeRunId}:trade:create-duplicate`,
   tradeCreateAfterSold: `deployed:${smokeRunId}:trade:create-after-sold`,
   tradeConfirm: `deployed:${smokeRunId}:trade:confirm`,
   tradeComplete: `deployed:${smokeRunId}:trade:complete`,
@@ -133,9 +134,13 @@ assert(/不能购买自己/.test(selfPurchaseTradeError.message || ''), 'self-pu
 
 const trade = await post('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreate))
 const replayedTrade = await post('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreate))
+const duplicateActiveTrade = await post('/trades', tradePayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeCreateDuplicate))
 
 assertEqual(trade.status, 'pending_seller_confirm', 'created trade status')
 assertEqual(replayedTrade.id, trade.id, 'replayed trade id')
+assertEqual(duplicateActiveTrade.id, trade.id, 'duplicate active trade id')
+assertEqual(duplicateActiveTrade.status, 'pending_seller_confirm', 'duplicate active trade status')
+assertTradeContactHidden(duplicateActiveTrade, 'duplicate active trade')
 const sellerTradesAfterCreate = await get('/trades', seller.token)
 const sellerCreatedTrade = findTrade(sellerTradesAfterCreate, trade.id, 'pending_seller_confirm', 'seller created trade list')
 assertTradeContactHidden(sellerCreatedTrade, 'seller pending trade')

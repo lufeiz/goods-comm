@@ -284,6 +284,7 @@ const flows = [
         tokens: [
           "post('/trades'",
           'selfPurchaseTradeError',
+          'duplicateActiveTrade',
           'assertOneTimeContactCode',
           'assertTradeContactHidden',
           'postSoldTradeError',
