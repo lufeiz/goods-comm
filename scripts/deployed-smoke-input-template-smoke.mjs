@@ -40,7 +40,7 @@ for (const [environment, file] of Object.entries(environmentTemplates)) {
 
   assert.match(raw, new RegExp(`Copy to \\.env\\.smoke\\.${environment}\\.local`), `${file}: copy instruction is missing`)
   assert.match(raw, new RegExp(`Do not commit \\.env\\.smoke\\.${environment}\\.local\\.`), `${file}: secret warning is missing`)
-  assert.match(raw, /set -a; source \.env\.smoke\..+\.local; set \+a/, `${file}: load instruction is missing`)
+  assert.match(raw, new RegExp(`Deployed smoke scripts auto-load \\.env\\.smoke\\.${environment}\\.local`), `${file}: auto-load instruction is missing`)
 
   for (const key of [...REQUIRED_MAIN_FLOW_KEYS, ...REQUIRED_HEALTH_KEYS]) {
     assert.ok(hasKey(values, key), `${file}: missing ${key}`)

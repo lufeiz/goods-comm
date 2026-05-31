@@ -53,7 +53,7 @@ npm run audit:production-readiness
 npm run audit:production-readiness -- --check-only
 ```
 
-审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。部署后 health / main-flow smoke 的一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制到 `.env.smoke.pre.local` / `.env.smoke.prod.local` 后加载，模板完整性由 `npm run smoke:deployed-input-templates` 校验。
+审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。部署后 health / main-flow smoke 的一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制到 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件；模板完整性由 `npm run smoke:deployed-input-templates` 校验。
 
 prod 到 pre 数据同步同时支持手动和自动定时入口；真实执行前必须替换数据库连接串并准备 PostgreSQL 工具：
 
@@ -115,7 +115,6 @@ git push origin main
 ```bash
 cp .env.smoke.pre.example .env.smoke.pre.local
 # replace login codes, coordinates, API URL and approved image URL
-set -a; source .env.smoke.pre.local; set +a
 npm run smoke:deployed:pre
 npm run smoke:deployed:pre:main
 ```

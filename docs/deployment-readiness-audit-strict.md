@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-30T14:17:19.920Z
+Generated: 2026-05-31T01:55:15.493Z
 Scope: pre, prod
 Result: BLOCKED (52 blockers, 7 warnings)
 
@@ -189,10 +189,10 @@ Local override: not present
 
 ### Blockers
 
-- [pre] deployed smoke cannot run until VITE_API_BASE_URL points to a real API
-- [pre] main-flow deployed smoke still needs shell inputs: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE
-- [prod] deployed smoke cannot run until VITE_API_BASE_URL points to a real API
-- [prod] main-flow deployed smoke still needs shell inputs: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE
+- [pre] deployed smoke cannot run until VITE_API_BASE_URL or GOODS_COMM_SMOKE_API_BASE_URL points to a real API
+- [pre] main-flow deployed smoke still needs real inputs in shell or .env.smoke.pre.local: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE
+- [prod] deployed smoke cannot run until VITE_API_BASE_URL or GOODS_COMM_SMOKE_API_BASE_URL points to a real API
+- [prod] main-flow deployed smoke still needs real inputs in shell or .env.smoke.prod.local: GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, GOODS_COMM_SMOKE_LONGITUDE
 ### Warnings
 
 - [prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true

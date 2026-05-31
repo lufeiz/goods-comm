@@ -10,7 +10,9 @@ import {
   envLocalFilePath,
   maskConnectionString,
   normalizeEnvironmentName,
-  readEnvironmentFile
+  readEnvironmentFile,
+  readSmokeEnvironmentFile,
+  smokeEnvLocalFilePath
 } from './env-files.mjs'
 
 const REQUIRED_KEYS = [
@@ -171,7 +173,7 @@ async function createAudit() {
   const crossEnvironment = auditCrossEnvironment(valuesByEnvironment)
   const artifactReport = await auditArtifacts(environments)
   const toolReport = auditTools()
-  const smokeReport = auditSmokeInputs(environments, valuesByEnvironment)
+  const smokeReport = await auditSmokeInputs(environments, valuesByEnvironment)
   const blockerCount = countItems(toolReport.blockers) +
     countItems(environmentReports.flatMap((report) => report.blockers)) +
     countItems(crossEnvironment.blockers) +
@@ -592,7 +594,7 @@ function auditTools() {
   }
 }
 
-function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
+async function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
   const blockers = []
   const warnings = []
   const passes = []
@@ -610,13 +612,23 @@ function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
       continue
     }
 
-    if (containsPlaceholder(values.VITE_API_BASE_URL || '')) {
-      blockers.push(`[${environment}] deployed smoke cannot run until VITE_API_BASE_URL points to a real API`)
+    const smokeInputValues = await readSmokeEnvironmentFile(environment)
+    const smokeInputOverrideLoaded = await pathExists(smokeEnvLocalFilePath(environment))
+    const apiBaseUrl = getSmokeInputValue(smokeInputValues, 'GOODS_COMM_SMOKE_API_BASE_URL') || values.VITE_API_BASE_URL
+
+    if (smokeInputOverrideLoaded) {
+      passes.push(`[${environment}] loaded .env.smoke.${environment}.local deployed smoke inputs`)
     }
 
-    const missingRuntimeInputs = requiredRuntimeInputs.filter((key) => !process.env[key])
+    if (containsPlaceholder(apiBaseUrl || '')) {
+      blockers.push(`[${environment}] deployed smoke cannot run until VITE_API_BASE_URL or GOODS_COMM_SMOKE_API_BASE_URL points to a real API`)
+    } else {
+      passes.push(`[${environment}] deployed smoke API target is configured`)
+    }
+
+    const missingRuntimeInputs = requiredRuntimeInputs.filter((key) => !hasRealValue(getSmokeInputValue(smokeInputValues, key)))
     if (missingRuntimeInputs.length) {
-      const message = `[${environment}] main-flow deployed smoke still needs shell inputs: ${missingRuntimeInputs.join(', ')}`
+      const message = `[${environment}] main-flow deployed smoke still needs real inputs in shell or .env.smoke.${environment}.local: ${missingRuntimeInputs.join(', ')}`
 
       if (requireDeployedSmokeInputs) {
         blockers.push(message)
@@ -624,10 +636,10 @@ function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
         warnings.push(message)
       }
     } else {
-      passes.push(`[${environment}] main-flow smoke runtime inputs are present in current shell`)
+      passes.push(`[${environment}] main-flow smoke runtime inputs are present in current shell or .env.smoke.${environment}.local`)
     }
 
-    if (environment === 'prod' && process.env.GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION !== 'true') {
+    if (environment === 'prod' && getSmokeInputValue(smokeInputValues, 'GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION') !== 'true') {
       warnings.push('[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true')
     }
   }
@@ -637,6 +649,14 @@ function auditSmokeInputs(targetEnvironments, valuesByEnvironment) {
     warnings,
     passes
   }
+}
+
+function getSmokeInputValue(values, key) {
+  if (process.env[key] !== undefined) {
+    return process.env[key]
+  }
+
+  return values[key] || ''
 }
 
 function evaluateDeployPath(values) {

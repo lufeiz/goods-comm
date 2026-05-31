@@ -24,7 +24,7 @@
 - `.env.pre`
 - `.env.prod`
 
-这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。部署后 health / main-flow smoke 的一次性输入使用 `.env.smoke.pre.example` / `.env.smoke.prod.example` 单独维护，复制到 `.env.smoke.*.local` 后由 shell 加载，模板覆盖度由 `npm run smoke:deployed-input-templates` 校验。
+这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。部署后 health / main-flow smoke 的一次性输入使用 `.env.smoke.pre.example` / `.env.smoke.prod.example` 单独维护，复制到 `.env.smoke.*.local` 后会被部署 smoke、部署脚本和生产审计自动读取，模板覆盖度由 `npm run smoke:deployed-input-templates` 校验。
 
 关键变量：
 
@@ -155,12 +155,6 @@ npm run smoke:deployed:prod
 ```bash
 cp .env.smoke.pre.example .env.smoke.pre.local
 # replace one-time codes, API URL, coordinates and approved image URL
-set -a; source .env.smoke.pre.local; set +a
-GOODS_COMM_SMOKE_SELLER_CODE=...
-GOODS_COMM_SMOKE_BUYER_CODE=...
-GOODS_COMM_SMOKE_LATITUDE=31.22945
-GOODS_COMM_SMOKE_LONGITUDE=121.45494
-GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE=... # optional disposable account
 npm run smoke:deployed:pre:main
 ```
 
@@ -195,7 +189,7 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 - 在腾讯云定时任务、云托管定时触发器或内部 CI runner 上每天低峰执行一次 `npm run sync:prod-to-pre:auto`。
 - 执行前注入真实 prod/pre 数据库连接串和 `GOODS_COMM_SYNC_AUTO_ENABLED=true`；自动模式不读取手动确认变量，便于放入定时任务。
 - 如需同步后自动检查 pre 健康状态，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_SMOKE=true`，脚本会执行 `node scripts/deployed-health-smoke.mjs --env pre`，默认等待 12 次、每次间隔 10 秒；可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整等待窗口。
-- 如需同步后自动验证 pre 主链路，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，脚本会执行 `node scripts/deployed-main-flow-smoke.mjs --env pre`；这需要同时配置 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 和必要时的 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL`。
+- 如需同步后自动验证 pre 主链路，可额外设置 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true`，脚本会执行 `node scripts/deployed-main-flow-smoke.mjs --env pre`；这需要在 shell 或 `.env.smoke.pre.local` 配置 `GOODS_COMM_SMOKE_SELLER_CODE`、`GOODS_COMM_SMOKE_BUYER_CODE`、`GOODS_COMM_SMOKE_LATITUDE`、`GOODS_COMM_SMOKE_LONGITUDE` 和必要时的 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL`。
 - 可按任务环境设置 `GOODS_COMM_SYNC_LOCK_PATH`、`GOODS_COMM_SYNC_AUDIT_PATH` 和 `GOODS_COMM_SYNC_DUMP_PATH`；锁和审计日志应落在可追踪位置，dump 路径应使用执行机临时目录，脚本会在成功或失败后删除本地生产 dump。
 - GitHub Actions 已提供 `.github/workflows/prod-to-pre-sync.yml`：`workflow_dispatch` 支持手动 `plan` / `execute`，`schedule` 支持每天低峰自动运行；只有仓库变量 `GOODS_COMM_SYNC_AUTO_ENABLED=true` 时，定时任务才会真正执行同步。手动执行可选择 `run_pre_main_smoke`，并可用 `health_attempts` / `health_interval_ms` 调整同步后 pre health smoke 等待窗口；定时任务可用仓库变量 `GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true` 打开同步后 pre 主链路 smoke，也可用 `GOODS_COMM_SYNC_HEALTH_ATTEMPTS` / `GOODS_COMM_SYNC_HEALTH_INTERVAL_MS` 调整健康检查重试。工作流从 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入 `.env.pre.local` / `.env.prod.local`，dump 和锁文件落在 runner 临时目录，只上传脱敏同步审计日志，不上传生产 dump。
 

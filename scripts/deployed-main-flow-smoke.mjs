@@ -1,5 +1,6 @@
 import {
   containsPlaceholder,
+  loadSmokeEnvironmentFile,
   normalizeEnvironmentName,
   readEnvironmentFile
 } from './env-files.mjs'
@@ -7,6 +8,7 @@ import { USER_AGREEMENT_VERSION } from '../src/config/app.js'
 
 const environment = getEnvironmentArg()
 const values = await readEnvironmentFile(environment)
+await loadSmokeEnvironmentFile(environment)
 const apiBaseUrl = normalizeBaseUrl(process.env.GOODS_COMM_SMOKE_API_BASE_URL || values.VITE_API_BASE_URL)
 const latitude = parseRequiredNumber('GOODS_COMM_SMOKE_LATITUDE')
 const longitude = parseRequiredNumber('GOODS_COMM_SMOKE_LONGITUDE')

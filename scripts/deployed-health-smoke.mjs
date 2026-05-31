@@ -1,11 +1,13 @@
 import {
   containsPlaceholder,
+  loadSmokeEnvironmentFile,
   normalizeEnvironmentName,
   readEnvironmentFile
 } from './env-files.mjs'
 
 const environment = getEnvironmentArg()
 const values = await readEnvironmentFile(environment)
+await loadSmokeEnvironmentFile(environment)
 const apiBaseUrl = normalizeBaseUrl(process.env.GOODS_COMM_SMOKE_API_BASE_URL || values.VITE_API_BASE_URL)
 const attempts = parsePositiveInteger(getArgValue('--attempts') || process.env.GOODS_COMM_SMOKE_HEALTH_ATTEMPTS || '1', 'GOODS_COMM_SMOKE_HEALTH_ATTEMPTS')
 const intervalMs = parsePositiveInteger(getArgValue('--interval-ms') || process.env.GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS || '5000', 'GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS')

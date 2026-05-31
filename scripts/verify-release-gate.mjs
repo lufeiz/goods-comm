@@ -81,6 +81,7 @@ function addCoreSmokes() {
     'smoke:request-logger',
     'smoke:env-local-templates',
     'smoke:deployed-input-templates',
+    'smoke:deployed-env-files',
     'smoke:platform-auth',
     'smoke:platform-notifier',
     'smoke:storage-content',

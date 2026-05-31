@@ -21,6 +21,10 @@ export function envLocalFilePath(environment) {
   return resolve(process.cwd(), `.env.${normalizeEnvironmentName(environment)}.local`)
 }
 
+export function smokeEnvLocalFilePath(environment) {
+  return resolve(process.cwd(), `.env.smoke.${normalizeEnvironmentName(environment)}.local`)
+}
+
 export async function readEnvironmentFile(environment) {
   const filePath = envFilePath(environment)
   const raw = await readFile(filePath, 'utf8')
@@ -41,8 +45,33 @@ export async function readEnvironmentFile(environment) {
   return values
 }
 
+export async function readSmokeEnvironmentFile(environment) {
+  try {
+    const raw = await readFile(smokeEnvLocalFilePath(environment), 'utf8')
+    return parseEnvFile(raw)
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      throw error
+    }
+  }
+
+  return {}
+}
+
 export async function loadEnvironmentFile(environment, options = {}) {
   const values = await readEnvironmentFile(environment)
+
+  for (const [key, value] of Object.entries(values)) {
+    if (options.override || process.env[key] === undefined) {
+      process.env[key] = value
+    }
+  }
+
+  return values
+}
+
+export async function loadSmokeEnvironmentFile(environment, options = {}) {
+  const values = await readSmokeEnvironmentFile(environment)
 
   for (const [key, value] of Object.entries(values)) {
     if (options.override || process.env[key] === undefined) {

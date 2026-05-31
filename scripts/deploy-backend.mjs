@@ -5,6 +5,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import {
   containsPlaceholder,
+  loadSmokeEnvironmentFile,
   maskConnectionString,
   normalizeEnvironmentName,
   readEnvironmentFile
@@ -12,6 +13,7 @@ import {
 
 const execute = process.argv.includes('--execute')
 const environment = getEnvironmentArg()
+await loadSmokeEnvironmentFile(environment)
 const requestedProvider = getArgValue('--provider') || 'auto'
 const skipDatabaseMigration = process.argv.includes('--skip-db-migrate') || process.env.GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE === 'true'
 const skipDeployedHealthSmoke = process.argv.includes('--skip-deployed-health-smoke') || process.env.GOODS_COMM_DEPLOY_SKIP_DEPLOYED_HEALTH_SMOKE === 'true'
