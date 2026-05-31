@@ -54,9 +54,9 @@
 - `npm run audit:production-readiness -- --check-only`：只做检查并在存在上线 blocker 时返回非 0，可放入发布门禁或 CI。
 - `npm run audit:production-readiness:strict`：生成严格上线审计报告，额外把部署后主链路 smoke 输入缺失视为 blocker，默认写入 `docs/deployment-readiness-audit-strict.md` 和 `docs/deployment-readiness-audit-strict.json`。
 - `npm run audit:production-readiness:strict-check`：只做严格上线检查并在存在 blocker 时返回非 0；`verify:release:strict` 使用同一口径。
-- `npm run verify:release:quick`：本地快速门禁，执行语法检查、核心 smoke、默认三端构建和生产审计报告；命令结束时会明确提示 quick/full 不是生产放行口径。
-- `npm run verify:release`：CI / 发布候选门禁，执行语法检查、完整 smoke、HTTP 后端 smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；命令结束时会明确提示 full 只生成生产审计，不会因为剩余生产 blocker 失败。
-- `npm run verify:release:strict`：真实上线门禁，在 full 门禁基础上先刷新 `docs/deployment-readiness-audit-strict.md` / `docs/deployment-readiness-audit-strict.json`，再把生产就绪审计改为强制 `--check-only --require-deployed-smoke-inputs`；pre/prod 真实资源、密钥、工具链和部署后 smoke 输入未补齐时会失败。
+- `npm run verify:release:quick`：本地快速门禁，执行语法检查、核心 smoke、默认三端构建和生产审计报告；命令结束时会明确提示 quick/full 不是生产放行口径。只有 quick profile 允许通过 `-- --skip-http-backend` 跳过本地 HTTP 监听，用于受限沙箱或夜间推送自动化。
+- `npm run verify:release`：CI / 发布候选门禁，执行语法检查、完整 smoke、HTTP 后端 smoke、本地部署后 health / main-flow smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；full profile 不允许 `--skip-http-backend`，避免发布候选跳过后端主链路验证。命令结束时会明确提示 full 只生成生产审计，不会因为剩余生产 blocker 失败。
+- `npm run verify:release:strict`：真实上线门禁，在 full 门禁基础上先刷新 `docs/deployment-readiness-audit-strict.md` / `docs/deployment-readiness-audit-strict.json`，再把生产就绪审计改为强制 `--check-only --require-deployed-smoke-inputs`；release profile 不允许 `--skip-http-backend`，pre/prod 真实资源、密钥、工具链和部署后 smoke 输入未补齐时会失败。
 - `npm run github:push:preflight`：推送 GitHub 前检查 `origin`、`main` upstream 和工作区干净；当待推送提交包含 `.github/workflows/*.yml` / `.yaml` 时，额外强制检查 GitHub CLI token 的 `repo` / `workflow` scope；用于人工推送和每天 21:00 自动推送前置检查，避免 release gate 已通过但 workflow 文件因 token 权限不足推送失败。普通代码 / 文档变更在 `gh` auth 不可用时只输出 warning；如需每次强制检查 `gh` auth，可设置 `GOODS_COMM_GITHUB_PREFLIGHT_STRICT_GH_AUTH=true`。
 - `npm run smoke:env-local-templates`：检查 `.env.pre.local.example` / `.env.prod.local.example` 是否覆盖真实上线需要替换的关键变量，并保持 pre/prod 的 PostgreSQL、COS、腾讯地图、微信内容安全、Webhook 告警、访问日志和平台登录/通知模式。
 - `npm run smoke:pages`：静态检查 `src/pages.json`、tabBar、页面文件、模板事件处理器、页面跳转路径，以及登录、定位、发布、交易、运营、协议等关键页面必须接入的 service 和关键显示状态；`verify:release` / `verify:release:strict` 已接入该检查。

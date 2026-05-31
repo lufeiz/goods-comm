@@ -82,6 +82,8 @@ function assertReleaseGateProfileBoundary() {
     "name: 'smoke:h5:render'",
     "'scripts/h5-render-smoke.mjs'",
     "'dist/build/h5'",
+    "if (skipHttpBackend && profile !== 'quick')",
+    '--skip-http-backend is only allowed for quick profile',
     'quick/full profiles are CI or release-candidate gates only',
     'do not fail on remaining production blockers',
     'Run npm run verify:release:strict before a real pre/prod release.'

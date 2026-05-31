@@ -14,6 +14,10 @@ const skipHttpBackend = process.argv.includes('--skip-http-backend')
 const startedAt = Date.now()
 const steps = []
 
+if (skipHttpBackend && profile !== 'quick') {
+  throw new Error('--skip-http-backend is only allowed for quick profile; full and release profiles must run HTTP backend and local deployed smoke checks')
+}
+
 await addSyntaxChecks()
 addCoreSmokes()
 addPlanChecks()

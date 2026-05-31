@@ -320,6 +320,7 @@ const flows = [
           "'smoke:pages'",
           "'smoke:bff'",
           "'smoke:bff:fetch'",
+          "if (skipHttpBackend && profile !== 'quick')",
           "steps.push(npmStep('smoke:deployed:local-main'))",
           "name: 'smoke:artifacts'"
         ]
