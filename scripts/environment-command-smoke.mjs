@@ -17,9 +17,6 @@ for (const environment of VALID_ENVIRONMENTS) {
   assertScript(`deploy:backend:${environment}`, `node scripts/deploy-backend.mjs --env ${environment} --execute`)
   assertScript(`deploy:frontend:${environment}:plan`, `node scripts/deploy-frontend.mjs --env ${environment}`)
   assertScript(`deploy:frontend:${environment}`, `node scripts/deploy-frontend.mjs --env ${environment} --execute`)
-}
-
-for (const environment of ['pre', 'prod']) {
   assertScript(`smoke:deployed:${environment}`, `node scripts/deployed-health-smoke.mjs --env ${environment}`)
   assertScript(`smoke:deployed:${environment}:main`, `node scripts/deployed-main-flow-smoke.mjs --env ${environment}`)
 }

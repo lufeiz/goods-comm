@@ -31,6 +31,8 @@ const REQUIRED_HEALTH_KEYS = [
 ]
 
 const environmentTemplates = {
+  dev: '.env.smoke.dev.example',
+  test: '.env.smoke.test.example',
   pre: '.env.smoke.pre.example',
   prod: '.env.smoke.prod.example'
 }
@@ -47,7 +49,11 @@ for (const [environment, file] of Object.entries(environmentTemplates)) {
     assert.ok(hasKey(values, key), `${file}: missing ${key}`)
   }
 
-  assertHttpsUrl(values.GOODS_COMM_SMOKE_API_BASE_URL, `${file}: GOODS_COMM_SMOKE_API_BASE_URL`)
+  if (environment === 'dev') {
+    assertHttpUrl(values.GOODS_COMM_SMOKE_API_BASE_URL, `${file}: GOODS_COMM_SMOKE_API_BASE_URL`)
+  } else {
+    assertHttpsUrl(values.GOODS_COMM_SMOKE_API_BASE_URL, `${file}: GOODS_COMM_SMOKE_API_BASE_URL`)
+  }
   assertHttpsUrl(values.GOODS_COMM_SMOKE_APPROVED_IMAGE_URL, `${file}: GOODS_COMM_SMOKE_APPROVED_IMAGE_URL`)
   assertProvider(values.GOODS_COMM_SMOKE_SELLER_PROVIDER, `${file}: GOODS_COMM_SMOKE_SELLER_PROVIDER`)
   assertProvider(values.GOODS_COMM_SMOKE_BUYER_PROVIDER, `${file}: GOODS_COMM_SMOKE_BUYER_PROVIDER`)
@@ -84,6 +90,10 @@ function hasKey(values, key) {
 
 function assertHttpsUrl(value, label) {
   assert.ok(String(value || '').startsWith('https://'), `${label} must be an HTTPS URL`)
+}
+
+function assertHttpUrl(value, label) {
+  assert.ok(/^https?:\/\//.test(String(value || '')), `${label} must be an HTTP(S) URL`)
 }
 
 function assertProvider(value, label) {

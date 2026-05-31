@@ -24,7 +24,7 @@
 - `.env.pre`
 - `.env.prod`
 
-这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。部署后 health / main-flow smoke 的一次性输入使用 `.env.smoke.pre.example` / `.env.smoke.prod.example` 单独维护，复制到 `.env.smoke.*.local` 后会被部署 smoke、部署脚本和生产审计自动读取，模板覆盖度由 `npm run smoke:deployed-input-templates` 校验。
+这些文件只放可提交的占位值和非密钥配置。真实数据库密码、云密钥、AppSecret、地图 key、内容安全 key 应在云平台环境变量或本地 `.env.*.local` 中维护，不提交到仓库。本地脚本读取 `.env.dev/test/pre/prod` 后，会自动加载同名 `.env.*.local` 覆盖文件；例如 `.env.pre.local` 可覆盖预上线数据库连接串和云密钥。仓库提供 `.env.pre.local.example` / `.env.prod.local.example` 作为真实覆盖模板，复制后填真实值即可被审计和部署脚本读取；模板覆盖度由 `npm run smoke:env-local-templates` 校验。部署后 health / main-flow smoke 的一次性输入使用 `.env.smoke.dev/test/pre/prod.example` 单独维护，复制到 `.env.smoke.*.local` 后会被部署 smoke、部署脚本和生产审计自动读取，模板覆盖度由 `npm run smoke:deployed-input-templates` 校验。
 
 关键变量：
 
@@ -155,14 +155,19 @@ npm run deploy:frontend:prod:plan
 部署完成后运行：
 
 ```bash
+npm run smoke:deployed:dev
+npm run smoke:deployed:dev:main
+npm run smoke:deployed:test
+npm run smoke:deployed:test:main
 npm run smoke:deployed:pre
 npm run smoke:deployed:pre:main
 npm run smoke:deployed:prod
+npm run smoke:deployed:prod:main
 ```
 
-`smoke:deployed:*` 会检查 `/health` 和 `/health/ready`，确认 pre/prod 实际使用 `postgres`、`cos`、内容安全 `wechat`、地图 `tencent`、平台通知 `wechat`、生产告警 `webhook` 和结构化访问日志 `accessLog.enabled=true`，并断言 `x-content-type-options`、`x-frame-options`、`referrer-policy`、`permissions-policy` 等安全响应头未被云网关 / CDN 覆盖；pre/prod 还会要求 HSTS。
+`smoke:deployed:*` 会检查 `/health` 和 `/health/ready`，并断言 `x-content-type-options`、`x-frame-options`、`referrer-policy`、`permissions-policy` 等安全响应头未被云网关 / CDN 覆盖；test/pre/prod 要求真实 HTTPS API，pre/prod 还会确认实际使用 `postgres`、`cos`、内容安全 `wechat`、地图 `tencent`、平台通知 `wechat`、生产告警 `webhook`、结构化访问日志 `accessLog.enabled=true` 和 HSTS。
 
-`smoke:deployed:pre:main` 会对真实 HTTPS API 执行登录、区域解析、未登录上传拒绝、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、一次性联系码格式 / 过期时间 / 完成后清空、买家完成、售出后拒绝二次交易、公开商品响应隐私脱敏、客户端伪造审核身份字段不外泄、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度；如果要把账号注销也纳入真实部署后验收，可额外提供独立一次性测试账号 `GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`，不要复用 seller/buyer 主烟测账号；如果还要验证注销后同平台身份不能重登，提供同一测试账号的第二个 one-time code `GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE`：
+`smoke:deployed:<env>:main` 会对目标环境 API 执行登录、区域解析、未登录上传拒绝、图片上传、商品发布、发起交易、卖家确认、买卖双方交易列表、交易通知、一次性联系码格式 / 过期时间 / 完成后清空、买家完成、售出后拒绝二次交易、公开商品响应隐私脱敏、客户端伪造审核身份字段不外泄、评价、退出登录和退出后旧 token 拒绝访问。它需要注入短期平台登录 code 与一个业务覆盖范围内的经纬度；test/pre/prod 要求真实 HTTPS API，prod 主链路 smoke 会写入真实数据，必须额外设置 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true`。如果要把账号注销也纳入真实部署后验收，可额外提供独立一次性测试账号 `GOODS_COMM_SMOKE_ACCOUNT_DELETE_CODE`，不要复用 seller/buyer 主烟测账号；如果还要验证注销后同平台身份不能重登，提供同一测试账号的第二个 one-time code `GOODS_COMM_SMOKE_ACCOUNT_DELETE_RELOGIN_CODE`：
 
 ```bash
 cp .env.smoke.pre.example .env.smoke.pre.local
@@ -170,7 +175,7 @@ cp .env.smoke.pre.example .env.smoke.pre.local
 npm run smoke:deployed:pre:main
 ```
 
-如果真实微信图片审核把上传图片置为异步待审，还需要设置 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL` 指向一张已审核通过的 HTTPS 测试图，供完整发布/交易链路继续执行。生产主链路 smoke 会写入真实数据，必须额外设置 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true`。
+如果真实微信图片审核把上传图片置为异步待审，还需要设置 `GOODS_COMM_SMOKE_APPROVED_IMAGE_URL` 指向一张已审核通过的 HTTPS 测试图，供完整发布/交易链路继续执行。
 
 ## 4. pre/prod 数据同步
 

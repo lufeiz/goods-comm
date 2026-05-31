@@ -308,7 +308,11 @@ const flows = [
           '"smoke:location-permissions": "node scripts/location-permission-smoke.mjs"',
           '"smoke:environment-commands": "node scripts/environment-command-smoke.mjs"',
           '"smoke:main-flow-contract": "node scripts/main-flow-contract-smoke.mjs"',
+          '"smoke:deployed:dev": "node scripts/deployed-health-smoke.mjs --env dev"',
+          '"smoke:deployed:test": "node scripts/deployed-health-smoke.mjs --env test"',
           '"smoke:deployed:local-main": "node scripts/deployed-main-flow-local-smoke.mjs"',
+          '"smoke:deployed:dev:main": "node scripts/deployed-main-flow-smoke.mjs --env dev"',
+          '"smoke:deployed:test:main": "node scripts/deployed-main-flow-smoke.mjs --env test"',
           '"smoke:deployed:pre:main": "node scripts/deployed-main-flow-smoke.mjs --env pre"',
           '"smoke:deployed:prod:main": "node scripts/deployed-main-flow-smoke.mjs --env prod"'
         ]
