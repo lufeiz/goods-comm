@@ -91,6 +91,7 @@ function addCoreSmokes() {
     'smoke:postgres-store',
     'smoke:prod-sync',
     'smoke:github-push-preflight',
+    'smoke:frontend-deploy',
     'smoke:workflows',
     'smoke:pages',
     'smoke:main-flow-contract',
@@ -128,6 +129,11 @@ function addPlanChecks() {
       command: process.execPath,
       args: ['scripts/deploy-backend.mjs', '--env', env]
     })
+    steps.push({
+      name: `frontend deploy plan ${env}`,
+      command: process.execPath,
+      args: ['scripts/deploy-frontend.mjs', '--env', env]
+    })
   }
 
   steps.push({
@@ -148,6 +154,8 @@ function addBuildChecks() {
     return
   }
 
+  steps.push(npmStep('build:h5'))
+
   for (const env of ['dev', 'test', 'pre', 'prod']) {
     for (const target of ['h5', 'weixin', 'alipay']) {
       steps.push(npmStep(`build:${target}:${env}`))
@@ -167,7 +175,7 @@ function addArtifactSmokeChecks() {
     args: [
       'scripts/h5-render-smoke.mjs',
       '--dist',
-      profile === 'quick' ? 'dist/build/h5' : 'dist/build/dev/h5'
+      'dist/build/h5'
     ]
   })
 }

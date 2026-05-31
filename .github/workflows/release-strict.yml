@@ -32,6 +32,21 @@ on:
         required: true
         default: false
         type: boolean
+      run_frontend_deploy:
+        description: Deploy frontend artifacts after strict gate; H5 uses CloudBase hosting, mini programs require configured CLI paths
+        required: true
+        default: false
+        type: boolean
+      frontend_targets:
+        description: Frontend deploy targets: all, h5, mp-weixin, mp-alipay, or comma-separated aliases
+        required: true
+        default: h5
+        type: string
+      frontend_release_version:
+        description: Optional frontend release version passed to mini program upload CLIs
+        required: false
+        default: ''
+        type: string
       backend_provider:
         description: Backend deploy provider
         required: true
@@ -73,6 +88,10 @@ jobs:
       GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS: ${{ inputs.health_interval_ms }}
       GOODS_COMM_DEPLOY_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
       GOODS_COMM_DB_MIGRATE_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
+      GOODS_COMM_FRONTEND_DEPLOY_TARGET: ${{ inputs.frontend_targets }}
+      GOODS_COMM_FRONTEND_RELEASE_VERSION: ${{ inputs.frontend_release_version }}
+      GOODS_COMM_WECHAT_DEVTOOLS_CLI: ${{ secrets.GOODS_COMM_WECHAT_DEVTOOLS_CLI }}
+      GOODS_COMM_ALIPAY_MINI_CLI: ${{ secrets.GOODS_COMM_ALIPAY_MINI_CLI }}
       TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
       TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
       TENCENTCLOUD_SESSION_TOKEN: ${{ secrets.TENCENTCLOUD_SESSION_TOKEN }}
@@ -151,6 +170,24 @@ jobs:
         run: |
           echo "Backend deployment to prod requires allow_prod_deploy=true."
           exit 1
+
+      - name: Require prod frontend deploy opt-in
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && !inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        run: |
+          echo "Frontend deployment to prod requires allow_prod_deploy=true."
+          exit 1
+
+      - name: Deploy pre frontend
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
+        env:
+          GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-pre
+        run: node scripts/deploy-frontend.mjs --env pre --target "${{ inputs.frontend_targets }}" --execute
+
+      - name: Deploy prod frontend
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_frontend_deploy && inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        env:
+          GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-prod
+        run: node scripts/deploy-frontend.mjs --env prod --target "${{ inputs.frontend_targets }}" --execute
 
       - name: Deploy pre backend
         if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}

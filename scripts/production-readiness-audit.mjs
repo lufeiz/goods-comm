@@ -807,6 +807,8 @@ function renderAudit(report) {
     'npm run audit:production-readiness:strict-check',
     'npm run db:migrate:plan -- --env pre',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
+    'npm run deploy:frontend:pre:plan',
+    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre',
     'npm run deploy:backend:pre:plan',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre',
     'npm run smoke:deployed:pre',

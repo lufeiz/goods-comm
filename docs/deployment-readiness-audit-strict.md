@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-31T04:21:56.617Z
+Generated: 2026-05-31T06:46:43.889Z
 Scope: pre, prod
 Result: BLOCKED (52 blockers, 7 warnings)
 
@@ -208,6 +208,8 @@ npm run audit:production-readiness -- --check-only
 npm run audit:production-readiness:strict-check
 npm run db:migrate:plan -- --env pre
 GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre
+npm run deploy:frontend:pre:plan
+GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre
 npm run deploy:backend:pre:plan
 GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre
 npm run smoke:deployed:pre

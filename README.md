@@ -71,9 +71,10 @@ GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
 
 该工作流会在 runner 临时目录写 dump、lock 和审计日志，只上传脱敏后的同步审计日志，不上传生产 dump。
 
-后端部署执行会在发布新后端前默认先应用对应环境数据库 schema，避免新版本启动后才发现缺表：
+前端部署脚本会先执行环境检查、目标端构建和 artifact checks，再上传 H5 / 微信 / 支付宝产物；后端部署执行会在发布新后端前默认先应用对应环境数据库 schema，避免新版本启动后才发现缺表：
 
 ```bash
+GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre
 GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre
 ```
 
@@ -124,7 +125,7 @@ npm run smoke:deployed:pre:main
 GitHub Actions 中有两个门禁：
 
 - `.github/workflows/ci.yml`：PR / 主干日常门禁，运行 `npm run verify:release`，会生成生产审计但不因占位 pre/prod 阻断普通开发。
-- `.github/workflows/release-strict.yml`：真实上线前手动门禁，先在 runner 安装 `postgresql-client`、CloudBase CLI 和 Tencent `tccli`，再运行 `npm run verify:release:strict`；可选 `run_backend_deploy=true` 在通过后先迁移目标数据库并部署后端，再执行 `smoke:deployed:*`。它读取 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 生成 `.env.pre.local` / `.env.prod.local`，读取 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 生成 `.env.smoke.pre.local` / `.env.smoke.prod.local`，读取 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 执行非交互式 CloudBase / 腾讯云部署；也可继续用单个 `GOODS_COMM_SMOKE_*` Secret 覆盖部署后 smoke 输入。生产后端部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`，避免误发生产或误写生产测试数据。
+- `.github/workflows/release-strict.yml`：真实上线前手动门禁，先在 runner 安装 `postgresql-client`、CloudBase CLI 和 Tencent `tccli`，再运行 `npm run verify:release:strict`；可选 `run_frontend_deploy=true` 按 `frontend_targets` 部署 H5 / 微信 / 支付宝前端，可选 `run_backend_deploy=true` 在通过后先迁移目标数据库并部署后端，再执行 `smoke:deployed:*`。它读取 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 生成 `.env.pre.local` / `.env.prod.local`，读取 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 生成 `.env.smoke.pre.local` / `.env.smoke.prod.local`，读取 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 执行非交互式 CloudBase / 腾讯云部署；也可继续用单个 `GOODS_COMM_SMOKE_*` Secret 覆盖部署后 smoke 输入。生产部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`，避免误发生产或误写生产测试数据。
 
 ## 关键目录
 

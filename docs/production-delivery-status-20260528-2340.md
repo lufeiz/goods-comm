@@ -178,6 +178,7 @@ npm run verify:release
 - 2026-05-31 续做后，`release-strict` 和 `prod-to-pre-sync` GitHub Actions 已支持 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 多行 Secret 直接生成 `.env.smoke.*.local`，同时保留单个 `GOODS_COMM_SMOKE_*` Secret 的覆盖能力；`smoke:workflows` 已固定这些发布工作流输入契约。
 - 2026-05-31 续做后，微信构建脚本会在不覆盖已有开发者工具配置的前提下，为缺失配置的环境产物补齐 `project.config.json`，并明确打印复制后的 `dist/build/.../mp-weixin` 导入目录；`smoke:artifacts` 已覆盖微信 `project.config.json` 和支付宝 `mini.project.json` 的导入配置。
 - 2026-05-31 续做后，新增 `npm run smoke:location-permissions` 并接入 release gate，脚本级覆盖定位授权拒绝、首次授权拒绝、系统定位关闭、超时、网络异常、无效坐标、低精度、区域解析失败、H5 浏览器权限、缓存过期和最终交易必须使用实时 GPS 的权限/质量矩阵。
+- 2026-05-31 续做后，新增 `scripts/deploy-frontend.mjs`、`npm run deploy:frontend:*` 和 `npm run smoke:frontend-deploy`，把 H5 CloudBase 静态托管、微信开发者工具上传、支付宝小程序上传的前端部署前置项和执行保护纳入 release gate；full/release profile 会输出 pre/prod 前端部署计划。
 - 2026-05-29 续做后，运营台通知投递 fallback 修复已通过 `node --check scripts/page-contract-smoke.mjs`、`npm run smoke:pages`、`npm run smoke:bff` 和 `npm run verify:release:quick -- --skip-http-backend` 验证；quick release gate 84/84 通过并重建 backend、H5、微信、支付宝默认产物。
 - 2026-05-29 续做后，生产就绪审计的 Build artifacts 区域也会运行后端 artifact smoke，把后端部署包完整性和容器生产依赖安装步骤纳入权威审计报告。
 - 最新生产就绪审计仍是 `BLOCKED (50 blockers, 9 warnings)`，严格审计仍是 `BLOCKED (52 blockers, 7 warnings)`；2026-05-29 续做后，区域网格配置格式阻塞已解除，并新增可信代理配置缺失项作为上线前真实环境输入；2026-05-30 续做后，生产告警 Webhook URL/token 与结构化访问日志配置都已纳入审计和部署后 health smoke，剩余阻塞仍来自真实云资源、密钥、工具链、可信代理 IP / 网段、生产告警真实值、云侧日志采集和部署后验证。

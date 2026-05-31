@@ -10,6 +10,7 @@ const workflows = {
   prodToPreSync: await readWorkflow('prod-to-pre-sync.yml')
 }
 const deployBackendScript = await readFile(resolve(root, 'scripts/deploy-backend.mjs'), 'utf8')
+const deployFrontendScript = await readFile(resolve(root, 'scripts/deploy-frontend.mjs'), 'utf8')
 const migrateDatabaseScript = await readFile(resolve(root, 'scripts/migrate-database.mjs'), 'utf8')
 const releaseGateScript = await readFile(resolve(root, 'scripts/verify-release-gate.mjs'), 'utf8')
 
@@ -19,6 +20,7 @@ assertReleaseGateProfileBoundary()
 assertStrictReleaseGate()
 assertProdToPreSyncWorkflow()
 assertDirectBackendDeployProtection()
+assertDirectFrontendDeployProtection()
 assertDirectDatabaseMigrationProtection()
 
 console.log('Workflow smoke checks passed')
@@ -73,12 +75,20 @@ function assertReleaseGateProfileBoundary() {
     "args: ['scripts/production-readiness-audit.mjs']",
     "if (profile !== 'release')",
     "'smoke:location-permissions'",
+    "'smoke:frontend-deploy'",
     "'smoke:main-flow-contract'",
+    "steps.push(npmStep('build:h5'))",
     "name: 'smoke:h5:render'",
     "'scripts/h5-render-smoke.mjs'",
+    "'dist/build/h5'",
     'quick/full profiles are CI or release-candidate gates only',
     'do not fail on remaining production blockers',
     'Run npm run verify:release:strict before a real pre/prod release.'
+  ])
+
+  assertIncludesAll('scripts/verify-release-gate.mjs', releaseGateScript, [
+    "name: `frontend deploy plan ${env}`",
+    "args: ['scripts/deploy-frontend.mjs', '--env', env]"
   ])
 
   const strictReportIndex = releaseGateScript.indexOf("name: 'production readiness strict report'")
@@ -87,6 +97,33 @@ function assertReleaseGateProfileBoundary() {
   assert.ok(
     strictReportIndex >= 0 && strictCheckIndex > strictReportIndex,
     'scripts/verify-release-gate.mjs: strict readiness artifacts must be written before the strict check can fail'
+  )
+}
+
+function assertDirectFrontendDeployProtection() {
+  assertIncludesAll('scripts/deploy-frontend.mjs', deployFrontendScript, [
+    "run('npm', ['run', `env:check:${environment}`])",
+    "run('npm', ['run', buildScriptName(target, environment)])",
+    'createArtifactChecks',
+    'verifyFrontendArtifacts',
+    'verifyMiniProgramDeployConfig',
+    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-${environment}',
+    'GOODS_COMM_DEPLOY_ALLOW_PROD=true',
+    'VITE_API_BASE_URL',
+    'GOODS_COMM_CLOUDBASE_ENV_ID',
+    'GOODS_COMM_WECHAT_APP_ID',
+    'GOODS_COMM_ALIPAY_APP_ID',
+    'GOODS_COMM_WECHAT_DEVTOOLS_CLI',
+    'GOODS_COMM_ALIPAY_MINI_CLI'
+  ])
+
+  const envCheckIndex = deployFrontendScript.indexOf("run('npm', ['run', `env:check:${environment}`])")
+  const buildIndex = deployFrontendScript.indexOf("run('npm', ['run', buildScriptName(target, environment)])")
+  const artifactSmokeIndex = deployFrontendScript.indexOf('await verifyFrontendArtifacts()')
+
+  assert.ok(
+    envCheckIndex >= 0 && buildIndex > envCheckIndex && artifactSmokeIndex > buildIndex,
+    'scripts/deploy-frontend.mjs: env check, build, and artifact smoke must run in that order'
   )
 }
 
@@ -100,6 +137,9 @@ function assertStrictReleaseGate() {
     'health_attempts:',
     'health_interval_ms:',
     'run_backend_deploy:',
+    'run_frontend_deploy:',
+    'frontend_targets:',
+    'frontend_release_version:',
     'allow_prod_deploy:',
     'allow_prod_mutation:',
     'GOODS_COMM_SMOKE_SELLER_CODE',
@@ -110,6 +150,10 @@ function assertStrictReleaseGate() {
     'GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS',
     'GOODS_COMM_DEPLOY_ALLOW_PROD',
     'GOODS_COMM_DB_MIGRATE_ALLOW_PROD',
+    'GOODS_COMM_FRONTEND_DEPLOY_TARGET',
+    'GOODS_COMM_FRONTEND_RELEASE_VERSION',
+    'GOODS_COMM_WECHAT_DEVTOOLS_CLI',
+    'GOODS_COMM_ALIPAY_MINI_CLI',
     'TENCENTCLOUD_SECRET_ID',
     'TENCENTCLOUD_SECRET_KEY',
     'GOODS_COMM_PRE_ENV_LOCAL',
@@ -123,6 +167,13 @@ function assertStrictReleaseGate() {
     'run: npm run audit:production-readiness:strict',
     'Backend deployment requires run_deployed_smoke=true',
     'Backend deployment to prod requires allow_prod_deploy=true',
+    'Frontend deployment to prod requires allow_prod_deploy=true',
+    'Deploy pre frontend',
+    'Deploy prod frontend',
+    'node scripts/deploy-frontend.mjs --env pre --target',
+    'node scripts/deploy-frontend.mjs --env prod --target',
+    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-pre',
+    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM: deploy-frontend-prod',
     'Prod deployed main-flow smoke requires allow_prod_mutation=true',
     'run: npm run smoke:deployed:pre',
     'run: npm run smoke:deployed:pre:main',
