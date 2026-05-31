@@ -55,11 +55,6 @@ jobs:
       GOODS_COMM_SYNC_DUMP_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.dump
       GOODS_COMM_SYNC_LOCK_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre.lock
       GOODS_COMM_SYNC_AUDIT_PATH: ${{ runner.temp }}/goods-comm-prod-to-pre-audit.jsonl
-      GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event_name == 'schedule' && 'true' || inputs.run_pre_smoke }}
-      GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_HEALTH_ATTEMPTS || inputs.health_attempts }}
-      GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || inputs.health_interval_ms }}
-      GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE == 'true' && 'true' || inputs.run_pre_main_smoke }}
-      GOODS_COMM_SYNC_CONFIRM: ${{ inputs.confirm_sync }}
       GOODS_COMM_SYNC_AUTO_ENABLED: ${{ vars.GOODS_COMM_SYNC_AUTO_ENABLED }}
       GOODS_COMM_SMOKE_API_BASE_URL: ${{ secrets.GOODS_COMM_SMOKE_API_BASE_URL }}
       GOODS_COMM_SMOKE_SELLER_CODE: ${{ secrets.GOODS_COMM_SMOKE_SELLER_CODE }}
@@ -118,15 +113,31 @@ jobs:
           fi
 
       - name: Print sync plan
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'plan' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.operation == 'plan' }}
+        env:
+          GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event.inputs.run_pre_smoke }}
+          GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ github.event.inputs.health_attempts }}
+          GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ github.event.inputs.health_interval_ms }}
+          GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: ${{ github.event.inputs.run_pre_main_smoke }}
         run: npm run sync:prod-to-pre:plan
 
       - name: Execute manual sync
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'execute' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.operation == 'execute' }}
+        env:
+          GOODS_COMM_SYNC_RUN_PRE_SMOKE: ${{ github.event.inputs.run_pre_smoke }}
+          GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ github.event.inputs.health_attempts }}
+          GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ github.event.inputs.health_interval_ms }}
+          GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: ${{ github.event.inputs.run_pre_main_smoke }}
+          GOODS_COMM_SYNC_CONFIRM: ${{ github.event.inputs.confirm_sync }}
         run: npm run sync:prod-to-pre
 
       - name: Execute scheduled auto sync
         if: ${{ github.event_name == 'schedule' && vars.GOODS_COMM_SYNC_AUTO_ENABLED == 'true' }}
+        env:
+          GOODS_COMM_SYNC_RUN_PRE_SMOKE: 'true'
+          GOODS_COMM_SYNC_HEALTH_ATTEMPTS: ${{ vars.GOODS_COMM_SYNC_HEALTH_ATTEMPTS || '12' }}
+          GOODS_COMM_SYNC_HEALTH_INTERVAL_MS: ${{ vars.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || '10000' }}
+          GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE: ${{ vars.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE == 'true' && 'true' || 'false' }}
         run: npm run sync:prod-to-pre:auto
 
       - name: Skip disabled scheduled sync
