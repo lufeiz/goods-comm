@@ -38,6 +38,7 @@ const idempotencyKeys = {
   tradeReviewPremature: `deployed:${smokeRunId}:trade:review-premature`,
   tradeReview: `deployed:${smokeRunId}:trade:review`,
   tradeReviewDuplicate: `deployed:${smokeRunId}:trade:review-duplicate`,
+  tradeReviewSeller: `deployed:${smokeRunId}:trade:review-seller`,
   accountDeleteItem: `deployed:${smokeRunId}:account-delete:item:create`
 }
 
@@ -227,10 +228,21 @@ const duplicateReview = await postExpectError(`/trades/${trade.id}/review`, revi
 assertEqual(duplicateReview.status, 409, 'duplicate review rejection status')
 assertEqual(duplicateReview.code, 'CONFLICT', 'duplicate review rejection code')
 assert(/不能重复评价/.test(duplicateReview.message || ''), 'duplicate review rejection message')
+const sellerReviewPayload = {
+  rating: 5,
+  content: `部署后卖家评价烟测 ${environment}`,
+  tags: ['沟通顺畅']
+}
+const sellerReview = await post(`/trades/${trade.id}/review`, sellerReviewPayload, seller.token, idempotencyOptions(idempotencyKeys.tradeReviewSeller))
+assertEqual(sellerReview.tradeId, trade.id, 'seller review trade id')
+assertEqual(sellerReview.reviewee.id, buyer.user.id, 'seller review reviewee')
 const reviews = await get(`/reviews?itemId=${encodeURIComponent(item.id)}`)
 assert(toArray(reviews.reviews).some((candidate) => candidate.id === review.id), 'created review did not appear in item review list')
+assert(toArray(reviews.reviews).some((candidate) => candidate.id === sellerReview.id), 'seller review did not appear in item review list')
 const sellerNotificationsAfterReview = await get('/notifications', seller.token)
 findNotification(sellerNotificationsAfterReview, 'trade_reviewed', trade.id, 'seller trade reviewed notification')
+const buyerNotificationsAfterSellerReview = await get('/notifications', buyer.token)
+findNotification(buyerNotificationsAfterSellerReview, 'trade_reviewed', trade.id, 'buyer trade reviewed notification')
 
 const soldList = await get(`/items?latitude=${encodeURIComponent(latitude.value)}&longitude=${encodeURIComponent(longitude.value)}&accuracy=${encodeURIComponent(accuracy.value)}&capturedAt=${encodeURIComponent(smokeCapturedAt.value)}`)
 assert(!toArray(soldList.items).some((candidate) => candidate.id === item.id), 'sold item still appears in public list')

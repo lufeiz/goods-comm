@@ -292,6 +292,8 @@ const flows = [
           'postSoldTradeError',
           "post(`/trades/${trade.id}/review`",
           'duplicateReview',
+          'sellerReview',
+          'buyer trade reviewed notification',
           'sold item still appears in public list'
         ]
       }
