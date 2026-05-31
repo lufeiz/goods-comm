@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-31T02:17:25.951Z
+Generated: 2026-05-31T02:24:30.577Z
 Scope: pre, prod
 Result: BLOCKED (52 blockers, 7 warnings)
 
@@ -178,12 +178,12 @@ Local override: not present
 - dist/build/prod/mp-weixin exists
 - dist/build/prod/mp-alipay exists
 - dist/build/prod/h5 exists
-- pre h5 artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config
-- pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config
-- pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config
-- prod h5 artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config
-- prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config
-- prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config
+- pre h5 artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable
+- pre mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable
+- pre mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable
+- prod h5 artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable
+- prod mp-weixin artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable
+- prod mp-alipay artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable
 
 ## Deployed smoke readiness
 

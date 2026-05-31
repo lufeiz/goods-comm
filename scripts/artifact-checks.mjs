@@ -160,6 +160,27 @@ async function verifyMiniProgramTarget(target, context) {
   }
 
   await verifyMiniProgramRenderedTestIds(target, context, markupExtension)
+  await verifyMiniProgramImportConfig(target)
+}
+
+async function verifyMiniProgramImportConfig(target) {
+  if (target.platform === 'mp-weixin') {
+    const projectConfig = JSON.parse(await readExistingFile(join(target.directory, 'project.config.json'), target.label))
+
+    assertCondition(projectConfig.compileType === 'miniprogram', `${target.label}: project.config.json compileType must be miniprogram`)
+    assertNonEmptyImportField(projectConfig.appid, `${target.label}: project.config.json appid is missing`)
+    assertNonEmptyImportField(projectConfig.projectname, `${target.label}: project.config.json projectname is missing`)
+    assertCondition(projectConfig.setting && typeof projectConfig.setting === 'object', `${target.label}: project.config.json setting is missing`)
+    assertCondition(projectConfig.setting.urlCheck === true, `${target.label}: project.config.json should keep urlCheck enabled`)
+    return
+  }
+
+  const miniProject = JSON.parse(await readExistingFile(join(target.directory, 'mini.project.json'), target.label))
+
+  assertNonEmptyImportField(miniProject.appid, `${target.label}: mini.project.json appid is missing`)
+  assertNonEmptyImportField(miniProject.projectname, `${target.label}: mini.project.json projectname is missing`)
+  assertCondition(miniProject.component2 === true, `${target.label}: mini.project.json component2 must be enabled`)
+  assertCondition(miniProject.enableAppxNg === true, `${target.label}: mini.project.json enableAppxNg must be enabled`)
 }
 
 function createRequiredRenderedTestIds() {
@@ -457,6 +478,11 @@ function assertCondition(condition, message) {
   if (!condition) {
     throw new Error(message)
   }
+}
+
+function assertNonEmptyImportField(value, message) {
+  assertCondition(typeof value === 'string' && value.trim() !== '', message)
+  assertCondition(!/REPLACE_WITH|placeholder|example\./i.test(value), message)
 }
 
 function assertDeepEqual(actual, expected, message) {

@@ -6,6 +6,7 @@ const mode = parseMode(process.argv.slice(2))
 const tempOutDir = resolve('/private/tmp', `goods-comm-mp-weixin-build${mode ? `-${mode}` : ''}`)
 const tempBuildDir = tempOutDir
 const targetBuildDir = mode ? resolve('dist/build', mode, 'mp-weixin') : resolve('dist/build/mp-weixin')
+const projectConfigFileName = 'project.config.json'
 const uniBin = resolve('node_modules/.bin/uni')
 const args = ['build', '-p', 'mp-weixin', '--outDir', tempOutDir]
 
@@ -36,8 +37,17 @@ if (!existsSync(tempBuildDir)) {
 mkdirSync(targetBuildDir, { recursive: true })
 cpSync(tempBuildDir, targetBuildDir, {
   recursive: true,
-  filter: (source) => !source.endsWith('/project.config.json')
+  filter: (source) => !source.endsWith(`/${projectConfigFileName}`)
 })
+
+const targetProjectConfigPath = resolve(targetBuildDir, projectConfigFileName)
+const generatedProjectConfigPath = resolve(tempBuildDir, projectConfigFileName)
+
+if (!existsSync(targetProjectConfigPath) && existsSync(generatedProjectConfigPath)) {
+  cpSync(generatedProjectConfigPath, targetProjectConfigPath)
+}
+
+console.log(`Weixin build artifact copied to ${targetBuildDir}`)
 
 function parseMode(args) {
   const modeIndex = args.findIndex((arg) => arg === '--mode')

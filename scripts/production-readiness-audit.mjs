@@ -534,7 +534,7 @@ async function auditArtifacts(targetEnvironments) {
     for (const target of artifactChecks.targets) {
       try {
         await artifactChecks.verifyTarget(target)
-        passes.push(`${target.label} artifact includes core pages, tabBar, key components, rendered test anchors and selector attributes, H5 route chunks, and runtime environment config`)
+        passes.push(`${target.label} artifact includes core pages, tabBar, key components, rendered test anchors, selector attributes, runtime environment config, and mini-program import config where applicable`)
       } catch (error) {
         warnings.push(`${target.label} artifact content check failed: ${error.message}`)
       }
