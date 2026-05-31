@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-31T13:48:29.465Z",
+  "generatedAt": "2026-05-31T14:00:13.961Z",
   "scope": [
     "pre",
     "prod"
   ],
   "status": "BLOCKED",
-  "blockerCount": 51,
+  "blockerCount": 50,
   "warningCount": 8,
   "toolchain": [
     {
@@ -30,23 +30,8 @@
     },
     {
       "tool": "pg npm package",
-      "requiredFor": "database migration",
+      "requiredFor": "database migration and prod-to-pre sync",
       "status": "declared"
-    },
-    {
-      "tool": "psql",
-      "requiredFor": "prod-to-pre reset/anonymize SQL",
-      "status": "missing"
-    },
-    {
-      "tool": "pg_dump",
-      "requiredFor": "prod-to-pre export",
-      "status": "missing"
-    },
-    {
-      "tool": "pg_restore",
-      "requiredFor": "prod-to-pre restore",
-      "status": "missing"
     }
   ],
   "areas": {
@@ -54,19 +39,13 @@
       "status": "BLOCKED",
       "blockers": [
         {
-          "id": "tools.blocker.1.pg-dump-pg-restore-and-psql-are-required-to-execute-prod-to-pre-sync-locally",
-          "area": "tools",
-          "severity": "blocker",
-          "message": "pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally"
-        },
-        {
-          "id": "tools.blocker.2.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
+          "id": "tools.blocker.1.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
           "area": "tools",
           "severity": "blocker",
           "message": "No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli"
         },
         {
-          "id": "tools.blocker.3.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
+          "id": "tools.blocker.2.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
           "area": "tools",
           "severity": "blocker",
           "message": "TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI"
@@ -88,10 +67,10 @@
       ],
       "passes": [
         {
-          "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration",
+          "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration-and-prod-to-pre-sync",
           "area": "tools",
           "severity": "pass",
-          "message": "Node pg dependency is declared for database migration"
+          "message": "Node pg dependency is declared for database migration and prod-to-pre sync"
         }
       ]
     },
@@ -793,19 +772,13 @@
   },
   "blockers": [
     {
-      "id": "tools.blocker.1.pg-dump-pg-restore-and-psql-are-required-to-execute-prod-to-pre-sync-locally",
-      "area": "tools",
-      "severity": "blocker",
-      "message": "pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally"
-    },
-    {
-      "id": "tools.blocker.2.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
+      "id": "tools.blocker.1.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
       "area": "tools",
       "severity": "blocker",
       "message": "No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli"
     },
     {
-      "id": "tools.blocker.3.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
+      "id": "tools.blocker.2.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
       "area": "tools",
       "severity": "blocker",
       "message": "TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI"
@@ -1151,10 +1124,10 @@
   ],
   "passes": [
     {
-      "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration",
+      "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration-and-prod-to-pre-sync",
       "area": "tools",
       "severity": "pass",
-      "message": "Node pg dependency is declared for database migration"
+      "message": "Node pg dependency is declared for database migration and prod-to-pre sync"
     },
     {
       "id": "environment.pre.pass.1.goods-comm-postgres-max-snapshot-rows-limits-postgresql-snapshot-rewrites-to-200",

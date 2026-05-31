@@ -1,8 +1,8 @@
 # goods-comm production readiness audit
 
-Generated: 2026-05-31T13:48:04.681Z
+Generated: 2026-05-31T14:00:07.739Z
 Scope: pre, prod
-Result: BLOCKED (49 blockers, 9 warnings)
+Result: BLOCKED (48 blockers, 10 warnings)
 
 This report is generated from `.env.*` plus optional `.env.*.local` overrides. It does not execute deployment, database migration, or production data sync.
 
@@ -12,12 +12,12 @@ Machine-readable JSON: `docs/deployment-readiness-audit.json`
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Tools | BLOCKED | 3 blockers, 2 warnings |
+| Tools | BLOCKED | 2 blockers, 2 warnings |
 | Environments | BLOCKED | 2 environments checked |
 | pre/prod isolation | WARN | 0 blockers, 2 warnings |
 | Build artifacts | PASS | 0 blockers, 0 warnings |
 | Deployed smoke | BLOCKED | 2 blockers, 3 warnings |
-| GitHub push automation | PASS | 0 blockers, 0 warnings |
+| GitHub push automation | WARN | 0 blockers, 1 warnings |
 
 ## Toolchain
 
@@ -27,13 +27,9 @@ Machine-readable JSON: `docs/deployment-readiness-audit.json`
 | docker | Tencent fallback image build/push | missing |
 | tccli | Tencent fallback deploy | missing |
 | TENCENTCLOUD_SECRET_ID/KEY | non-interactive CloudBase/Tencent deploy | missing |
-| pg npm package | database migration | declared |
-| psql | prod-to-pre reset/anonymize SQL | missing |
-| pg_dump | prod-to-pre export | missing |
-| pg_restore | prod-to-pre restore | missing |
+| pg npm package | database migration and prod-to-pre sync | declared |
 ### Tool blockers
 
-- pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally
 - No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli
 - TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI
 ### Tool warnings
@@ -42,7 +38,7 @@ Machine-readable JSON: `docs/deployment-readiness-audit.json`
 - Tencent fallback deploy tools are incomplete: docker and tccli are both required
 ### Tool passes
 
-- Node pg dependency is declared for database migration
+- Node pg dependency is declared for database migration and prod-to-pre sync
 
 ## Environment details
 
@@ -208,14 +204,13 @@ Local override: not present
 - None
 ### Warnings
 
-- None
+- GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed
 ### Passes
 
 - origin remote targets https://github.com/lufeiz/goods-comm
 - current branch is main
 - branch tracks origin/main
 - nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push
-- GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight
 
 ## Release gate commands
 

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmod, mkdtemp, readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { delimiter, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const lockPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.lock`
 const auditPath = `/private/tmp/goods-comm-prod-sync-smoke-${process.pid}.jsonl`
@@ -20,6 +21,8 @@ assert.equal(plan.status, 0)
 assert.match(plan.stdout, /Prod to pre sync plan/)
 assert.match(plan.stdout, /Automatic run/)
 assert.match(plan.stdout, /Audit path/)
+assert.match(plan.stdout, /Legacy dump cleanup path/)
+assert.match(plan.stdout, /without writing a local production dump/)
 assert.match(plan.stdout, /Run pre health smoke: no/)
 assert.match(plan.stdout, /Pre health smoke attempts: 12/)
 assert.match(plan.stdout, /Pre health smoke interval ms: 10000/)
@@ -105,7 +108,7 @@ const manualWithPlaceholders = runSyncScript(['--execute'], {
 assert.notEqual(manualWithPlaceholders.status, 0)
 assert.match(manualWithPlaceholders.stderr, /placeholders/)
 
-const fakeTools = await createFakePostgresTools()
+const fakePg = await createFakePgModule()
 
 try {
   await cleanup()
@@ -119,8 +122,8 @@ try {
     }
   }, {
     GOODS_COMM_SYNC_CONFIRM: 'sync-prod-to-pre',
-    GOODS_COMM_SYNC_FAKE_TOOL_LOG: fakeTools.logPath,
-    PATH: `${fakeTools.binPath}${delimiter}${process.env.PATH || ''}`
+    GOODS_COMM_SYNC_PG_MODULE: fakePg.moduleUrl,
+    GOODS_COMM_SYNC_FAKE_PG_LOG: fakePg.logPath
   })
   assert.equal(successfulManual.status, 0)
 
@@ -128,20 +131,25 @@ try {
   assert.equal(audit.status, 'completed')
   assert.deepEqual(audit.stages.map((stage) => stage.name), [
     'acquire_lock',
-    'verify_toolchain',
-    'dump_prod',
+    'connect_databases',
+    'begin_database_transactions',
     'reset_pre',
-    'restore_pre',
+    'copy_prod_to_pre',
     'anonymize_pre',
+    'commit_database_transactions',
+    'close_database_connections',
     'remove_prod_dump'
   ])
   assert.ok(audit.stages.every((stage) => stage.status === 'completed'))
   assert.ok(audit.stages.every((stage) => Number.isSafeInteger(stage.durationMs) && stage.durationMs >= 0))
+  assert.equal(audit.stages.find((stage) => stage.name === 'copy_prod_to_pre').details.totalRows, 4)
   await assertPathMissing(dumpPath)
 
-  const toolLog = await readFile(fakeTools.logPath, 'utf8')
-  assert.match(toolLog, /pg_dump --format=custom --no-owner --no-privileges --file/)
-  assert.match(toolLog, /pg_restore --data-only --no-owner --no-privileges --dbname/)
+  const queryLog = await readFile(fakePg.logPath, 'utf8')
+  assert.match(queryLog, /SELECT \* FROM "users"/)
+  assert.match(queryLog, /INSERT INTO "users"/)
+  assert.match(queryLog, /SELECT \* FROM "trade_intents"/)
+  assert.match(queryLog, /UPDATE users/)
 
   await cleanup()
 
@@ -154,22 +162,23 @@ try {
     }
   }, {
     GOODS_COMM_SYNC_CONFIRM: 'sync-prod-to-pre',
-    GOODS_COMM_SYNC_FAKE_TOOL_LOG: fakeTools.logPath,
-    GOODS_COMM_SYNC_FAKE_FAIL_COMMAND: 'pg_restore',
-    PATH: `${fakeTools.binPath}${delimiter}${process.env.PATH || ''}`
+    GOODS_COMM_SYNC_PG_MODULE: fakePg.moduleUrl,
+    GOODS_COMM_SYNC_FAKE_PG_LOG: fakePg.logPath,
+    GOODS_COMM_SYNC_FAKE_PG_FAIL_PATTERN: 'INSERT INTO "trade_intents"'
   })
   assert.notEqual(failedManual.status, 0)
 
   const failedAudit = await readLatestAuditRecord()
   assert.equal(failedAudit.status, 'failed')
-  const failedRestoreStage = failedAudit.stages.find((stage) => stage.name === 'restore_pre')
-  assert.equal(failedRestoreStage.status, 'failed')
-  assert.match(failedRestoreStage.error, /pg_restore failed/)
+  const failedCopyStage = failedAudit.stages.find((stage) => stage.name === 'copy_prod_to_pre')
+  assert.equal(failedCopyStage.status, 'failed')
+  assert.match(failedCopyStage.error, /fake pg failure/)
+  assert.equal(failedAudit.stages.find((stage) => stage.name === 'rollback_database_transactions').status, 'completed')
   assert.equal(failedAudit.stages.at(-1).name, 'remove_prod_dump')
   assert.equal(failedAudit.stages.at(-1).status, 'completed')
   await assertPathMissing(dumpPath)
 } finally {
-  await rm(fakeTools.directory, {
+  await rm(fakePg.directory, {
     recursive: true,
     force: true
   })
@@ -244,48 +253,71 @@ function escapeRegExp(value = '') {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-async function createFakePostgresTools() {
-  const directory = await mkdtemp(join(tmpdir(), `goods-comm-sync-tools-${process.pid}-`))
-  const logPath = join(directory, 'commands.log')
-  const script = `#!/bin/sh
-name=$(basename "$0")
-if [ "$1" = "--version" ]; then
-  echo "$name fake"
-  exit 0
-fi
-printf "%s %s\\n" "$name" "$*" >> "$GOODS_COMM_SYNC_FAKE_TOOL_LOG"
-if [ "$GOODS_COMM_SYNC_FAKE_FAIL_COMMAND" = "$name" ]; then
-  exit 23
-fi
-if [ "$name" = "pg_dump" ]; then
-  dump_file=""
-  while [ "$#" -gt 0 ]; do
-    if [ "$1" = "--file" ]; then
-      shift
-      dump_file="$1"
-      break
-    fi
-    shift
-  done
-  if [ -n "$dump_file" ]; then
-    printf "fake production dump\\n" > "$dump_file"
-  fi
-fi
-exit 0
-`
+async function createFakePgModule() {
+  const directory = await mkdtemp(join(tmpdir(), `goods-comm-sync-pg-${process.pid}-`))
+  const logPath = join(directory, 'queries.jsonl')
+  const modulePath = join(directory, 'fake-pg.mjs')
+  const rowsByTable = {
+    users: [{ id: 'user_1', provider: 'weixin' }],
+    items: [{ id: 'item_1', seller_id: 'user_1', title: 'prod item' }],
+    trade_intents: [{ id: 'trade_1', item_id: 'item_1', seller_id: 'user_1', buyer_id: 'user_1' }],
+    notifications: [{ id: 'notice_1', user_id: 'user_1', title: 'prod notice' }]
+  }
 
   await writeFile(logPath, '')
+  await writeFile(modulePath, `
+import { appendFileSync } from 'node:fs'
 
-  await Promise.all(['pg_dump', 'psql', 'pg_restore'].map(async (command) => {
-    const path = join(directory, command)
-    await writeFile(path, script)
-    await chmod(path, 0o755)
-  }))
+const rowsByTable = ${JSON.stringify(rowsByTable, null, 2)}
+
+export class Client {
+  constructor(options = {}) {
+    this.connectionString = options.connectionString || ''
+    this.role = this.connectionString.includes('prod') ? 'prod' : 'pre'
+  }
+
+  async connect() {
+    this.log('connect')
+  }
+
+  async end() {
+    this.log('end')
+  }
+
+  async query(sql, params = []) {
+    const text = String(sql)
+    this.log(text, params)
+
+    const failPattern = process.env.GOODS_COMM_SYNC_FAKE_PG_FAIL_PATTERN || ''
+    if (failPattern && text.includes(failPattern)) {
+      throw new Error(\`fake pg failure for \${failPattern}\`)
+    }
+
+    const selectMatch = text.match(/^SELECT \\* FROM "([^"]+)"/)
+    if (this.role === 'prod' && selectMatch) {
+      return {
+        rows: rowsByTable[selectMatch[1]] || []
+      }
+    }
+
+    return {
+      rows: [],
+      rowCount: 0
+    }
+  }
+
+  log(sql, params = []) {
+    appendFileSync(process.env.GOODS_COMM_SYNC_FAKE_PG_LOG, \`\${this.role} \${sql} \${JSON.stringify(params)}\\n\`)
+  }
+}
+
+export default { Client }
+`)
 
   return {
     directory,
-    binPath: directory,
-    logPath
+    logPath,
+    moduleUrl: pathToFileURL(modulePath).href
   }
 }
 

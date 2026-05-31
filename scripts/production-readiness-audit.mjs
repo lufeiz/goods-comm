@@ -577,15 +577,9 @@ function auditTools() {
   }
 
   if (hasPackageDependency('pg')) {
-    passes.push('Node pg dependency is declared for database migration')
+    passes.push('Node pg dependency is declared for database migration and prod-to-pre sync')
   } else {
-    blockers.push('pg dependency is required to execute database migration from Node')
-  }
-
-  if (commandStatus.pgDump.available && commandStatus.pgRestore.available && commandStatus.psql.available) {
-    passes.push('pg_dump, pg_restore, and psql are available for prod-to-pre sync')
-  } else {
-    blockers.push('pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally')
+    blockers.push('pg dependency is required to execute database migration and prod-to-pre sync from Node')
   }
 
   if (!commandStatus.cloudbase.availableCommand && !(commandStatus.docker.available && commandStatus.tccli.available)) {
@@ -988,10 +982,7 @@ function inspectCommands() {
       availableCommand: firstAvailableCommand(['cloudbase', 'tcb'])
     },
     docker: inspectCommand('docker', 'Tencent fallback image build/push'),
-    tccli: inspectCommand('tccli', 'Tencent fallback deploy'),
-    psql: inspectCommand('psql', 'Prod-to-pre reset/anonymize SQL'),
-    pgDump: inspectCommand('pg_dump', 'Prod-to-pre export'),
-    pgRestore: inspectCommand('pg_restore', 'Prod-to-pre restore')
+    tccli: inspectCommand('tccli', 'Tencent fallback deploy')
   }
 }
 
@@ -1222,23 +1213,8 @@ function renderToolchainStatus() {
     },
     {
       tool: 'pg npm package',
-      requiredFor: 'database migration',
+      requiredFor: 'database migration and prod-to-pre sync',
       status: hasPackageDependency('pg') ? 'declared' : 'missing'
-    },
-    {
-      tool: 'psql',
-      requiredFor: 'prod-to-pre reset/anonymize SQL',
-      status: commandStatus.psql.available ? 'available' : 'missing'
-    },
-    {
-      tool: 'pg_dump',
-      requiredFor: 'prod-to-pre export',
-      status: commandStatus.pgDump.available ? 'available' : 'missing'
-    },
-    {
-      tool: 'pg_restore',
-      requiredFor: 'prod-to-pre restore',
-      status: commandStatus.pgRestore.available ? 'available' : 'missing'
     }
   ]
 }
@@ -1267,10 +1243,7 @@ function renderToolTable() {
     ['docker', 'Tencent fallback image build/push', commandStatus.docker.available ? 'available' : 'missing'],
     ['tccli', 'Tencent fallback deploy', commandStatus.tccli.available ? 'available' : 'missing'],
     ['TENCENTCLOUD_SECRET_ID/KEY', 'non-interactive CloudBase/Tencent deploy', hasTencentCloudApiCredential() ? 'present' : 'missing'],
-    ['pg npm package', 'database migration', hasPackageDependency('pg') ? 'declared' : 'missing'],
-    ['psql', 'prod-to-pre reset/anonymize SQL', commandStatus.psql.available ? 'available' : 'missing'],
-    ['pg_dump', 'prod-to-pre export', commandStatus.pgDump.available ? 'available' : 'missing'],
-    ['pg_restore', 'prod-to-pre restore', commandStatus.pgRestore.available ? 'available' : 'missing']
+    ['pg npm package', 'database migration and prod-to-pre sync', hasPackageDependency('pg') ? 'declared' : 'missing']
   ]
 
   return renderTable(rows)

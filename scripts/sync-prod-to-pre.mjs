@@ -1,16 +1,18 @@
 import { spawnSync } from 'node:child_process'
-import { appendFile, stat, unlink, writeFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { appendFile, readFile, stat, unlink, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { readEnvironmentFile, containsPlaceholder, maskConnectionString } from './env-files.mjs'
 import { PRE_PROD_TOPOLOGY_MATCH_KEYS } from './environment-topology.mjs'
 
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const auto = process.argv.includes('--auto')
 const execute = process.argv.includes('--execute') || auto
 const prod = await readEnvironmentFile('prod')
 const pre = await readEnvironmentFile('pre')
 const prodUrl = prod.GOODS_COMM_DATABASE_URL
 const preUrl = pre.GOODS_COMM_DATABASE_URL
-const dumpPath = process.env.GOODS_COMM_SYNC_DUMP_PATH || '/private/tmp/goods-comm-prod-to-pre.dump'
+const legacyDumpPath = process.env.GOODS_COMM_SYNC_DUMP_PATH || '/private/tmp/goods-comm-prod-to-pre.dump'
 const lockPath = process.env.GOODS_COMM_SYNC_LOCK_PATH || '/private/tmp/goods-comm-prod-to-pre.lock'
 const auditPath = process.env.GOODS_COMM_SYNC_AUDIT_PATH || '/private/tmp/goods-comm-prod-to-pre-audit.jsonl'
 const lockTtlMs = Number(process.env.GOODS_COMM_SYNC_LOCK_TTL_MS || 2 * 60 * 60 * 1000)
@@ -18,20 +20,48 @@ const runPreSmoke = process.env.GOODS_COMM_SYNC_RUN_PRE_SMOKE === 'true'
 const runPreMainSmoke = process.env.GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE === 'true'
 const preHealthSmokeAttempts = parsePositiveInteger(process.env.GOODS_COMM_SYNC_HEALTH_ATTEMPTS || '12', 'GOODS_COMM_SYNC_HEALTH_ATTEMPTS')
 const preHealthSmokeIntervalMs = parsePositiveInteger(process.env.GOODS_COMM_SYNC_HEALTH_INTERVAL_MS || '10000', 'GOODS_COMM_SYNC_HEALTH_INTERVAL_MS')
-const resetSql = resolve('backend/db/pre-sync-reset.sql')
-const anonymizeSql = resolve('backend/db/pre-sync-anonymize.sql')
+const resetSqlPath = resolve(root, 'backend/db/pre-sync-reset.sql')
+const anonymizeSqlPath = resolve(root, 'backend/db/pre-sync-anonymize.sql')
+const resetSql = await readFile(resetSqlPath, 'utf8')
+const anonymizeSql = await readFile(anonymizeSqlPath, 'utf8')
 const syncStages = []
+const syncTables = [
+  'users',
+  'auth_sessions',
+  'idempotency_records',
+  'items',
+  'item_images',
+  'trade_intents',
+  'trade_timeline',
+  'trade_disputes',
+  'trade_reviews',
+  'location_audits',
+  'reports',
+  'location_risk_events',
+  'notifications',
+  'notification_deliveries',
+  'moderation_events',
+  'client_events',
+  'ops_audit_events',
+  'account_deletions',
+  'bff_state_snapshots'
+]
+let prodClient = null
+let preClient = null
+let prodTransactionStarted = false
+let preTransactionStarted = false
 validateSyncInputs()
 
 const plan = [
-  '1. Dump prod database with pg_dump custom format.',
-  '2. Truncate pre database business tables.',
-  '3. Restore prod data into pre.',
-  '4. Run pre anonymization SQL to revoke sessions and remove direct contact data.',
-  '5. Remove the local prod dump after sync completion or failure.',
-  '6. Write a sync audit record with per-stage timing and failure details for operational traceability.',
-  '7. Run deployed pre health smoke when GOODS_COMM_SYNC_RUN_PRE_SMOKE=true.',
-  '8. Run deployed pre main-flow smoke when GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true.'
+  '1. Open prod and pre PostgreSQL connections with the project pg dependency.',
+  '2. Start a repeatable-read read-only prod transaction and a pre write transaction.',
+  '3. Truncate pre business tables with backend/db/pre-sync-reset.sql.',
+  '4. Copy normalized business tables directly from prod to pre without writing a local production dump.',
+  '5. Run backend/db/pre-sync-anonymize.sql before committing pre.',
+  '6. Remove any legacy local dump path after sync completion or failure.',
+  '7. Write a sync audit record with per-stage timing and failure details for operational traceability.',
+  '8. Run deployed pre health smoke when GOODS_COMM_SYNC_RUN_PRE_SMOKE=true.',
+  '9. Run deployed pre main-flow smoke when GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true.'
 ]
 
 if (!execute) {
@@ -41,14 +71,14 @@ if (!execute) {
   }
   console.log(`Prod database: ${maskConnectionString(prodUrl)}`)
   console.log(`Pre database: ${maskConnectionString(preUrl)}`)
-  console.log(`Dump path: ${dumpPath}`)
+  console.log(`Legacy dump cleanup path: ${legacyDumpPath}`)
   console.log(`Lock path: ${lockPath}`)
   console.log(`Audit path: ${auditPath}`)
   console.log(`Run pre health smoke: ${runPreSmoke ? 'yes' : 'no'}`)
   console.log(`Pre health smoke attempts: ${preHealthSmokeAttempts}`)
   console.log(`Pre health smoke interval ms: ${preHealthSmokeIntervalMs}`)
   console.log(`Run pre main-flow smoke: ${runPreMainSmoke ? 'yes' : 'no'}`)
-  console.log('Manual run: use --execute and GOODS_COMM_SYNC_CONFIRM=sync-prod-to-pre after credentials and pg tools are available.')
+  console.log('Manual run: use --execute and GOODS_COMM_SYNC_CONFIRM=sync-prod-to-pre after database credentials are available.')
   console.log('Automatic run: use --auto with GOODS_COMM_SYNC_AUTO_ENABLED=true from a trusted scheduler.')
   console.log('Main-flow smoke also needs GOODS_COMM_SMOKE_SELLER_CODE, GOODS_COMM_SMOKE_BUYER_CODE, GOODS_COMM_SMOKE_LATITUDE, and GOODS_COMM_SMOKE_LONGITUDE.')
   process.exit(0)
@@ -74,16 +104,12 @@ try {
   await runStage('acquire_lock', () => acquireSyncLock())
   lockAcquired = true
 
-  await runStage('verify_toolchain', () => {
-    for (const command of ['pg_dump', 'psql', 'pg_restore']) {
-      assertCommandAvailable(command)
-    }
-  })
-
-  await runStage('dump_prod', () => run('pg_dump', ['--format=custom', '--no-owner', '--no-privileges', '--file', dumpPath, prodUrl]))
-  await runStage('reset_pre', () => run('psql', [preUrl, '-f', resetSql]))
-  await runStage('restore_pre', () => run('pg_restore', ['--data-only', '--no-owner', '--no-privileges', '--dbname', preUrl, dumpPath]))
-  await runStage('anonymize_pre', () => run('psql', [preUrl, '-f', anonymizeSql]))
+  await runStage('connect_databases', () => connectDatabaseClients())
+  await runStage('begin_database_transactions', () => beginDatabaseTransactions())
+  await runStage('reset_pre', () => preClient.query(stripTransactionControl(resetSql)))
+  await runStage('copy_prod_to_pre', () => copyProdToPre())
+  await runStage('anonymize_pre', () => preClient.query(stripTransactionControl(anonymizeSql)))
+  await runStage('commit_database_transactions', () => commitDatabaseTransactions())
 
   if (runPreSmoke) {
     await runStage('smoke_pre_health', () => run('node', [
@@ -103,9 +129,25 @@ try {
 } catch (error) {
   executionError = error
 } finally {
+  if (preTransactionStarted || prodTransactionStarted) {
+    try {
+      await runStage('rollback_database_transactions', () => rollbackDatabaseTransactions())
+    } catch (error) {
+      executionError = mergeExecutionErrors(executionError, error)
+    }
+  }
+
+  if (prodClient || preClient) {
+    try {
+      await runStage('close_database_connections', () => closeDatabaseClients())
+    } catch (error) {
+      executionError = mergeExecutionErrors(executionError, error)
+    }
+  }
+
   if (lockAcquired) {
     try {
-      await runStage('remove_prod_dump', () => removeDumpFile())
+      await runStage('remove_prod_dump', () => removeLegacyDumpFile())
     } catch (error) {
       executionError = mergeExecutionErrors(executionError, error)
     }
@@ -213,14 +255,135 @@ async function releaseSyncLock() {
   }
 }
 
-async function removeDumpFile() {
+async function removeLegacyDumpFile() {
   try {
-    await unlink(dumpPath)
+    await unlink(legacyDumpPath)
   } catch (error) {
     if (error?.code !== 'ENOENT') {
       throw error
     }
   }
+}
+
+async function connectDatabaseClients() {
+  const Client = await loadPgClient()
+  prodClient = new Client({
+    connectionString: prodUrl,
+    application_name: 'goods-comm-sync-prod-to-pre-prod'
+  })
+  preClient = new Client({
+    connectionString: preUrl,
+    application_name: 'goods-comm-sync-prod-to-pre-pre'
+  })
+
+  await prodClient.connect()
+  await preClient.connect()
+}
+
+async function beginDatabaseTransactions() {
+  await prodClient.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY')
+  prodTransactionStarted = true
+  await preClient.query('BEGIN')
+  preTransactionStarted = true
+}
+
+async function commitDatabaseTransactions() {
+  if (preTransactionStarted) {
+    await preClient.query('COMMIT')
+    preTransactionStarted = false
+  }
+
+  if (prodTransactionStarted) {
+    await prodClient.query('COMMIT')
+    prodTransactionStarted = false
+  }
+}
+
+async function rollbackDatabaseTransactions() {
+  if (preTransactionStarted) {
+    await preClient.query('ROLLBACK')
+    preTransactionStarted = false
+  }
+
+  if (prodTransactionStarted) {
+    await prodClient.query('ROLLBACK')
+    prodTransactionStarted = false
+  }
+}
+
+async function closeDatabaseClients() {
+  const clients = [prodClient, preClient].filter(Boolean)
+  await Promise.all(clients.map((client) => client.end()))
+  prodClient = null
+  preClient = null
+}
+
+async function copyProdToPre() {
+  const tableRows = {}
+  let totalRows = 0
+
+  for (const table of syncTables) {
+    const result = await prodClient.query(`SELECT * FROM ${quoteIdentifier(table)}`)
+    const rows = Array.isArray(result.rows) ? result.rows : []
+
+    tableRows[table] = rows.length
+    totalRows += rows.length
+
+    for (const row of rows) {
+      await insertRow(preClient, table, row)
+    }
+  }
+
+  return {
+    totalRows,
+    tableRows
+  }
+}
+
+async function insertRow(client, table, row) {
+  const columns = Object.keys(row)
+
+  if (!columns.length) {
+    return
+  }
+
+  const placeholders = columns.map((_, index) => `$${index + 1}`)
+  const sql = `INSERT INTO ${quoteIdentifier(table)} (${columns.map(quoteIdentifier).join(', ')}) VALUES (${placeholders.join(', ')})`
+  const values = columns.map((column) => row[column])
+
+  await client.query(sql, values)
+}
+
+async function loadPgClient() {
+  const moduleSpecifier = process.env.GOODS_COMM_SYNC_PG_MODULE || 'pg'
+
+  try {
+    const pg = await import(moduleSpecifier)
+    const Client = pg.default?.Client || pg.Client
+
+    if (!Client) {
+      throw new Error(`${moduleSpecifier} does not export a pg Client`)
+    }
+
+    return Client
+  } catch (error) {
+    if (error?.code === 'ERR_MODULE_NOT_FOUND') {
+      throw new Error('The pg package is required for prod-to-pre sync; run npm install before syncing')
+    }
+
+    throw error
+  }
+}
+
+function quoteIdentifier(value) {
+  return `"${String(value).replace(/"/g, '""')}"`
+}
+
+function stripTransactionControl(sql) {
+  return String(sql || '')
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*(BEGIN|COMMIT);?\s*$/i.test(line))
+    .join('\n')
 }
 
 async function appendSyncAudit(record) {
@@ -229,7 +392,7 @@ async function appendSyncAudit(record) {
     mode: auto ? 'auto' : 'manual',
     prodDatabase: maskConnectionString(prodUrl),
     preDatabase: maskConnectionString(preUrl),
-    dumpPath,
+    legacyDumpPath,
     runPreSmoke,
     preHealthSmokeAttempts,
     preHealthSmokeIntervalMs,
@@ -261,12 +424,16 @@ async function runStage(name, callback) {
   try {
     const result = await callback()
     const completedAtMs = Date.now()
+    const details = result && typeof result === 'object' && !Array.isArray(result)
+      ? { details: result }
+      : {}
 
     syncStages.push({
       ...stage,
       status: 'completed',
       completedAt: new Date(completedAtMs).toISOString(),
-      durationMs: completedAtMs - startedAtMs
+      durationMs: completedAtMs - startedAtMs,
+      ...details
     })
 
     return result
@@ -282,16 +449,6 @@ async function runStage(name, callback) {
     })
 
     throw error
-  }
-}
-
-function assertCommandAvailable(command) {
-  const result = spawnSync(command, ['--version'], {
-    stdio: 'ignore'
-  })
-
-  if (result.error || result.status !== 0) {
-    throw new Error(`${command} is required for --execute sync`)
   }
 }
 

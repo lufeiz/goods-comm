@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-05-31T13:48:04.681Z",
+  "generatedAt": "2026-05-31T14:00:07.739Z",
   "scope": [
     "pre",
     "prod"
   ],
   "status": "BLOCKED",
-  "blockerCount": 49,
-  "warningCount": 9,
+  "blockerCount": 48,
+  "warningCount": 10,
   "toolchain": [
     {
       "tool": "cloudbase/tcb",
@@ -30,23 +30,8 @@
     },
     {
       "tool": "pg npm package",
-      "requiredFor": "database migration",
+      "requiredFor": "database migration and prod-to-pre sync",
       "status": "declared"
-    },
-    {
-      "tool": "psql",
-      "requiredFor": "prod-to-pre reset/anonymize SQL",
-      "status": "missing"
-    },
-    {
-      "tool": "pg_dump",
-      "requiredFor": "prod-to-pre export",
-      "status": "missing"
-    },
-    {
-      "tool": "pg_restore",
-      "requiredFor": "prod-to-pre restore",
-      "status": "missing"
     }
   ],
   "areas": {
@@ -54,19 +39,13 @@
       "status": "BLOCKED",
       "blockers": [
         {
-          "id": "tools.blocker.1.pg-dump-pg-restore-and-psql-are-required-to-execute-prod-to-pre-sync-locally",
-          "area": "tools",
-          "severity": "blocker",
-          "message": "pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally"
-        },
-        {
-          "id": "tools.blocker.2.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
+          "id": "tools.blocker.1.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
           "area": "tools",
           "severity": "blocker",
           "message": "No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli"
         },
         {
-          "id": "tools.blocker.3.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
+          "id": "tools.blocker.2.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
           "area": "tools",
           "severity": "blocker",
           "message": "TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI"
@@ -88,10 +67,10 @@
       ],
       "passes": [
         {
-          "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration",
+          "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration-and-prod-to-pre-sync",
           "area": "tools",
           "severity": "pass",
-          "message": "Node pg dependency is declared for database migration"
+          "message": "Node pg dependency is declared for database migration and prod-to-pre sync"
         }
       ]
     },
@@ -753,9 +732,16 @@
       "passes": []
     },
     "githubPushAutomation": {
-      "status": "PASS",
+      "status": "WARN",
       "blockers": [],
-      "warnings": [],
+      "warnings": [
+        {
+          "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-fail-until-gh-",
+          "area": "github_push_automation",
+          "severity": "warning",
+          "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed"
+        }
+      ],
       "passes": [
         {
           "id": "github_push_automation.pass.1.origin-remote-targets-https-github-com-lufeiz-goods-comm",
@@ -780,31 +766,19 @@
           "area": "github_push_automation",
           "severity": "pass",
           "message": "nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push"
-        },
-        {
-          "id": "github_push_automation.pass.5.github-cli-token-includes-repo-and-workflow-scopes-for-workflow-aware-push-prefl",
-          "area": "github_push_automation",
-          "severity": "pass",
-          "message": "GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight"
         }
       ]
     }
   },
   "blockers": [
     {
-      "id": "tools.blocker.1.pg-dump-pg-restore-and-psql-are-required-to-execute-prod-to-pre-sync-locally",
-      "area": "tools",
-      "severity": "blocker",
-      "message": "pg_dump, pg_restore, and psql are required to execute prod-to-pre sync locally"
-    },
-    {
-      "id": "tools.blocker.2.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
+      "id": "tools.blocker.1.no-backend-deployment-toolchain-is-currently-executable-need-cloudbase-tcb-or-do",
       "area": "tools",
       "severity": "blocker",
       "message": "No backend deployment toolchain is currently executable: need cloudbase/tcb or docker+tccli"
     },
     {
-      "id": "tools.blocker.3.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
+      "id": "tools.blocker.2.tencentcloud-secret-id-and-tencentcloud-secret-key-are-required-for-non-interact",
       "area": "tools",
       "severity": "blocker",
       "message": "TENCENTCLOUD_SECRET_ID and TENCENTCLOUD_SECRET_KEY are required for non-interactive CloudBase/Tencent deployment in CI"
@@ -1140,14 +1114,20 @@
       "area": "deployed_smoke",
       "severity": "warning",
       "message": "[prod] production main-flow smoke is protected by GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true"
+    },
+    {
+      "id": "github_push_automation.warning.1.github-cli-auth-is-unavailable-workflow-aware-push-preflight-will-fail-until-gh-",
+      "area": "github_push_automation",
+      "severity": "warning",
+      "message": "GitHub CLI auth is unavailable; workflow-aware push preflight will fail until `gh auth login` or `gh auth refresh -h github.com -s workflow` is completed"
     }
   ],
   "passes": [
     {
-      "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration",
+      "id": "tools.pass.1.node-pg-dependency-is-declared-for-database-migration-and-prod-to-pre-sync",
       "area": "tools",
       "severity": "pass",
-      "message": "Node pg dependency is declared for database migration"
+      "message": "Node pg dependency is declared for database migration and prod-to-pre sync"
     },
     {
       "id": "environment.pre.pass.1.goods-comm-postgres-max-snapshot-rows-limits-postgresql-snapshot-rewrites-to-200",
@@ -1466,12 +1446,6 @@
       "area": "github_push_automation",
       "severity": "pass",
       "message": "nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push"
-    },
-    {
-      "id": "github_push_automation.pass.5.github-cli-token-includes-repo-and-workflow-scopes-for-workflow-aware-push-prefl",
-      "area": "github_push_automation",
-      "severity": "pass",
-      "message": "GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight"
     }
   ]
 }
