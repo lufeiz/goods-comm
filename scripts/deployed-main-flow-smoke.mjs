@@ -35,6 +35,7 @@ const idempotencyKeys = {
   tradeCreateAfterSold: `deployed:${smokeRunId}:trade:create-after-sold`,
   tradeConfirm: `deployed:${smokeRunId}:trade:confirm`,
   tradeComplete: `deployed:${smokeRunId}:trade:complete`,
+  tradeReviewPremature: `deployed:${smokeRunId}:trade:review-premature`,
   tradeReview: `deployed:${smokeRunId}:trade:review`,
   accountDeleteItem: `deployed:${smokeRunId}:account-delete:item:create`
 }
@@ -180,6 +181,16 @@ assertOneTimeContactCode(buyerConfirmedTrade, 'buyer confirmed trade')
 const buyerNotificationsAfterConfirm = await get('/notifications', buyer.token)
 findNotification(buyerNotificationsAfterConfirm, 'trade_confirmed', trade.id, 'buyer trade confirmed notification')
 
+const reviewPayload = {
+  rating: 5,
+  content: `部署后交易评价烟测 ${environment}`,
+  tags: ['准时']
+}
+const prematureReview = await postExpectError(`/trades/${trade.id}/review`, reviewPayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeReviewPremature))
+assertEqual(prematureReview.status, 409, 'premature review rejection status')
+assertEqual(prematureReview.code, 'CONFLICT', 'premature review rejection code')
+assert(/交易完成后才能评价/.test(prematureReview.message || ''), 'premature review rejection message')
+
 const completePayload = {
   status: 'completed'
 }
@@ -206,11 +217,6 @@ const postSoldTradeError = await postExpectError('/trades', tradePayload, buyer.
 assertEqual(postSoldTradeError.status, 409, 'post-sale trade rejection status')
 assertEqual(postSoldTradeError.code, 'CONFLICT', 'post-sale trade rejection code')
 assert(/已完成交易/.test(postSoldTradeError.message || ''), 'post-sale trade rejection message')
-const reviewPayload = {
-  rating: 5,
-  content: `部署后交易评价烟测 ${environment}`,
-  tags: ['准时']
-}
 const review = await post(`/trades/${trade.id}/review`, reviewPayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeReview))
 const replayedReview = await post(`/trades/${trade.id}/review`, reviewPayload, buyer.token, idempotencyOptions(idempotencyKeys.tradeReview))
 assertEqual(review.tradeId, trade.id, 'created review trade id')

@@ -286,6 +286,7 @@ const flows = [
           'selfPurchaseTradeError',
           'duplicateActiveTrade',
           'buyerConfirmTradeError',
+          'prematureReview',
           'assertOneTimeContactCode',
           'assertTradeContactHidden',
           'postSoldTradeError',
