@@ -110,6 +110,7 @@
     "smoke:postgres-store": "node scripts/postgres-store-smoke.mjs",
     "smoke:database-migration": "node scripts/database-migration-smoke.mjs",
     "smoke:database-provision": "node scripts/database-provision-smoke.mjs",
+    "smoke:database-runbook": "node scripts/database-runbook-smoke.mjs",
     "smoke:prod-sync": "node scripts/prod-sync-smoke.mjs",
     "smoke:github-push-preflight": "node scripts/github-push-preflight.mjs --self-test",
     "smoke:frontend-deploy": "node scripts/frontend-deploy-smoke.mjs",

@@ -56,9 +56,13 @@ npm run audit:production-readiness -- --check-only
 
 `release:inputs` 只输出真实发布输入的缺口状态，不打印密钥值；可用 `npm run release:inputs -- --check-only` 在真实上线前把缺失输入转成非 0 退出，也可加 `-- --output docs/release-input-readiness.md --json-output docs/release-input-readiness.json` 生成可上传的发布输入报告。审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。部署后 health / main-flow smoke 的一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制到 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件；模板完整性由 `npm run smoke:deployed-input-templates` 校验。
 
-prod 到 pre 数据同步同时支持手动和自动定时入口；真实执行前必须替换数据库连接串并准备 PostgreSQL 工具：
+数据库开通、迁移、后端部署和 prod 到 pre 同步顺序见 `docs/database-provisioning-runbook.md`。其中 `GOODS_COMM_DATABASE_URL` 是后端运行、迁移、smoke 和同步使用的应用连接串；`GOODS_COMM_DATABASE_ADMIN_URL` 只用于 `db:provision:*` 创建应用角色和目标库，不应注入后端运行时。
+
+prod 到 pre 数据同步同时支持手动和自动定时入口；真实执行前必须替换数据库连接串并确认 pre/prod 是两套不同数据库：
 
 ```bash
+npm run db:provision:pre:plan
+npm run db:migrate:pre:plan
 npm run sync:prod-to-pre:plan
 GOODS_COMM_SYNC_CONFIRM=sync-prod-to-pre npm run sync:prod-to-pre
 GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto

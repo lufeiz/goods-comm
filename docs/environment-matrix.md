@@ -37,6 +37,7 @@
 | `GOODS_COMM_ENV` | 后端运行环境，必须等于 `dev/test/pre/prod` |
 | `GOODS_COMM_ALLOWED_ORIGINS` | H5 / 浏览器 CORS 合法 Origin |
 | `GOODS_COMM_DATABASE_URL` | 当前环境数据库连接串 |
+| `GOODS_COMM_DATABASE_ADMIN_URL` | 数据库开通脚本使用的管理员连接串，只用于 `db:provision:*` 创建应用角色和目标库，不应注入后端运行时 |
 | `GOODS_COMM_STATE_STORE` | 后端状态存储类型；dev/test 可为 `file`，pre/prod 必须为 `postgres` |
 | `GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS` | PostgreSQL bridge store 的 snapshot-rewrite 安全上限，默认 `20000`；超过后写事务失败，要求先改为增量 SQL 仓储 |
 | `GOODS_COMM_POSTGRES_ADVISORY_LOCK_KEY` | PostgreSQL snapshot-rewrite 事务级 advisory lock key；pre/prod 应保持一致，确保多实例写入串行化 |
@@ -133,9 +134,13 @@ npm run backend:start:prod
 
 后端 `/health` 会返回当前 `environment`、`stateStore`、`objectStore`、`contentSafety`、`mapProvider`、`platformNotify`、`opsAlert` 和 `accessLog`，用于部署后快速确认服务实际加载的环境与生产依赖。
 
-数据库迁移与后端部署计划：
+数据库开通、迁移与后端部署计划：
 
 ```bash
+npm run db:provision:dev:plan
+npm run db:provision:test:plan
+npm run db:provision:pre:plan
+npm run db:provision:prod:plan
 npm run db:migrate:dev:plan
 npm run db:migrate:test:plan
 npm run db:migrate:pre:plan
@@ -150,7 +155,7 @@ npm run deploy:frontend:pre:plan
 npm run deploy:frontend:prod:plan
 ```
 
-执行真实迁移或部署时必须额外提供确认变量，例如 `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre` 和 `GOODS_COMM_DEPLOY_CONFIRM=deploy-pre`，并替换 `.env.<env>.local` 中的占位云资源、密钥和数据库连接串。dev/test/pre/prod 都有 `db:migrate:<env>:plan` 和 `db:migrate:<env>` 脚本；生产数据库迁移还必须显式设置 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`，生产后端部署还必须显式设置 `GOODS_COMM_DEPLOY_ALLOW_PROD=true`，避免绕过 GitHub release workflow 直接误操作生产。pre/prod 后端启动前必须先执行对应环境的数据库迁移；真实后端部署脚本默认会先构建并验证 `dist/backend`，再跑迁移、部署新版本，并立即执行部署后 health smoke，默认等待 12 次、每次间隔 10 秒，只有确认同版本 schema 已迁移时才允许用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过。如果缺表，`/health/ready` 会返回依赖未就绪，而不是自动创建表。需要把主链路 smoke 合并到直接部署命令时，可额外传 `--run-main-smoke` 或设置 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`；需要调整 health 等待窗口时，可传 `--health-attempts` / `--health-interval-ms`。
+执行真实开通、迁移或部署时必须额外提供确认变量，例如 `GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre`、`GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre` 和 `GOODS_COMM_DEPLOY_CONFIRM=deploy-pre`，并替换 `.env.<env>.local` 中的占位云资源、密钥和数据库连接串。dev/test/pre/prod 都有 `db:provision:<env>:plan`、`db:provision:<env>`、`db:migrate:<env>:plan` 和 `db:migrate:<env>` 脚本；生产数据库开通和迁移还必须显式设置 `GOODS_COMM_DB_PROVISION_ALLOW_PROD=true` / `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`，生产后端部署还必须显式设置 `GOODS_COMM_DEPLOY_ALLOW_PROD=true`，避免绕过 GitHub release workflow 直接误操作生产。数据库开通顺序和权限边界见 `docs/database-provisioning-runbook.md`。pre/prod 后端启动前必须先执行对应环境的数据库迁移；真实后端部署脚本默认会先构建并验证 `dist/backend`，再跑迁移、部署新版本，并立即执行部署后 health smoke，默认等待 12 次、每次间隔 10 秒，只有确认同版本 schema 已迁移时才允许用 `--skip-db-migrate` 或 `GOODS_COMM_DEPLOY_SKIP_DB_MIGRATE=true` 跳过。如果缺表，`/health/ready` 会返回依赖未就绪，而不是自动创建表。需要把主链路 smoke 合并到直接部署命令时，可额外传 `--run-main-smoke` 或设置 `GOODS_COMM_DEPLOY_RUN_MAIN_SMOKE=true`；需要调整 health 等待窗口时，可传 `--health-attempts` / `--health-interval-ms`。
 
 部署完成后运行：
 

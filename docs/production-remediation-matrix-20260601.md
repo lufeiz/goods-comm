@@ -32,7 +32,7 @@
 | 问题 | 生产风险 | 解决方案 | 当前状态 | 验收证据 |
 | --- | --- | --- | --- | --- |
 | pre/prod 真实 API 缺失 | deployed smoke 无法证明真实后端可用 | 配置 `VITE_API_BASE_URL` / `GOODS_COMM_SMOKE_API_BASE_URL` 为真实 HTTPS API，并加入微信/支付宝合法域名 | 未完成，当前仍为 blocker | `npm run smoke:deployed:pre`、`npm run smoke:deployed:pre:main` 通过 |
-| 真实数据库缺失 | 无法证明用户、商品、交易、通知、审计可持久化 | 为 dev/test/pre/prod 建独立 PostgreSQL/TencentDB；pre/prod 同拓扑不同库；先跑迁移再启动服务 | 脚本和 schema 已有，真实实例未接 | `npm run db:migrate:pre`、`/health/ready`、deployed main-flow smoke |
+| 真实数据库缺失 | 无法证明用户、商品、交易、通知、审计可持久化 | 按 `docs/database-provisioning-runbook.md` 为 dev/test/pre/prod 建独立 PostgreSQL/TencentDB；先用 `GOODS_COMM_DATABASE_ADMIN_URL` 创建应用角色和目标库，再用 `GOODS_COMM_DATABASE_URL` 跑 schema 迁移、部署后端和 deployed smoke | 开通脚本、schema、权限边界和 runbook 已有，真实实例未接 | `npm run db:provision:pre`、`npm run db:migrate:pre`、`/health/ready`、deployed main-flow smoke |
 | pre/prod 数据同步未真实运行 | 预上线不能使用接近生产的数据回归 | 使用 `sync:prod-to-pre:plan` / `sync:prod-to-pre` / GitHub workflow 定时同步；同步后脱敏并跑 pre smoke | 脚本已完成，真实数据库账号未接 | `npm run sync:prod-to-pre` 成功，审计 JSONL 无生产 dump 残留 |
 | COS/CDN 缺真实值 | 图片上传和公开访问无法生产验证 | 配置 COS bucket、secret、CDN base URL；pre/prod 禁止 local object store | 适配器和校验已有，真实值未接 | deployed main-flow smoke 覆盖上传、发布、公开商品脱敏 |
 | 腾讯地图 Key 与社区网格缺真实值 | LBS 匹配无法证明可信 | 使用服务端腾讯地图逆地址解析 + 正式社区/街道网格数据；客户端只做预校验 | 代码路径已完成，占位网格未替换 | `smoke:location-permissions`、deployed main-flow smoke |

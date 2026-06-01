@@ -99,6 +99,7 @@ function addCoreSmokes() {
     'smoke:postgres-store',
     'smoke:database-migration',
     'smoke:database-provision',
+    'smoke:database-runbook',
     'smoke:prod-sync',
     'smoke:github-push-preflight',
     'smoke:frontend-deploy',

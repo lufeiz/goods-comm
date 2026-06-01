@@ -22,7 +22,8 @@
 | 微信云托管 / CloudBase 环境 ID | dev/test/pre/prod 各一套，或至少 test/pre/prod 独立 | `.env.*` 中的 `GOODS_COMM_CLOUDBASE_ENV_ID` |
 | 腾讯云 fallback 服务 | 当微信云托管不可用时，准备 Tencent Cloud 运行区域、服务 ID 和容器镜像地址 | `.env.*` 中的 `GOODS_COMM_TENCENT_REGION` / `GOODS_COMM_TENCENT_CLOUD_RUN_SERVICE` / `GOODS_COMM_TENCENT_CONTAINER_IMAGE` |
 | HTTPS API 域名 | test/pre/prod 必须 HTTPS，并配置为微信/支付宝合法 request/upload 域名 | `test-api.goods-comm.example.com`, `pre-api.goods-comm.example.com`, `api.goods-comm.example.com` |
-| 腾讯云数据库 PostgreSQL | dev/test/pre/prod 独立库；pre/prod 两套不同数据库 | `.env.*` 中的 `GOODS_COMM_DATABASE_URL` |
+| 腾讯云数据库 PostgreSQL | dev/test/pre/prod 独立库；pre/prod 两套不同数据库；应用连接串只给后端运行、迁移和 smoke 使用 | `.env.*` 中的 `GOODS_COMM_DATABASE_URL` |
+| 数据库管理员连接串 | 只给 `npm run db:provision:*` 创建应用角色和目标库使用，不应注入后端运行时 | `.env.pre.local.example` / `.env.prod.local.example` 中的 `GOODS_COMM_DATABASE_ADMIN_URL` |
 | COS / CloudBase storage bucket | dev/test/pre/prod 独立 bucket；pre/prod 不共用 | `.env.*` 中的 `GOODS_COMM_COS_BUCKET` |
 | COS SecretId / SecretKey / Region | pre/prod 需要真实腾讯云 COS 上传权限 | `.env.*` 中的 `GOODS_COMM_COS_SECRET_ID` / `GOODS_COMM_COS_SECRET_KEY` / `GOODS_COMM_COS_REGION` |
 | CDN 域名 | test/pre/prod 图片访问域名 | `.env.*` 中的 `GOODS_COMM_CDN_BASE_URL` |
@@ -52,6 +53,7 @@
 
 当前已提供可执行计划脚本：
 
+- `docs/database-provisioning-runbook.md`：数据库开通、迁移、后端部署、deployed smoke 和 prod-to-pre 同步的执行手册，明确 `GOODS_COMM_DATABASE_URL` 与 `GOODS_COMM_DATABASE_ADMIN_URL` 的权限边界。
 - `npm run audit:production-readiness`：生成上线前审计报告，汇总本机工具、pre/prod 真实配置、后端部署包完整性、三端构建产物、部署 smoke 输入、prod 到 pre 同步条件、每晚 GitHub 推送自动化和 `gh` workflow-aware preflight 授权状态，默认写入 `docs/deployment-readiness-audit.md` 和机器可读的 `docs/deployment-readiness-audit.json`。部署 smoke 输入不只检查是否存在，还会校验 API HTTPS、provider、经纬度范围、精度、范围半径、已审核图片 URL / mime / size，以及注销账号 code 与 seller / buyer / 重登 code 的关系。
 - `npm run audit:production-readiness -- --check-only`：只做检查并在存在上线 blocker 时返回非 0，可放入发布门禁或 CI。
 - `npm run audit:production-readiness:strict`：生成严格上线审计报告，额外把部署后主链路 smoke 输入缺失视为 blocker，默认写入 `docs/deployment-readiness-audit-strict.md` 和 `docs/deployment-readiness-audit-strict.json`。
@@ -76,6 +78,8 @@
 - `npm run smoke:workflows`：检查 `.github/workflows/ci.yml`、`release-strict.yml` 和 `prod-to-pre-sync.yml` 的关键发布保护，确保 CI 调用 release gate、strict gate 上传普通/严格审计、部署后 smoke 不能被部署动作绕过、prod 部署/主链路 mutation 需要显式确认、prod-to-pre sync 不上传生产 dump；`verify:release` / `verify:release:strict` 已接入该检查。
 - `.github/workflows/release-strict.yml`：真实上线前手动 GitHub Actions 门禁。工作流会先安装 CloudBase CLI 和 Tencent `tccli`，数据库迁移和 prod-to-pre 同步都使用项目依赖 `pg`，不再额外安装 PostgreSQL client；物化 protected env 与 deployed smoke 多行 Secret 后，会先运行 `npm run release:inputs -- --check-only --output docs/release-input-readiness.md --json-output docs/release-input-readiness.json`，通过后才进入 strict gate。仍需要配置 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 覆盖 `.env.pre` / `.env.prod` 占位值，配置 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 多行 Secret 覆盖 `.env.smoke.pre.local` / `.env.smoke.prod.local` 一次性 smoke 输入，配置 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 做非交互部署认证；也可继续配置单个 `GOODS_COMM_SMOKE_*` Secret 覆盖 API、seller / buyer code、provider、坐标、精度、范围、幂等 run id、可选 capturedAt、已审核图片 URL / storageKey / size / mime / checksum、可选注销账号 code 和重登 code，这些非空 shell 变量会覆盖 `.env.smoke.*.local`。工作流会同时上传发布输入报告、普通审计和严格审计产物，避免 strict gate 失败时只留下普通 warning 口径；如果同时启用后端和前端部署，工作流会先迁移数据库、部署后端并跑 health / main-flow smoke，再按 `frontend_targets` 执行前端部署，避免新前端先暴露到旧后端；H5 使用 CloudBase 静态托管，小程序端需要额外配置 `GOODS_COMM_WECHAT_DEVTOOLS_CLI` / `GOODS_COMM_ALIPAY_MINI_CLI` Secret 指向上传 CLI；如果启用 `run_backend_deploy=true`，会强制 `run_deployed_smoke=true`，避免部署后跳过 health / main-flow smoke；独立 deployed health smoke 默认等待 12 次、每次 10 秒，可用 `health_attempts` / `health_interval_ms` 调整；生产部署还需要手动输入 `allow_prod_deploy=true`，并传入脚本级 `GOODS_COMM_DEPLOY_ALLOW_PROD=true` / `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`；生产主链路 smoke 需要手动输入 `allow_prod_mutation=true`。
 - Codex 本地自动化 `goods-comm-nightly-github-push` 已配置为每天 21:00 在本仓库运行：先执行 `npm run verify:release:quick -- --skip-http-backend`，通过后再提交变更、执行 `npm run github:push:preflight` 并推送 `origin/main`；如果待推送内容包含 workflow 文件而 `gh` 授权不可用，预检会用 `git push --dry-run` 验证真实 Git 凭据；验证失败时不推送。
+- `npm run db:provision:dev:plan` / `npm run db:provision:test:plan` / `npm run db:provision:pre:plan` / `npm run db:provision:prod:plan`：输出 dev/test/pre/prod 对应数据库开通计划，说明管理员连接串、目标库和应用角色。
+- `GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre`：真实执行对应环境数据库开通，创建应用角色和目标库；需要 `GOODS_COMM_DATABASE_ADMIN_URL`，生产还必须额外设置 `GOODS_COMM_DB_PROVISION_ALLOW_PROD=true`。
 - `npm run db:migrate:dev:plan` / `test:plan` / `pre:plan` / `prod:plan`：输出 dev/test/pre/prod 对应数据库 schema 初始化计划；通用入口仍可用 `npm run db:migrate:plan -- --env pre`。
 - `GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre`：真实执行对应环境数据库 schema 初始化，dev/test/pre/prod 都有同名 `db:migrate:<env>` 脚本；执行使用项目依赖 `pg` 直接连接 PostgreSQL / TencentDB 并在事务内应用 `backend/db/schema.sql`，要求真实连接串，生产迁移还必须额外设置 `GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true`。
 - `npm run deploy:frontend:dev:plan` / `test:plan` / `pre:plan` / `prod:plan`：输出对应环境 H5、微信小程序、支付宝小程序前端部署计划和缺失前置条件；计划会要求真实 `VITE_API_BASE_URL`、H5 CloudBase 静态托管环境、微信 / 支付宝真实 AppID、微信开发者工具 CLI、支付宝小程序 CLI 和非交互云凭据。
