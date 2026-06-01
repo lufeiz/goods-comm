@@ -166,8 +166,14 @@ jobs:
             printf "%s\n" "${GOODS_COMM_PROD_SMOKE_ENV_LOCAL}" > .env.smoke.prod.local
           fi
 
+      - name: Check release input bundle
+        id: release_inputs
+        continue-on-error: true
+        run: npm run release:inputs -- --check-only
+
       - name: Run strict release gate
         id: strict
+        if: ${{ steps.release_inputs.outcome == 'success' }}
         continue-on-error: true
         run: npm run verify:release:strict
 
@@ -268,6 +274,10 @@ jobs:
             docs/deployment-readiness-audit-strict.md
             docs/deployment-readiness-audit-strict.json
 
+      - name: Fail when release input bundle check failed
+        if: ${{ steps.release_inputs.outcome != 'success' }}
+        run: exit 1
+
       - name: Fail when strict gate failed
-        if: ${{ steps.strict.outcome != 'success' }}
+        if: ${{ steps.release_inputs.outcome == 'success' && steps.strict.outcome != 'success' }}
         run: exit 1

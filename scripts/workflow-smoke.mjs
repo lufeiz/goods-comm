@@ -220,6 +220,10 @@ function assertStrictReleaseGate() {
     'GOODS_COMM_PROD_SMOKE_ENV_LOCAL',
     'printf "%s\\n" "${GOODS_COMM_PRE_SMOKE_ENV_LOCAL}" > .env.smoke.pre.local',
     'printf "%s\\n" "${GOODS_COMM_PROD_SMOKE_ENV_LOCAL}" > .env.smoke.prod.local',
+    'Check release input bundle',
+    'id: release_inputs',
+    'run: npm run release:inputs -- --check-only',
+    "steps.release_inputs.outcome == 'success'",
     'run: npm run verify:release:strict',
     'continue-on-error: true',
     'run: npm run audit:production-readiness:strict',
@@ -246,6 +250,7 @@ function assertStrictReleaseGate() {
     'docs/deployment-readiness-audit.json',
     'docs/deployment-readiness-audit-strict.md',
     'docs/deployment-readiness-audit-strict.json',
+    'Fail when release input bundle check failed',
     'Fail when strict gate failed'
   ])
 
@@ -258,6 +263,9 @@ function assertStrictReleaseGate() {
   )
 
   assertWorkflowStepOrder('release-strict.yml', content, [
+    'Materialize protected env overrides',
+    'Materialize deployed smoke inputs',
+    'Check release input bundle',
     'Deploy pre backend',
     'Run pre deployed health smoke',
     'Run pre deployed main-flow smoke',
@@ -265,6 +273,9 @@ function assertStrictReleaseGate() {
   ])
 
   assertWorkflowStepOrder('release-strict.yml', content, [
+    'Materialize protected env overrides',
+    'Materialize deployed smoke inputs',
+    'Check release input bundle',
     'Deploy prod backend',
     'Run prod deployed health smoke',
     'Require prod mutation opt-in for prod main-flow smoke',

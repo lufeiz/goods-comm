@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-06-01T01:41:59.752Z
+Generated: 2026-06-01T01:49:10.297Z
 Scope: pre, prod
 Result: BLOCKED (48 blockers, 9 warnings)
 
