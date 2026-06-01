@@ -9,6 +9,7 @@ import { once } from 'node:events'
 
 const root = process.cwd()
 const h5Root = resolve(root, getArgValue('--dist') || 'dist/build/h5')
+const mode = getArgValue('--mode') || 'main-flow'
 const chromePath = getArgValue('--chrome') || process.env.GOODS_COMM_CHROME_PATH || findChromePath()
 const timeoutMs = Number(getArgValue('--timeout-ms') || process.env.GOODS_COMM_H5_RENDER_TIMEOUT_MS || 30000)
 const chromeStartTimeoutMs = Number(
@@ -35,6 +36,17 @@ async function main() {
     browser = await startChrome(chromePath)
     page = await createPage(browser.debugPort)
     await configureBrowser(page, baseUrl)
+    if (mode === 'protected-auth') {
+      await runProtectedAuthFlow(page, baseUrl)
+      assertNoBrowserErrors(page.diagnostics)
+      console.log('H5 protected auth smoke checks passed for fail-closed login')
+      return
+    }
+
+    if (mode !== 'main-flow') {
+      throw new Error(`Unknown H5 render smoke mode: ${mode}`)
+    }
+
     await runMainFlow(page, baseUrl)
     assertNoBrowserErrors(page.diagnostics)
     console.log('H5 render smoke checks passed for login, location, publish, and trade sale flow')
@@ -43,6 +55,39 @@ async function main() {
     await browser?.close().catch(() => {})
     await server.close()
   }
+}
+
+async function runProtectedAuthFlow(page, baseUrl) {
+  await page.navigate(`${baseUrl}/#/pages/mine/mine`)
+  await page.waitForSelector('mine-page')
+  await page.assertText('mine-auth-actions', 'H5 体验登录')
+  await page.ensureAgreementAccepted()
+  await page.callPageMethod('mine-page', 'login')
+  await page.waitForFunction(() => {
+    const smoke = window.__goodsCommH5Smoke || { toasts: [] }
+    const authUser = readStorage('goods.authUser')
+    const clientEvents = readStorage('goods.clientEvents') || []
+    const protectedAuthEvent = Array.isArray(clientEvents) && clientEvents.some((event) =>
+      event?.type === 'login_failed' &&
+      String(event.message || '').includes('H5 预发和生产环境暂不支持演示登录')
+    )
+    const protectedAuthToast = smoke.toasts.some((toast) =>
+      String(toast).includes('H5 预发和生产环境暂不支持演示登录')
+    )
+
+    return !authUser && (protectedAuthToast || protectedAuthEvent)
+
+    function readStorage(key) {
+      const raw = window.localStorage?.getItem(key)
+      if (!raw) return null
+      try {
+        const parsed = JSON.parse(raw)
+        return parsed?.data ?? parsed
+      } catch (error) {
+        return raw
+      }
+    }
+  }, 'protected H5 login disabled without auth user')
 }
 
 async function runMainFlow(page, baseUrl) {
@@ -503,7 +548,7 @@ class CdpPage {
       snapshot = await this.evaluate(() => {
         const bodyText = document.body?.innerText || ''
         const storage = {}
-        for (const key of ['goods.userAgreement', 'goods.authUser', 'goods.h5.clientId']) {
+        for (const key of ['goods.userAgreement', 'goods.authUser', 'goods.h5.clientId', 'goods.clientEvents']) {
           storage[key] = window.localStorage?.getItem(key) || ''
         }
         return JSON.stringify({

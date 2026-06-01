@@ -4,7 +4,7 @@
 
 本文件记录真实部署仍缺少的信息。缺失项不阻塞工程开发：当前 `.env.dev/test/pre/prod` 已使用占位值，后端、数据库 schema、环境校验、构建产物和 prod 到 pre 同步脚本都可以先行开发和验证。真实部署前可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；本地覆盖文件已被 `.gitignore` 排除，GitHub Actions 则使用 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入同名文件。部署后 smoke 的短期登录 code、坐标和已审核测试图等一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制出 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件。
 
-当前审计快照：普通生产审计仍为 `BLOCKED (50 blockers, 9 warnings)`，严格生产审计仍为 `BLOCKED (52 blockers, 8 warnings)`。如果本机生产审计提示 GitHub CLI auth 不可用，普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback；包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
+当前审计快照：普通生产审计仍为 `BLOCKED (50 blockers, 10 warnings)`，严格生产审计仍为 `BLOCKED (52 blockers, 8 warnings)`。如果本机生产审计提示 GitHub CLI auth 不可用，普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback；包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
 
 ## 1. 平台账号与应用
 
@@ -74,6 +74,7 @@
 - `npm run smoke:deployed-input-templates`：检查 `.env.smoke.dev/test/pre/prod.example` 是否覆盖部署后 health / main-flow smoke 所需 API、登录 code、坐标、范围、重试窗口、已审核测试图和可选账号注销输入，并强制生产模板默认 `GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=false`；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:deployed-env-files`：检查 `.env.smoke.<env>.local` 自动加载语义，确保 shell 显式变量优先，缺省值才从本地 smoke 文件补入；`verify:release` / `verify:release:strict` 已接入该检查。
 - `npm run smoke:h5:render`：启动本地 H5 构建产物和 headless Chrome，用真实渲染页面验证 H5 登录、浏览器定位显示、发布表单、图片预览、商品发布、买家发起交易、卖家确认和完成售卖主链路；脚本不引入 Playwright 依赖，可用 `GOODS_COMM_CHROME_PATH` 指定 Chrome/Chromium，可用 `--dist` 指向 dev/test/pre/prod H5 产物；`verify:release` / `verify:release:strict` 已在 H5 构建后接入该检查。
+- `npm run smoke:h5:protected-auth`：分别打开 pre/prod H5 构建产物并点击登录，确认正式 H5 不会写入 dev/test 演示登录态，而是 fail-closed 提示接入 OAuth/SSO；full / strict release gate 会在四环境 H5 构建和 artifact checks 后执行该检查。
 - `npm run smoke:backend:artifact`：检查 `dist/backend` 后端部署包包含 `package.json`、`package-lock.json`、Node HTTP server、BFF、PostgreSQL store、数据库 schema、容器 Dockerfile 和关键业务依赖，并验证 Dockerfile 会用 `npm ci` 按 artifact lockfile 安装生产依赖，避免真实 PostgreSQL store 部署时缺少或漂移 `pg`；`verify:release` / `verify:release:strict` 已在 `build:backend` 后接入该检查。
 - `npm run smoke:artifacts`：检查默认 H5 / 微信 / 支付宝构建产物是否包含 `src/pages.json` 中的核心页面、tabBar、关键组件、H5 页面 chunk 和小程序开发者工具导入配置；`verify:release` / `verify:release:strict` 会用同一脚本检查 dev/test/pre/prod 四环境三端产物。
 - `npm run smoke:workflows`：检查 `.github/workflows/ci.yml`、`release-strict.yml` 和 `prod-to-pre-sync.yml` 的关键发布保护，确保 CI 调用 release gate、strict gate 上传普通/严格审计、部署后 smoke 不能被部署动作绕过、prod 部署/主链路 mutation 需要显式确认、prod-to-pre sync 不上传生产 dump；`verify:release` / `verify:release:strict` 已接入该检查。
@@ -107,7 +108,7 @@
 - `npm run env:check` 会阻断 dev/test/pre/prod 复用同一个 `GOODS_COMM_DATABASE_URL`、`GOODS_COMM_STATE_PATH`、`GOODS_COMM_OBJECT_DIR` 或 `GOODS_COMM_COS_BUCKET`；即使还在占位阶段，也必须保持四套环境的持久化边界互相独立。
 - pre/prod 后端通过 `GOODS_COMM_STATE_STORE=postgres` 连接 PostgreSQL；文件状态存储会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_PLATFORM_AUTH_MODE=platform` 调用真实微信 / 支付宝登录换身份接口；演示登录会被运行时拒绝。
-- pre/prod H5 前端登录入口默认 fail-closed；H5 只保留 dev/test 联调演示登录，正式公网 H5 需要先接 OAuth/SSO 后再开放。
+- pre/prod H5 前端登录入口默认 fail-closed，并由 `smoke:artifacts` 检查构建产物包含保护文案，由 `smoke:h5:protected-auth` 真实渲染验证不会写入演示登录态；H5 只保留 dev/test 联调演示登录，正式公网 H5 需要先接 OAuth/SSO 后再开放。
 - pre/prod 后端通过 `GOODS_COMM_OBJECT_STORE=cos` 上传商品图片到 COS/CDN；本地对象存储会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_CONTENT_SECURITY_PROVIDER=wechat` 做文本和图片内容安全；mock 审核会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_MAP_PROVIDER=tencent` 做服务端区域解析；样例区域解析会被运行时拒绝。

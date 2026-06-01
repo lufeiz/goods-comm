@@ -2,7 +2,8 @@
 
 生成日期：2026-06-01
 项目路径：`/Users/lufeiz/Downloads/项目/codexProject/goods-comm`
-评估口径：基于当前工作区、当前审计产物和只读多 agent 分析。
+当前提交：`c995ff3ac568`
+评估口径：基于当前工作区、当前审计产物、仓库文件证据和本轮只读多 agent 分析；没有用外部宣传口径替代代码与审计事实。
 
 ## 1. 一句话结论
 
@@ -11,7 +12,7 @@
 但它也不是可直接生产上线的真实交易系统。当前生产就绪审计仍是：
 
 ```text
-Production readiness audit: BLOCKED (50 blockers, 9 warnings)
+Production readiness audit: BLOCKED (50 blockers, 10 warnings)
 Strict production readiness audit: BLOCKED (52 blockers, 8 warnings)
 ```
 
@@ -43,14 +44,24 @@ Strict production readiness audit: BLOCKED (52 blockers, 8 warnings)
 
 ## 3. 多 agent 多视角评分
 
-本次并行启动 3 个只读分析 agent，分别从产品价值、工程架构、生产风控三个角度评审。三位 agent 均未修改代码，只读分析当前仓库。问题逐项整改方案已整理到 `docs/production-remediation-matrix-20260601.md`。
+本次复用了当前线程中可用的 6 个只读分析 agent，分别从产品价值、交易闭环、工程架构、代码可维护性、生产发布、安全合规和运营风控角度评审。所有 agent 均只读分析当前仓库，未修改代码。问题逐项整改方案已整理到 `docs/production-remediation-matrix-20260601.md`。
 
 | 视角 | 评分 | 判断 |
 | --- | ---: | --- |
-| 产品 / 用户价值 / 交易闭环 | 6.3/10 | 社区 / 街道交易边界清楚，定位、发布、交易意向、卖家确认、一次性联系码、争议和评价形成轻交易闭环；但冷启动、真实供需密度、履约成本和商业转化没有数据证明。 |
-| 工程架构 / 代码质量 / 可维护性 | 6.8/10 | 端、BFF、Node 后端、PostgreSQL、部署脚本、审计和测试骨架完整；但核心模块过大，真实 PostgreSQL / 平台 / 对象存储 / 地图集成仍未落地。 |
-| 生产发布 / 安全合规 / 运营风控 | 4.5/10 | 生产审计、strict gate、fail-closed 护栏、运营审计和风控入口方向正确；但真实 API、DB、COS/CDN、腾讯地图、平台凭据、部署通道和 deployed smoke 都未闭环。 |
+| 产品定位 / 用户价值 | 7.0/10 | 同社区 / 同街道二手交易切口成立，LBS 范围交易有差异化；但真实需求强度、用户留存和供需密度没有被数据证明。 |
+| 产品闭环 / 交易流程 | 6.3/10 | 发布、浏览、详情、交易意向、卖家确认、一次性联系码、完成、争议和评价形成轻交易闭环；但仍是线下撮合，不是支付、担保、退款完整电商。 |
+| 工程架构 / 边界设计 | 7.0/10 | 端、BFF、Node 后端、PostgreSQL schema、对象存储、平台登录、内容安全、运营鉴权、限流和告警都已有边界；扣分点是核心模块过大、接口校验偏手写。 |
+| 代码质量 / 可维护性 | 6.5/10 | 领域规则、契约测试、幂等和 fail-closed 保护做得比较认真；但 `src/bff/handler.js`、`src/services/goods.js`、`backend/src/server.mjs`、`backend/src/postgres-state-store.mjs` 仍承担过多职责。 |
+| 测试验证 / 发布门禁 | 6.0/10 | smoke、contract、artifact、H5 render、deployed smoke、release gate 覆盖面广；但缺真实外部依赖集成、覆盖率、真机和平台开发者工具自动化证据。 |
+| 上线 / 安全 / 运营风控 | 4.5/10 | 生产审计、strict gate、fail-closed 护栏、运营审计和风控入口方向正确；但真实 API、DB、COS/CDN、腾讯地图、平台凭据、部署通道和 deployed smoke 都未闭环。 |
 | 综合当前态 | 5.9/10 | 按“技术作品 / MVP 底座”是中上，按“真实线上交易系统”仍偏低；适合继续投入做 pre 闭环和封闭试点，不适合直接生产上线。 |
+
+多 agent 的一致结论是：
+
+```text
+这不是玩具 Demo，而是一个生产化意识较强的 MVP 底座；
+但真实资源、真实部署、真实平台身份、真实地图、真实数据库、真实图片存储和真实用户数据没有闭环前，不能按生产系统放行。
+```
 
 按使用场景拆分更准确：
 
@@ -114,7 +125,7 @@ Strict production readiness audit: BLOCKED (52 blockers, 8 warnings)
 | 文件 | 行数 |
 | --- | ---: |
 | `src/bff/handler.js` | 3406 |
-| `backend/src/postgres-state-store.mjs` | 2119 |
+| `backend/src/postgres-state-store.mjs` | 2120 |
 | `src/services/goods.js` | 1807 |
 | `backend/src/server.mjs` | 1630 |
 | `src/pages/ops/ops.vue` | 1169 |
@@ -146,11 +157,15 @@ scripts/verify-release-gate.mjs
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 功能范围 | README 已列出附近列表、发布、LBS 校验、详情交易前校验、交易意向、运营控制台、遥测、协议和 BFF 契约。 |
-| 页面闭环 | `src/pages.json` 注册集市、发布、交易、我的、详情、运营控制台、协议隐私页，并配置四个 tab。 |
-| 领域规则 | `src/domain/eligibility.js` 以纯函数判断物品、用户位置、距离、社区 / 街道匹配，并返回明确原因码。 |
+| 功能范围 | `README.md` 已列出附近列表、发布、LBS 校验、详情交易前校验、交易意向、运营控制台、遥测、协议和 BFF 契约。 |
+| 页面闭环 | `src/pages.json:2-75` 注册集市、发布、交易、我的、详情、运营控制台、协议隐私页，并配置四个 tab。 |
+| 领域规则 | `src/domain/eligibility.js:16-96` 以纯函数判断物品、用户位置、距离、社区 / 街道匹配，并返回明确原因码。 |
+| 发布门槛 | `src/pages/publish/publish.vue:258-339` 要求登录、同意协议、有效价格、定位、社区 / 街道和至少一张图片。 |
+| 交易门槛 | `src/pages/detail/detail.vue:202-300` 要求登录、同意协议、非自购、最终 GPS / 服务端资格校验，再创建交易意向。 |
+| 后端装配 | `backend/src/server.mjs:24-80` 装配状态存储、对象存储、平台登录、内容安全、区域解析、通知、运营鉴权、限流、告警和请求日志。 |
+| 契约测试 | `tests/contract/bff-main-flow.test.mjs:25-180` 覆盖受保护登录、session secret、定位新鲜度、发布幂等、服务端区域重算、交易确认和评价前置条件。 |
 | 工程门禁 | `package.json` 已覆盖多端构建、后端构建、环境检查、生产审计、release gate、数据库开通/迁移、部署 plan 和 deployed smoke。 |
-| 普通生产审计 | `BLOCKED (50 blockers, 9 warnings)`；build artifacts 为 PASS，但 pre/prod API、云资源、真实密钥和 deployed smoke 仍阻塞。 |
+| 普通生产审计 | `BLOCKED (50 blockers, 10 warnings)`；build artifacts 为 PASS，但 pre/prod API、云资源、真实密钥和 deployed smoke 仍阻塞。 |
 | 严格生产审计 | `BLOCKED (52 blockers, 8 warnings)`；真实上线前仍会因 deployed smoke 输入和真实环境缺口失败。 |
 | CI / release gate | `ci.yml` 执行 `npm run verify:release`；`release-strict.yml` 先跑 release input 检查，再跑 `verify:release:strict`。 |
 | 测试入口 | `package.json` 已有 unit/contract test、BFF smoke、HTTP 后端 smoke、H5 render smoke、artifact smoke、workflow smoke、deployed health/main-flow smoke。 |

@@ -2,6 +2,9 @@ import { access, readdir, readFile } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import { readEnvironmentFile } from './env-files.mjs'
 
+const PROTECTED_H5_AUTH_DISABLED_MESSAGE = 'H5 预发和生产环境暂不支持演示登录，请接入 OAuth/SSO 后再开放公网登录'
+const PROTECTED_ENVIRONMENTS = new Set(['pre', 'prod'])
+
 export async function createArtifactChecks(options = {}) {
   const root = options.root || process.cwd()
   const profile = options.profile || 'quick'
@@ -107,6 +110,7 @@ async function verifyH5Target(target, context) {
   }
 
   await verifyH5RenderedTestIds(target, context, assetNames)
+  await verifyProtectedH5AuthGuard(target, context, assetNames)
 }
 
 async function verifyMiniProgramTarget(target, context) {
@@ -351,6 +355,23 @@ async function verifyH5RenderedTestIds(target, context, assetNames) {
   }
 }
 
+async function verifyProtectedH5AuthGuard(target, context, assetNames) {
+  if (!PROTECTED_ENVIRONMENTS.has(target.environment)) {
+    return
+  }
+
+  const jsBundleText = await readH5JavaScriptBundleText(target, assetNames)
+
+  assertCondition(
+    jsBundleText.includes(PROTECTED_H5_AUTH_DISABLED_MESSAGE),
+    `${target.label}: protected H5 artifact must fail closed instead of allowing demo login`
+  )
+  assertCondition(
+    jsBundleText.includes('goods.authUser'),
+    `${target.label}: protected H5 artifact must include auth storage boundary`
+  )
+}
+
 async function verifyMiniProgramRenderedTestIds(target, context, markupExtension) {
   for (const [page, testIds] of Object.entries(context.requiredRenderedTestIds.pages)) {
     const markup = await readExistingFile(join(target.directory, `${page}.${markupExtension}`), target.label)
@@ -420,6 +441,18 @@ async function verifyH5RuntimeConfig(target, context, assetNames) {
     runtimeAssets.some((asset) => includesJsString(asset.content, expectedConfig.appEnv)),
     `${target.label}: H5 runtime assets do not contain the expected app environment`
   )
+}
+
+async function readH5JavaScriptBundleText(target, assetNames) {
+  const jsAssetNames = assetNames.filter((name) => name.endsWith('.js'))
+  let jsBundleText = ''
+
+  for (const assetName of jsAssetNames) {
+    jsBundleText += await readExistingFile(join(target.directory, 'assets', assetName), target.label)
+    jsBundleText += '\n'
+  }
+
+  return jsBundleText
 }
 
 async function readExpectedEnvironmentConfigs(environments) {

@@ -196,6 +196,22 @@ function addArtifactSmokeChecks() {
       'dist/build/h5'
     ]
   })
+
+  if (profile !== 'quick') {
+    for (const env of ['pre', 'prod']) {
+      steps.push({
+        name: `smoke:h5:protected-auth ${env}`,
+        command: process.execPath,
+        args: [
+          'scripts/h5-render-smoke.mjs',
+          '--mode',
+          'protected-auth',
+          '--dist',
+          `dist/build/${env}/h5`
+        ]
+      })
+    }
+  }
 }
 
 async function listJavaScriptFiles(dir) {
