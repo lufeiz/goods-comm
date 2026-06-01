@@ -86,6 +86,7 @@ GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre n
 
 ```bash
 npm test
+npm run test:contract
 npm run smoke
 npm run smoke:main-flow-contract
 npm run smoke:bff
