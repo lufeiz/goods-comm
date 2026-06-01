@@ -1,8 +1,8 @@
 # goods-comm production readiness audit
 
-Generated: 2026-06-01T02:22:40.442Z
+Generated: 2026-06-01T02:34:19.833Z
 Scope: pre, prod
-Result: BLOCKED (48 blockers, 10 warnings)
+Result: BLOCKED (48 blockers, 9 warnings)
 
 This report is generated from `.env.*` plus optional `.env.*.local` overrides. It does not execute deployment, database migration, or production data sync.
 
@@ -17,7 +17,7 @@ Machine-readable JSON: `docs/deployment-readiness-audit.json`
 | pre/prod isolation | WARN | 0 blockers, 2 warnings |
 | Build artifacts | PASS | 0 blockers, 0 warnings |
 | Deployed smoke | BLOCKED | 2 blockers, 3 warnings |
-| GitHub push automation | WARN | 0 blockers, 1 warnings |
+| GitHub push automation | PASS | 0 blockers, 0 warnings |
 
 ## Toolchain
 
@@ -204,13 +204,14 @@ Local override: not present
 - None
 ### Warnings
 
-- GitHub CLI auth is unavailable; workflow-aware push preflight will use git push --dry-run for pending workflow changes, or pass directly after `gh auth login` / `gh auth refresh -h github.com -s workflow`
+- None
 ### Passes
 
 - origin remote targets https://github.com/lufeiz/goods-comm
 - current branch is main
 - branch tracks origin/main
 - nightly GitHub push automation is active at 21:00 and runs quick gate, local main-flow smoke, preflight, and push
+- GitHub CLI token includes repo and workflow scopes for workflow-aware push preflight
 
 ## Release gate commands
 

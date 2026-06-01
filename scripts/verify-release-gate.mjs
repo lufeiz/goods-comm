@@ -100,6 +100,7 @@ function addCoreSmokes() {
     'smoke:database-migration',
     'smoke:database-provision',
     'smoke:database-runbook',
+    'smoke:cloud-deployment-runbook',
     'smoke:prod-sync',
     'smoke:github-push-preflight',
     'smoke:frontend-deploy',

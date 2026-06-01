@@ -4,7 +4,7 @@
 
 本文件记录真实部署仍缺少的信息。缺失项不阻塞工程开发：当前 `.env.dev/test/pre/prod` 已使用占位值，后端、数据库 schema、环境校验、构建产物和 prod 到 pre 同步脚本都可以先行开发和验证。真实部署前可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；本地覆盖文件已被 `.gitignore` 排除，GitHub Actions 则使用 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入同名文件。部署后 smoke 的短期登录 code、坐标和已审核测试图等一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制出 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件。
 
-当前审计快照：普通生产审计仍为 `BLOCKED (48 blockers, 10 warnings)`，严格生产审计仍为 `BLOCKED (50 blockers, 8 warnings)`。当前本机生产审计未读取到 GitHub CLI auth；普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback，但包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
+当前审计快照：普通生产审计仍为 `BLOCKED (48 blockers, 9 warnings)`，严格生产审计仍为 `BLOCKED (50 blockers, 8 warnings)`。如果本机生产审计提示 GitHub CLI auth 不可用，普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback；包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
 
 ## 1. 平台账号与应用
 
@@ -53,6 +53,7 @@
 
 当前已提供可执行计划脚本：
 
+- `docs/cloud-deployment-runbook.md`：CloudBase / Tencent 云部署执行顺序、GitHub Secrets、workflow 输入、后端/前端部署边界和生产 smoke opt-in 手册，覆盖 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL`、`GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL`、`TENCENTCLOUD_SECRET_ID` / `TENCENTCLOUD_SECRET_KEY`。
 - `docs/database-provisioning-runbook.md`：数据库开通、迁移、后端部署、deployed smoke 和 prod-to-pre 同步的执行手册，明确 `GOODS_COMM_DATABASE_URL` 与 `GOODS_COMM_DATABASE_ADMIN_URL` 的权限边界。
 - `npm run audit:production-readiness`：生成上线前审计报告，汇总本机工具、pre/prod 真实配置、后端部署包完整性、三端构建产物、部署 smoke 输入、prod 到 pre 同步条件、每晚 GitHub 推送自动化和 `gh` workflow-aware preflight 授权状态，默认写入 `docs/deployment-readiness-audit.md` 和机器可读的 `docs/deployment-readiness-audit.json`。部署 smoke 输入不只检查是否存在，还会校验 API HTTPS、provider、经纬度范围、精度、范围半径、已审核图片 URL / mime / size，以及注销账号 code 与 seller / buyer / 重登 code 的关系。
 - `npm run audit:production-readiness -- --check-only`：只做检查并在存在上线 blocker 时返回非 0，可放入发布门禁或 CI。

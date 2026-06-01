@@ -44,7 +44,7 @@ npm run build:alipay:pre
 npm run backend:start:pre
 ```
 
-环境矩阵见 `docs/environment-matrix.md`，部署缺失信息见 `docs/deployment-missing-info.md`。
+环境矩阵见 `docs/environment-matrix.md`，部署缺失信息见 `docs/deployment-missing-info.md`，云部署执行顺序见 `docs/cloud-deployment-runbook.md`。
 
 上线前审计会汇总本机 CLI、pre/prod 真实配置、构建产物、部署 smoke 前置项和 prod 到 pre 同步条件：
 
@@ -137,7 +137,7 @@ npm run smoke:deployed:pre:main
 GitHub Actions 中有两个门禁：
 
 - `.github/workflows/ci.yml`：PR / 主干日常门禁，运行 `npm run verify:release`，会生成生产审计但不因占位 pre/prod 阻断普通开发。
-- `.github/workflows/release-strict.yml`：真实上线前手动门禁，先在 runner 安装 CloudBase CLI 和 Tencent `tccli`，物化 protected env 与 deployed smoke 多行 Secret 后执行 `npm run release:inputs -- --check-only --output docs/release-input-readiness.md --json-output docs/release-input-readiness.json`，通过后才运行 `npm run verify:release:strict`；数据库迁移和 prod-to-pre 同步使用项目依赖 `pg`，不再安装 `postgresql-client`。可选 `run_frontend_deploy=true` 按 `frontend_targets` 部署 H5 / 微信 / 支付宝前端，可选 `run_backend_deploy=true` 在通过后先迁移目标数据库并部署后端，再执行 `smoke:deployed:*`。它读取 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 生成 `.env.pre.local` / `.env.prod.local`，读取 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 生成 `.env.smoke.pre.local` / `.env.smoke.prod.local`，读取 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 执行非交互式 CloudBase / 腾讯云部署；也可继续用单个 `GOODS_COMM_SMOKE_*` Secret 覆盖部署后 smoke 输入。生产部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`，避免误发生产或误写生产测试数据。
+- `.github/workflows/release-strict.yml`：真实上线前手动门禁，先在 runner 安装 CloudBase CLI 和 Tencent `tccli`，物化 protected env 与 deployed smoke 多行 Secret 后执行 `npm run release:inputs -- --check-only --output docs/release-input-readiness.md --json-output docs/release-input-readiness.json`，通过后才运行 `npm run verify:release:strict`；数据库迁移和 prod-to-pre 同步使用项目依赖 `pg`，不再安装 `postgresql-client`。可选 `run_frontend_deploy=true` 按 `frontend_targets` 部署 H5 / 微信 / 支付宝前端，可选 `run_backend_deploy=true` 在通过后先迁移目标数据库并部署后端，再执行 `smoke:deployed:*`。它读取 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 两个多行 Secret 生成 `.env.pre.local` / `.env.prod.local`，读取 `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` 生成 `.env.smoke.pre.local` / `.env.smoke.prod.local`，读取 `TENCENTCLOUD_SECRET_ID`、`TENCENTCLOUD_SECRET_KEY` 和可选 `TENCENTCLOUD_SESSION_TOKEN` 执行非交互式 CloudBase / 腾讯云部署；也可继续用单个 `GOODS_COMM_SMOKE_*` Secret 覆盖部署后 smoke 输入。生产部署必须显式开启 `allow_prod_deploy=true`，生产主链路 smoke 必须显式开启 `allow_prod_mutation=true`，避免误发生产或误写生产测试数据。推荐发布输入为 `run_backend_deploy=true` 且 `run_deployed_smoke=true`，前端部署应在同轮后端 deployed smoke 通过后再开启；完整流程见 `docs/cloud-deployment-runbook.md`。
 
 ## 关键目录
 
@@ -154,6 +154,7 @@ GitHub Actions 中有两个门禁：
 - `docs/architecture.md`：正式上线架构与后端接口建议
 - `docs/environment-matrix.md`：dev/test/pre/prod 四套环境与数据库同步策略
 - `docs/deployment-missing-info.md`：真实部署仍缺少的信息和占位值
+- `docs/cloud-deployment-runbook.md`：CloudBase / Tencent 云部署执行顺序、GitHub Secrets、workflow 输入和生产 smoke 边界
 
 ## 正式上线注意
 

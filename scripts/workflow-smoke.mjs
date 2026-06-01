@@ -111,6 +111,7 @@ function assertReleaseGateProfileBoundary() {
     "'smoke:database-migration'",
     "'smoke:database-provision'",
     "'smoke:database-runbook'",
+    "'smoke:cloud-deployment-runbook'",
     "'smoke:frontend-deploy'",
     "'smoke:mini-program-deploy-config'",
     "'smoke:main-flow-contract'",
