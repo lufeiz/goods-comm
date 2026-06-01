@@ -23,7 +23,7 @@ For normal protected releases, prefer the manual GitHub workflow:
 .github/workflows/release-strict.yml
 ```
 
-The workflow must pass `release:inputs`, then `verify:release:strict`, then optional backend deploy, deployed smoke, and frontend deploy. Direct local deploy commands are useful for operator recovery, but GitHub Actions is the auditable release path.
+The workflow must pass `release:inputs`, then `verify:release:strict`, then optional database provisioning, backend deploy, deployed smoke, and frontend deploy. Direct local deploy commands are useful for operator recovery, but GitHub Actions is the auditable release path.
 
 ## 2. Required GitHub Secrets
 
@@ -35,6 +35,8 @@ Use multi-line Secrets for environment files:
 | `GOODS_COMM_PROD_ENV_LOCAL` | `.env.prod.local` | Real prod runtime config, separate from pre. |
 | `GOODS_COMM_PRE_SMOKE_ENV_LOCAL` | `.env.smoke.pre.local` | One-time pre deployed smoke input bundle. |
 | `GOODS_COMM_PROD_SMOKE_ENV_LOCAL` | `.env.smoke.prod.local` | One-time prod deployed smoke input bundle. |
+
+When `run_db_provision=true`, the matching `GOODS_COMM_*_ENV_LOCAL` secret must also contain `GOODS_COMM_DATABASE_ADMIN_URL`. That admin URL is only for provisioning the target role/database and must not be injected into backend runtime after provisioning.
 
 Use single Secrets for non-interactive cloud credentials and optional CLI paths:
 
@@ -84,6 +86,12 @@ npm run deploy:backend:pre:plan
 npm run deploy:frontend:pre:plan
 ```
 
+If the pre database or application role may not exist yet, provision it before backend deploy:
+
+```bash
+GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre
+```
+
 Backend deploy applies migration by default before exposing the new backend:
 
 ```bash
@@ -120,6 +128,10 @@ Production follows the same topology as pre but uses a separate database, bucket
 Production backend deployment requires both deploy and migration opt-ins:
 
 ```bash
+GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod \
+GOODS_COMM_DB_PROVISION_ALLOW_PROD=true \
+npm run db:provision:prod
+
 GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod \
 GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true \
 GOODS_COMM_DEPLOY_CONFIRM=deploy-prod \
@@ -148,6 +160,7 @@ Use these workflow settings for a pre backend release:
 | Input | Value |
 | --- | --- |
 | `target_environment` | `pre` |
+| `run_db_provision` | `true` only when the target database or app role may not exist; requires `run_backend_deploy=true` and `skip_db_migrate=false` |
 | `run_backend_deploy` | `true` |
 | `run_deployed_smoke` | `true` |
 | `run_frontend_deploy` | `false` until backend smoke passes |
@@ -161,13 +174,14 @@ Use these workflow settings for a production release:
 | Input | Value |
 | --- | --- |
 | `target_environment` | `prod` or `both` |
+| `run_db_provision` | `true` only when the prod database or app role may not exist; requires `allow_prod_deploy=true`, `run_backend_deploy=true`, and `skip_db_migrate=false` |
 | `run_backend_deploy` | `true` |
 | `run_deployed_smoke` | `true` |
 | `run_frontend_deploy` | `true` only after backend smoke is green |
 | `allow_prod_deploy` | `true` |
 | `allow_prod_mutation` | `true` only for a dedicated production smoke window |
 
-The workflow refuses backend deployment when `run_deployed_smoke=false`. It also refuses production deploy without `allow_prod_deploy=true`, and refuses production main-flow smoke without `allow_prod_mutation=true`.
+The workflow refuses backend deployment when `run_deployed_smoke=false`. It also refuses database provisioning when `run_backend_deploy=false` or `skip_db_migrate=true`, refuses production database provisioning or production deploy without `allow_prod_deploy=true`, and refuses production main-flow smoke without `allow_prod_mutation=true`.
 
 ## 7. Acceptance gates
 
@@ -175,11 +189,12 @@ Cloud deployment is not complete until all of these are true:
 
 1. `npm run release:inputs -- --check-only` passes with real pre/prod env and smoke bundles.
 2. `npm run verify:release:strict` passes.
-3. Backend deploy succeeds for pre and immediately passes `npm run smoke:deployed:pre`.
-4. Pre main flow passes `npm run smoke:deployed:pre:main`.
-5. Frontend H5 / WeChat / Alipay artifacts are uploaded only after the matching backend is verified.
-6. Production uses the same sequence with explicit production opt-ins.
-7. `npm run audit:production-readiness:strict-check` has no cloud deployment, environment, database, or deployed smoke blockers.
+3. Database provisioning, when enabled, succeeds before backend deploy and is followed by migration in the same release workflow.
+4. Backend deploy succeeds for pre and immediately passes `npm run smoke:deployed:pre`.
+5. Pre main flow passes `npm run smoke:deployed:pre:main`.
+6. Frontend H5 / WeChat / Alipay artifacts are uploaded only after the matching backend is verified.
+7. Production uses the same sequence with explicit production opt-ins.
+8. `npm run audit:production-readiness:strict-check` has no cloud deployment, environment, database, or deployed smoke blockers.
 
 ## 8. Failure handling
 
@@ -187,6 +202,7 @@ Cloud deployment is not complete until all of these are true:
 | --- | --- |
 | `release:inputs` fails | Do not deploy. Fill missing GitHub Secrets or `.env.*.local` values first. |
 | `verify:release:strict` fails | Do not deploy. Use the strict audit artifacts to fix the failed gate. |
+| Database provisioning fails | Do not deploy backend. Check `GOODS_COMM_DATABASE_ADMIN_URL`, target database name, app role name, and protected environment opt-ins. |
 | CloudBase CLI auth fails | Confirm `TENCENTCLOUD_SECRET_ID` / `TENCENTCLOUD_SECRET_KEY`, or use a manually controlled runner with `GOODS_COMM_DEPLOY_ALLOW_EXISTING_CLOUDBASE_LOGIN=true`. |
 | Tencent fallback image push fails | Confirm Docker daemon, image registry permissions, and `GOODS_COMM_TENCENT_CONTAINER_IMAGE`. |
 | `/health/ready` fails after deploy | Do not deploy frontend. Check database migration, COS, map, alert, platform auth, and runtime env values. |

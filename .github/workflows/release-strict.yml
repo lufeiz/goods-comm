@@ -32,6 +32,11 @@ on:
         required: true
         default: false
         type: boolean
+      run_db_provision:
+        description: Provision target database before backend deploy
+        required: true
+        default: false
+        type: boolean
       run_frontend_deploy:
         description: Deploy frontend artifacts after strict gate; H5 uses CloudBase hosting, mini programs require configured CLI paths
         required: true
@@ -105,6 +110,7 @@ jobs:
       GOODS_COMM_SMOKE_HEALTH_ATTEMPTS: ${{ inputs.health_attempts }}
       GOODS_COMM_SMOKE_HEALTH_INTERVAL_MS: ${{ inputs.health_interval_ms }}
       GOODS_COMM_DEPLOY_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
+      GOODS_COMM_DB_PROVISION_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
       GOODS_COMM_DB_MIGRATE_ALLOW_PROD: ${{ inputs.allow_prod_deploy }}
       GOODS_COMM_FRONTEND_DEPLOY_TARGET: ${{ inputs.frontend_targets }}
       GOODS_COMM_FRONTEND_RELEASE_VERSION: ${{ inputs.frontend_release_version }}
@@ -187,10 +193,28 @@ jobs:
           echo "Backend deployment requires run_deployed_smoke=true so health and main-flow smoke run after deploy."
           exit 1
 
+      - name: Require backend deploy after database provisioning
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_db_provision && !inputs.run_backend_deploy }}
+        run: |
+          echo "Database provisioning requires run_backend_deploy=true so migration, health, and main-flow smoke validate the new database."
+          exit 1
+
+      - name: Require database migration after provisioning
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_db_provision && inputs.skip_db_migrate }}
+        run: |
+          echo "Database provisioning requires skip_db_migrate=false so the newly provisioned database receives the expected schema."
+          exit 1
+
       - name: Require prod deploy opt-in
         if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && !inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
         run: |
           echo "Backend deployment to prod requires allow_prod_deploy=true."
+          exit 1
+
+      - name: Require prod database provision opt-in
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_db_provision && !inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        run: |
+          echo "Database provisioning for prod requires allow_prod_deploy=true."
           exit 1
 
       - name: Require prod frontend deploy opt-in
@@ -198,6 +222,13 @@ jobs:
         run: |
           echo "Frontend deployment to prod requires allow_prod_deploy=true."
           exit 1
+
+      - name: Provision pre database
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_db_provision && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
+        shell: bash
+        run: |
+          export GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre
+          node scripts/provision-database.mjs --env pre --execute
 
       - name: Deploy pre backend
         if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && (inputs.target_environment == 'pre' || inputs.target_environment == 'both') }}
@@ -211,6 +242,13 @@ jobs:
           fi
           export GOODS_COMM_DEPLOY_CONFIRM=deploy-pre
           node "${args[@]}"
+
+      - name: Provision prod database
+        if: ${{ steps.strict.outcome == 'success' && inputs.run_db_provision && inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}
+        shell: bash
+        run: |
+          export GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod
+          node scripts/provision-database.mjs --env prod --execute
 
       - name: Deploy prod backend
         if: ${{ steps.strict.outcome == 'success' && inputs.run_backend_deploy && inputs.allow_prod_deploy && (inputs.target_environment == 'prod' || inputs.target_environment == 'both') }}

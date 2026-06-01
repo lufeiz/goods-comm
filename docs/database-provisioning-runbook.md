@@ -45,6 +45,8 @@ npm run smoke:deployed:pre
 npm run smoke:deployed:pre:main
 ```
 
+In `.github/workflows/release-strict.yml`, set `run_db_provision=true` only when the target database or app role may not exist yet. The workflow requires `run_backend_deploy=true` and `skip_db_migrate=false` with database provisioning so the same audited run also applies migration and runs deployed smoke against the new database.
+
 The backend deploy command also runs migration by default before deploying:
 
 ```bash
@@ -80,6 +82,8 @@ GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod \
 GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true \
 npm run db:migrate:prod
 ```
+
+The release workflow uses the same protection: production database provisioning requires `run_db_provision=true` and `allow_prod_deploy=true`, which passes `GOODS_COMM_DB_PROVISION_ALLOW_PROD=true` to the provisioning script for that run only.
 
 Production backend deploy requires both deploy and migration opt-ins:
 

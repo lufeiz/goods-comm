@@ -22,8 +22,10 @@ assertIncludesAll('docs/cloud-deployment-runbook.md', runbook, [
   'TENCENTCLOUD_SECRET_ID',
   'TENCENTCLOUD_SECRET_KEY',
   'npm run deploy:backend:pre:plan',
+  'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre',
   'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre',
   'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre',
+  'run_db_provision',
   'run_backend_deploy',
   'run_deployed_smoke',
   'allow_prod_deploy',
@@ -39,6 +41,7 @@ assertIncludesAll('README.md', readme, [
   '.github/workflows/release-strict.yml',
   'TENCENTCLOUD_SECRET_ID',
   'run_backend_deploy=true',
+  'run_db_provision=true',
   'run_deployed_smoke=true'
 ])
 
@@ -47,6 +50,7 @@ assertIncludesAll('docs/deployment-missing-info.md', missingInfo, [
   'TENCENTCLOUD_SECRET_ID',
   'TENCENTCLOUD_SECRET_KEY',
   'GOODS_COMM_PRE_ENV_LOCAL',
+  'GOODS_COMM_DATABASE_ADMIN_URL',
   'GOODS_COMM_PRE_SMOKE_ENV_LOCAL'
 ])
 
@@ -64,6 +68,12 @@ assertIncludesAll('.github/workflows/release-strict.yml', releaseWorkflow, [
   'Check release input bundle',
   'npm run verify:release:strict',
   'Require deployed smoke after backend deploy',
+  'Require database migration after provisioning',
+  'Provision pre database',
+  'Provision prod database',
+  'GOODS_COMM_DB_PROVISION_ALLOW_PROD',
+  'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre',
+  'GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod',
   'Deploy pre backend',
   'Deploy prod backend',
   'Run pre deployed health smoke',

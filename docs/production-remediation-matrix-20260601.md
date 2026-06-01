@@ -12,7 +12,7 @@
 
 | 审计 | 当前结果 | 说明 |
 | --- | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
+| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
 | 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 真实上线前 gate；会把 deployed main-flow smoke 输入缺失升级为 blocker。 |
 
 ## 1. 整体判断
@@ -32,7 +32,7 @@
 | 问题 | 生产风险 | 解决方案 | 当前状态 | 验收证据 |
 | --- | --- | --- | --- | --- |
 | pre/prod 真实 API 缺失 | deployed smoke 无法证明真实后端可用 | 配置 `VITE_API_BASE_URL` / `GOODS_COMM_SMOKE_API_BASE_URL` 为真实 HTTPS API，并加入微信/支付宝合法域名 | 未完成，当前仍为 blocker | `npm run smoke:deployed:pre`、`npm run smoke:deployed:pre:main` 通过 |
-| 真实数据库缺失 | 无法证明用户、商品、交易、通知、审计可持久化 | 按 `docs/database-provisioning-runbook.md` 为 dev/test/pre/prod 建独立 PostgreSQL/TencentDB；先用 `GOODS_COMM_DATABASE_ADMIN_URL` 创建应用角色和目标库，再用 `GOODS_COMM_DATABASE_URL` 跑 schema 迁移、部署后端和 deployed smoke | 开通脚本、schema、权限边界和 runbook 已有，真实实例未接 | `npm run db:provision:pre`、`npm run db:migrate:pre`、`/health/ready`、deployed main-flow smoke |
+| 真实数据库缺失 | 无法证明用户、商品、交易、通知、审计可持久化 | 按 `docs/database-provisioning-runbook.md` 为 dev/test/pre/prod 建独立 PostgreSQL/TencentDB；先用 `GOODS_COMM_DATABASE_ADMIN_URL` 创建应用角色和目标库，再用 `GOODS_COMM_DATABASE_URL` 跑 schema 迁移、部署后端和 deployed smoke | 开通脚本、schema、权限边界、runbook 和 release-strict 可选数据库开通已接入，真实实例未接 | `npm run db:provision:pre`、`npm run db:migrate:pre`、`/health/ready`、deployed main-flow smoke |
 | pre/prod 数据同步未真实运行 | 预上线不能使用接近生产的数据回归 | 使用 `sync:prod-to-pre:plan` / `sync:prod-to-pre` / GitHub workflow 定时同步；同步后脱敏并跑 pre smoke | 脚本已完成，真实数据库账号未接 | `npm run sync:prod-to-pre` 成功，审计 JSONL 无生产 dump 残留 |
 | COS/CDN 缺真实值 | 图片上传和公开访问无法生产验证 | 配置 COS bucket、secret、CDN base URL；pre/prod 禁止 local object store | 适配器和校验已有，真实值未接 | deployed main-flow smoke 覆盖上传、发布、公开商品脱敏 |
 | 腾讯地图 Key 与社区网格缺真实值 | LBS 匹配无法证明可信 | 使用服务端腾讯地图逆地址解析 + 正式社区/街道网格数据；客户端只做预校验 | 代码路径已完成，占位网格未替换 | `smoke:location-permissions`、deployed main-flow smoke |
@@ -41,7 +41,7 @@
 | 内容审核密钥和回调缺失 | 违规商品可能公开，异步图片审核无法闭环 | 配置微信内容安全和 `GOODS_COMM_MODERATION_WEBHOOK_SECRET`；发布默认走待审/审核状态 | 代码路径已完成，真实密钥未接 | `smoke:storage-content`、deployed publish smoke |
 | 微信订阅消息模板缺失 | 交易通知只能本地/mock，真实用户无法收到状态变化 | 配置模板 ID 和字段映射；失败进入 outbox，可重试和告警 | 适配器和 outbox 已有，模板未接 | `smoke:platform-notifier`、ops notification retry |
 | 告警 Webhook 缺真实值 | 生产通知失败、重试失败不能触达值班系统 | 配置 HTTPS webhook URL/token；pre/prod `/health/ready` 校验 | 适配器已有，真实值未接 | `smoke:ops-alerts`、deployed health smoke |
-| 云部署工具链缺失 | 后端无法实际部署到微信/腾讯云 | 按 `docs/cloud-deployment-runbook.md` 优先 CloudBase/tcb；不可用时 docker + tccli Tencent fallback；CI 配置 `TENCENTCLOUD_SECRET_ID/KEY`，使用 release-strict workflow 先跑 strict gate、再部署后端、跑 deployed smoke、最后部署前端 | 部署脚本、workflow、runbook 和执行保护已有；当前本机和 CI Secret 未就绪 | `deploy:backend:pre` 成功 + `smoke:deployed:pre` / `smoke:deployed:pre:main` 通过 |
+| 云部署工具链缺失 | 后端无法实际部署到微信/腾讯云 | 按 `docs/cloud-deployment-runbook.md` 优先 CloudBase/tcb；不可用时 docker + tccli Tencent fallback；CI 配置 `TENCENTCLOUD_SECRET_ID/KEY`，使用 release-strict workflow 先跑 strict gate、按需开通数据库、再部署后端、跑 deployed smoke、最后部署前端 | 部署脚本、workflow、runbook 和执行保护已有；当前本机和 CI Secret 未就绪 | `deploy:backend:pre` 成功 + `smoke:deployed:pre` / `smoke:deployed:pre:main` 通过 |
 | deployed smoke 输入缺失 | 上线后主链路无法验收 | 配置 `.env.smoke.pre.local` / `.env.smoke.prod.local` 或 GitHub multi-line secrets，包含一次性 seller/buyer code、坐标、已审核测试图；上线前先跑 `release:inputs -- --check-only` 汇总缺口 | 模板、自动加载和发布输入检查器已完成；`release-strict.yml` 已在 strict gate 前执行输入束检查并上传发布输入报告；真实输入未接 | `release:inputs -- --check-only`、`audit:production-readiness:strict-check` 无 deployed smoke blocker |
 | GitHub workflow-aware preflight | workflow 文件变更时需要证明 token 具备 `workflow` scope；Actions 运行时弃用告警会影响后续 CI 稳定性 | 保持 `gh` auth 可用；失效时恢复 `gh auth` 或依赖 `git push --dry-run` fallback；workflow 文件变更时优先确保 `workflow` scope；CI、strict release 和 prod-to-pre sync workflow 使用 `actions/checkout@v5` / `actions/setup-node@v5` 的 Node 24 runtime，并保留 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` 兜底 | workflow smoke 已固化 Node 24 Actions runtime tag 和 opt-in；普通生产审计已记录 workflow-aware push preflight scope 通过，`gh` auth 失效时会退回 warning | `npm run smoke:workflows`、`npm run github:push:preflight` 通过 |
 | README workflow 工具链描述旧 | 部署人员可能误以为还要安装 PostgreSQL client | 文档统一为“数据库迁移/同步使用项目依赖 `pg`，strict workflow 只安装 CloudBase CLI 和 tccli” | 本轮修正 | `npm run smoke:workflows` 和文档检查 |
