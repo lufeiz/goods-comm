@@ -85,10 +85,14 @@ function assertCiReleaseGate() {
     'branches:',
     '- main',
     '- master',
+    'uses: actions/checkout@v5',
+    'uses: actions/setup-node@v5',
     'node-version: 24',
     'run: npm ci',
     'run: npm run verify:release'
   ])
+
+  assertNoDeprecatedNode20Actions('ci.yml', content)
 }
 
 function assertReleaseGateProfileBoundary() {
@@ -169,6 +173,8 @@ function assertStrictReleaseGate() {
 
   assertIncludesAll('release-strict.yml', content, [
     'workflow_dispatch:',
+    'uses: actions/checkout@v5',
+    'uses: actions/setup-node@v5',
     'target_environment:',
     'run_deployed_smoke:',
     'health_attempts:',
@@ -243,6 +249,8 @@ function assertStrictReleaseGate() {
     'Fail when strict gate failed'
   ])
 
+  assertNoDeprecatedNode20Actions('release-strict.yml', content)
+
   assert.doesNotMatch(
     content,
     /postgresql-client/,
@@ -272,6 +280,8 @@ function assertProdToPreSyncWorkflow() {
     'workflow_dispatch:',
     'schedule:',
     "cron: '0 18 * * *'",
+    'uses: actions/checkout@v5',
+    'uses: actions/setup-node@v5',
     'concurrency:',
     'group: goods-comm-prod-to-pre-sync',
     'GOODS_COMM_SYNC_DUMP_PATH',
@@ -320,6 +330,8 @@ function assertProdToPreSyncWorkflow() {
     'if-no-files-found: ignore'
   ])
 
+  assertNoDeprecatedNode20Actions('prod-to-pre-sync.yml', content)
+
   assert.doesNotMatch(
     content,
     /path:\s*\$\{\{\s*runner\.temp\s*\}\/goods-comm-prod-to-pre\.dump/,
@@ -336,6 +348,14 @@ function assertProdToPreSyncWorkflow() {
     content,
     /postgresql-client/,
     'prod-to-pre-sync.yml: prod-to-pre sync workflow should use the project pg dependency instead of installing PostgreSQL client tools'
+  )
+}
+
+function assertNoDeprecatedNode20Actions(name, content) {
+  assert.doesNotMatch(
+    content,
+    /uses:\s+actions\/(?:checkout|setup-node)@v4\b/,
+    `${name}: actions/checkout and actions/setup-node must use Node 24 runtime tags`
   )
 }
 
