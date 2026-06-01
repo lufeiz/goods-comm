@@ -169,7 +169,7 @@ jobs:
       - name: Check release input bundle
         id: release_inputs
         continue-on-error: true
-        run: npm run release:inputs -- --check-only
+        run: npm run release:inputs -- --check-only --output docs/release-input-readiness.md --json-output docs/release-input-readiness.json
 
       - name: Run strict release gate
         id: strict
@@ -273,6 +273,8 @@ jobs:
             docs/deployment-readiness-audit.json
             docs/deployment-readiness-audit-strict.md
             docs/deployment-readiness-audit-strict.json
+            docs/release-input-readiness.md
+            docs/release-input-readiness.json
 
       - name: Fail when release input bundle check failed
         if: ${{ steps.release_inputs.outcome != 'success' }}

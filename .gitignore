@@ -6,6 +6,10 @@ node_modules/
 # Build outputs
 dist/
 
+# Generated release evidence
+docs/release-input-readiness.md
+docs/release-input-readiness.json
+
 # Local runtime data
 .data/
 coverage/

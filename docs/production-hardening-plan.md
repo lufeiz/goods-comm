@@ -10,12 +10,12 @@
 
 | 审计 | 结果 | 说明 |
 | --- | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 已刷新 `docs/deployment-readiness-audit.md` / JSON。 |
+| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)` | 已刷新 `docs/deployment-readiness-audit.md` / JSON。 |
 | 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 已刷新 `docs/deployment-readiness-audit-strict.md` / JSON；真实上线前仍需补齐 deployed main-flow smoke 输入。 |
 
 当前主要 blocker 仍来自真实 pre/prod API、数据库、COS/CDN、腾讯地图、平台凭据、session/ops secret、告警 Webhook、部署工具链、云部署凭据和 deployed smoke 一次性输入。工程开发可以继续使用占位值推进，但生产放行必须以 strict gate 和真实 deployed smoke 为准。
 
-发布输入检查补强：2026-06-01 新增 `npm run release:inputs`，用于在不打印密钥值的前提下汇总 pre/prod 本地 override、多行 GitHub Secret、deployed smoke 一次性输入和腾讯云非交互部署凭据的缺口；`npm run release:inputs -- --check-only` 可在真实上线前转为硬失败，`smoke:release-inputs` 已接入 release gate 验证检查器自身可用，`release-strict.yml` 也已在 strict gate 前执行同一输入束检查。
+发布输入检查补强：2026-06-01 新增 `npm run release:inputs`，用于在不打印密钥值的前提下汇总 pre/prod 本地 override、多行 GitHub Secret、deployed smoke 一次性输入和腾讯云非交互部署凭据的缺口；`npm run release:inputs -- --check-only` 可在真实上线前转为硬失败，也支持输出 `docs/release-input-readiness.md` / JSON 作为发布证据；`smoke:release-inputs` 已接入 release gate 验证检查器自身可用，`release-strict.yml` 也已在 strict gate 前执行同一输入束检查并上传发布输入报告。
 
 测试体系补强：2026-06-01 已新增标准 `npm test` / `npm run test:unit` / `npm run test:contract`，用 Node 内置 test runner 覆盖距离计算、交易资格、定位缓存、精度、最终 GPS 交易校验，BFF 登录、发布、交易、评价和幂等契约，以及 PostgreSQL 规范化行往返后的登录、定位展示、发布、售卖、评价和幂等持久化契约，并接入 `verify:release` / `verify:release:quick` / `verify:release:strict`。
 

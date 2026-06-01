@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { access, readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
 import {
   envLocalFilePath,
   maskConnectionString,
@@ -13,6 +13,8 @@ const PROTECTED_ENVIRONMENTS = ['pre', 'prod']
 const SELF_TEST = process.argv.includes('--self-test')
 const CHECK_ONLY = process.argv.includes('--check-only')
 const environments = getRequestedEnvironments()
+const outputPath = getArgValue('--output')
+const jsonOutputPath = getArgValue('--json-output') || defaultJsonOutputPath(outputPath)
 
 const PROTECTED_REQUIRED_KEYS = [
   'VITE_API_BASE_URL',
@@ -143,7 +145,11 @@ if (SELF_TEST) {
 } else {
   const sourceBundle = await readReleaseInputSources(environments, process.env)
   const report = buildReleaseInputsReport(sourceBundle, process.env)
-  console.log(renderReport(report))
+  const renderedReport = renderReport(report)
+
+  await writeOptionalReport(outputPath, renderedReport)
+  await writeOptionalReport(jsonOutputPath, `${JSON.stringify(createMachineReadableReport(report), null, 2)}\n`)
+  console.log(renderedReport)
 
   if (CHECK_ONLY && report.blockerCount > 0) {
     process.exitCode = 1
@@ -540,6 +546,39 @@ function renderReport(report) {
   return lines.join('\n')
 }
 
+async function writeOptionalReport(path, content) {
+  if (!path) {
+    return
+  }
+
+  const resolvedPath = resolve(process.cwd(), path)
+  await mkdir(dirname(resolvedPath), {
+    recursive: true
+  })
+  await writeFile(resolvedPath, content)
+}
+
+function createMachineReadableReport(report) {
+  return {
+    generatedAt: new Date().toISOString(),
+    status: report.status,
+    blockerCount: report.blockerCount,
+    warningCount: report.warningCount,
+    groups: [
+      ...report.protectedReports,
+      ...report.smokeReports,
+      report.crossEnvironmentReport,
+      report.ciReport
+    ].map((group) => ({
+      label: group.label,
+      sources: group.sources,
+      blockers: group.blockers,
+      warnings: group.warnings,
+      passes: group.passes
+    }))
+  }
+}
+
 function renderGroup(group) {
   const lines = [
     `## ${group.label}`,
@@ -689,6 +728,16 @@ function getArgValue(name) {
   return index >= 0 ? process.argv[index + 1] : ''
 }
 
+function defaultJsonOutputPath(markdownPath) {
+  if (!markdownPath) {
+    return ''
+  }
+
+  return /\.md$/i.test(markdownPath)
+    ? markdownPath.replace(/\.md$/i, '.json')
+    : `${markdownPath}.json`
+}
+
 function runSelfTest() {
   const sourceBundle = {
     environments: ['pre', 'prod'],
@@ -711,6 +760,7 @@ function runSelfTest() {
   assert.equal(report.blockerCount, 0)
   assert.match(renderReport(report), /Release input readiness: PASS/)
   assert.doesNotMatch(renderReport(report), /tc-secret-key|postgres-secret|session-secret/)
+  assert.doesNotMatch(JSON.stringify(createMachineReadableReport(report)), /tc-secret-key|postgres-secret|session-secret/)
 
   const blockedBundle = {
     environments: ['pre'],

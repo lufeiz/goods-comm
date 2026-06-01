@@ -11,7 +11,7 @@
 但它也不是可直接生产上线的真实交易系统。当前生产就绪审计仍是：
 
 ```text
-Production readiness audit: BLOCKED (48 blockers, 9 warnings)
+Production readiness audit: BLOCKED (48 blockers, 10 warnings)
 Strict production readiness audit: BLOCKED (50 blockers, 8 warnings)
 ```
 
@@ -43,14 +43,14 @@ Strict production readiness audit: BLOCKED (50 blockers, 8 warnings)
 
 ## 3. 多视角评分
 
-本次并行启动 3 个只读分析 agent。产品/商业、工程/架构两个 agent 已返回；交付/安全 agent 在本报告编写窗口内超时，交付评分由主流程基于当前审计报告和验证命令给出。问题逐项整改方案已整理到 `docs/production-remediation-matrix-20260601.md`。
+本次并行启动 3 个只读分析 agent，分别从产品/用户体验、工程/安全可信、交付/运维/测试三个角度评审。三位 agent 均未修改代码，只读分析当前仓库。问题逐项整改方案已整理到 `docs/production-remediation-matrix-20260601.md`。
 
 | 视角 | 评分 | 判断 |
 | --- | ---: | --- |
-| 产品价值与商业闭环 | 6.5/10 | 切口清楚，MVP 价值闭环基本成立；商业闭环、冷启动、转化、留存、收入模型没有数据证明。 |
-| 工程架构与代码质量 | 7.0/10 | 分层、BFF 复用、四环境、发布门禁和生产保护意识强；核心模块过大，测试偏 smoke，PostgreSQL store 仍有桥接债务。 |
-| 交付、安全与生产就绪 | 4.0/10 | 部署脚本、审计、strict workflow、deployed smoke 设计完整；真实 API、DB、COS、地图、平台凭据、部署工具链和 smoke 输入未补齐。 |
-| 综合当前态 | 6.0/10 | 适合展示和继续试点，不适合直接生产上线。 |
+| 产品 / 用户体验 | 7.0/10 | 社区 / 街道交易边界清楚，定位、发布、交易意向、卖家确认、一次性联系码、争议和评价形成 MVP 闭环；但冷启动、求购/议价/召回、真实供需密度和履约体验没有数据证明。 |
+| 工程 / 安全可信 | 5.5/10 | BFF、后端、PostgreSQL schema、token hash、运营权限、幂等、限流和生产 fail-closed 护栏已经超过纯前端 Demo；但真实 API、DB、COS、地图、平台身份、内容安全和通知没有生产闭环。 |
+| 交付 / 运维 / 测试 | 6.0/10 | 构建、测试、release gate、strict workflow、审计报告、部署 plan 和 deployed smoke 入口完整；但云部署工具链、云凭据、pre/prod smoke 输入和已部署验收仍缺失。 |
+| 综合当前态 | 6.0/10 | 按“展示和继续试点”是中上，按“真实线上交易”仍偏低；适合继续投入，不适合直接生产上线。 |
 
 按使用场景拆分更准确：
 
@@ -129,32 +129,32 @@ Strict production readiness audit: BLOCKED (50 blockers, 8 warnings)
 
 后端文档明确当前 PostgreSQL store 是 `normalized_snapshot_rewrite` 桥接模式，有 `GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS=20000` 作为安全上限。这适合从 MVP 迁向数据库，但真实流量上来后应该改为按聚合根增量 SQL 写入。
 
-## 6. 当前验证结果
+## 6. 当前证据快照
 
-本次实际执行：
+本轮主要做只读分析和多 agent 评审，没有重新执行完整 release gate。当前判断依赖以下仓库证据：
 
 ```text
-npm run smoke
-npm run smoke:backend
-npm run audit:production-readiness -- --check-only
-npm run audit:production-readiness
-npm run audit:production-readiness:strict
+docs/deployment-readiness-audit.md
+docs/deployment-readiness-audit-strict.md
+package.json
+scripts/verify-release-gate.mjs
+.github/workflows/ci.yml
+.github/workflows/release-strict.yml
 ```
 
-结果：
+当前证据显示：
 
-| 命令 | 结果 |
+| 证据 | 当前结果 |
 | --- | --- |
-| `npm run smoke` | 通过，核心逻辑 smoke 绿。 |
-| `npm run smoke:backend` | 通过；输出的 mock notification failure 是脚本刻意验证失败通知路径。 |
-| `npm run audit:production-readiness -- --check-only` | 失败，`BLOCKED (48 blockers, 10 warnings)`；随后 quick gate 刷新普通审计为 `BLOCKED (48 blockers, 9 warnings)`。 |
-| `npm run audit:production-readiness` | 成功刷新 `docs/deployment-readiness-audit.md` 和 JSON；quick gate 最新结果为 `BLOCKED (48 blockers, 9 warnings)`。 |
-| `npm run audit:production-readiness:strict` | 成功刷新 `docs/deployment-readiness-audit-strict.md` 和 JSON，结果仍为 `BLOCKED (50 blockers, 8 warnings)`。 |
+| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)`；build artifacts 为 PASS，但 pre/prod API、云资源、真实密钥、GitHub CLI auth 和 deployed smoke 仍阻塞。 |
+| 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)`；真实上线前仍会因 deployed smoke 输入和真实环境缺口失败。 |
+| CI / release gate | `ci.yml` 执行 `npm run verify:release`；`release-strict.yml` 先跑 release input 检查，再跑 `verify:release:strict`。 |
+| 测试入口 | `package.json` 已有 unit/contract test、BFF smoke、HTTP 后端 smoke、H5 render smoke、artifact smoke、workflow smoke、deployed health/main-flow smoke。 |
 
-验证支持的结论是：
+证据支持的结论是：
 
 ```text
-本地核心逻辑和 HTTP 后端主链路能跑通；生产上线条件没有满足。
+项目具备较完整的本地验证和发布候选门禁；生产上线条件没有满足。
 ```
 
 ## 7. 下一步建议

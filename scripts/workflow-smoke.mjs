@@ -222,7 +222,7 @@ function assertStrictReleaseGate() {
     'printf "%s\\n" "${GOODS_COMM_PROD_SMOKE_ENV_LOCAL}" > .env.smoke.prod.local',
     'Check release input bundle',
     'id: release_inputs',
-    'run: npm run release:inputs -- --check-only',
+    'run: npm run release:inputs -- --check-only --output docs/release-input-readiness.md --json-output docs/release-input-readiness.json',
     "steps.release_inputs.outcome == 'success'",
     'run: npm run verify:release:strict',
     'continue-on-error: true',
@@ -250,6 +250,8 @@ function assertStrictReleaseGate() {
     'docs/deployment-readiness-audit.json',
     'docs/deployment-readiness-audit-strict.md',
     'docs/deployment-readiness-audit-strict.json',
+    'docs/release-input-readiness.md',
+    'docs/release-input-readiness.json',
     'Fail when release input bundle check failed',
     'Fail when strict gate failed'
   ])
