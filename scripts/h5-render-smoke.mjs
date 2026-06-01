@@ -11,6 +11,11 @@ const root = process.cwd()
 const h5Root = resolve(root, getArgValue('--dist') || 'dist/build/h5')
 const chromePath = getArgValue('--chrome') || process.env.GOODS_COMM_CHROME_PATH || findChromePath()
 const timeoutMs = Number(getArgValue('--timeout-ms') || process.env.GOODS_COMM_H5_RENDER_TIMEOUT_MS || 30000)
+const chromeStartTimeoutMs = Number(
+  getArgValue('--chrome-start-timeout-ms') ||
+  process.env.GOODS_COMM_H5_CHROME_START_TIMEOUT_MS ||
+  Math.max(timeoutMs, 30000)
+)
 
 if (!existsSync(join(h5Root, 'index.html'))) {
   throw new Error(`H5 build output is missing at ${h5Root}; run npm run build:h5 first`)
@@ -23,10 +28,11 @@ if (!chromePath) {
 async function main() {
   const server = await startStaticServer(h5Root)
   const baseUrl = `http://127.0.0.1:${server.port}`
-  const browser = await startChrome(chromePath)
+  let browser
   let page
 
   try {
+    browser = await startChrome(chromePath)
     page = await createPage(browser.debugPort)
     await configureBrowser(page, baseUrl)
     await runMainFlow(page, baseUrl)
@@ -34,7 +40,7 @@ async function main() {
     console.log('H5 render smoke checks passed for login, location, publish, and trade sale flow')
   } finally {
     await page?.close().catch(() => {})
-    await browser.close()
+    await browser?.close().catch(() => {})
     await server.close()
   }
 }
@@ -715,11 +721,16 @@ async function startChrome(executablePath) {
     '--disable-background-networking',
     '--disable-component-update',
     '--disable-default-apps',
+    '--disable-dev-shm-usage',
     '--disable-extensions',
     '--disable-popup-blocking',
+    '--disable-setuid-sandbox',
     '--disable-sync',
+    '--disable-software-rasterizer',
     '--no-first-run',
     '--no-default-browser-check',
+    '--no-sandbox',
+    '--remote-debugging-address=127.0.0.1',
     `--remote-debugging-port=${debugPort}`,
     `--user-data-dir=${userDataDir}`,
     'about:blank'
@@ -741,7 +752,7 @@ async function startChrome(executablePath) {
   await waitFor(async () => {
     await fetchJson(`http://127.0.0.1:${debugPort}/json/version`)
     return true
-  }, 10000, () => `Chrome DevTools endpoint did not start. stderr: ${stderr.join('').slice(-2000)}`)
+  }, chromeStartTimeoutMs, () => `Chrome DevTools endpoint did not start within ${chromeStartTimeoutMs}ms. stderr: ${stderr.join('').slice(-4000)}`)
 
   return {
     debugPort,
