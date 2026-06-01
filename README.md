@@ -95,6 +95,8 @@ npm run smoke:backend
 npm run smoke:platform-notifier
 ```
 
+`npm test` 会运行领域单测、BFF 主链路契约和 PostgreSQL 规范化持久化主链路契约，覆盖登录、定位展示、发布、交易售卖、评价、公开响应脱敏和写请求幂等。
+
 发布门禁把语法检查、环境检查、smoke、构建、迁移 / 部署 / 同步 plan 和生产审计串成同一入口；CI 使用 full profile，本地快速回归可用 quick profile：
 
 ```bash

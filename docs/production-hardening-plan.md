@@ -15,7 +15,7 @@
 
 当前主要 blocker 仍来自真实 pre/prod API、数据库、COS/CDN、腾讯地图、平台凭据、session/ops secret、告警 Webhook、部署工具链、云部署凭据和 deployed smoke 一次性输入。工程开发可以继续使用占位值推进，但生产放行必须以 strict gate 和真实 deployed smoke 为准。
 
-测试体系补强：2026-06-01 已新增标准 `npm test` / `npm run test:unit` / `npm run test:contract`，用 Node 内置 test runner 覆盖距离计算、交易资格、定位缓存、精度、最终 GPS 交易校验，以及 BFF 登录、发布、交易、评价和幂等契约，并接入 `verify:release` / `verify:release:quick` / `verify:release:strict`。
+测试体系补强：2026-06-01 已新增标准 `npm test` / `npm run test:unit` / `npm run test:contract`，用 Node 内置 test runner 覆盖距离计算、交易资格、定位缓存、精度、最终 GPS 交易校验，BFF 登录、发布、交易、评价和幂等契约，以及 PostgreSQL 规范化行往返后的登录、定位展示、发布、售卖、评价和幂等持久化契约，并接入 `verify:release` / `verify:release:quick` / `verify:release:strict`。
 
 ## 1. 本轮结论
 
@@ -62,7 +62,7 @@
 | 定位失败状态不细 | 区分拒绝授权、系统定位关闭、低精度、过期、超时、网络异常、坐标无效、区域解析失败、手动选择和 GPS 最终校验 | 端侧已统一 `LOCATION_*` 错误码，展示来源、精度、相对更新时间，并阻断非 GPS 最终交易；BFF 已在 `/items` 和 `/trades` 中二次校验 `capturedAt` 和 `accuracy`；`smoke:location-permissions` 已用 mock `uni` 和浏览器 geolocation 覆盖定位授权拒绝、首次授权拒绝、系统定位关闭、超时、网络异常、无效坐标、低精度、区域解析失败、H5 浏览器权限、缓存过期和最终交易必须使用实时 GPS 的权限/质量矩阵 | 真机覆盖更多平台错误码 |
 | 交易流程只有意向 | 增加卖家确认、待验货、完成、取消、争议、客服裁决、站内通知和平台模板消息；商品状态随交易变化；写请求必须幂等 | 已实现本地状态机和交易页操作；卖家手动上下架已被交易锁定、已售和风控状态约束；交易页会在确认、完成、取消、争议前二次确认；远端状态更新边界、争议工单、客服裁决、站内通知收件箱、平台通知适配器、投递 outbox、重试接口、轻量运营控制台、运营短期会话和 `Idempotency-Key` 重放已补 | 真实服务端连接级事务、真实微信订阅消息模板 ID、完整客服后台和细粒度 RBAC |
 | 缺少举报和数据删除闭环 | 新增举报表、运营处理接口、账号注销接口、账号注销后商品下架、活跃交易取消和 session 吊销 | BFF handler 已覆盖 `/reports`、`/ops/login`、`/ops/moderation-queue`、`/ops/reports/:id/resolve`、`/ops/users`、`/ops/users/:id/status`、`/ops/audit-events`、`/auth/delete-account`，轻量运营控制台已接待审商品、举报、争议、通知重试、用户风控和操作审计，并支持具名运营账号会话、角色校验和 actor 注入；封禁用户会吊销 session、下架活跃发布、冻结相关交易并写审计；账号注销会伪匿名化平台身份、清空 unionId / 昵称 / 头像 / 联系码、保留 tombstone 并拒绝同平台身份重登；端侧举报前需要确认用户协议 / 隐私政策；烟测覆盖举报对象/原因/权限校验、重复举报幂等、高风险举报下架、运营驳回误报恢复商品、冻结活跃交易、封禁 / 解封、过期 token 拒绝、操作审计，以及 HTTP 层账号注销后的 token 吊销、卖家商品下架、买家交易取消、商品释放和注销身份重登拒绝 | 完整客服后台、数据保留策略、正式协议法务审核 |
-| 缺完整测试体系 | 保留 smoke，增加 service 单测、uni mock、页面 E2E、双端 CI | smoke 已覆盖本地、远端 service 路径、BFF 契约、Fetch 适配器、真实 HTTP 后端、文件 store 事务失败回滚和端侧遥测链路；新增 `smoke:pages` 静态页面契约检查，覆盖页面注册、tabBar、页面跳转、模板事件处理器和关键 service 接入；新增 `smoke:main-flow-contract` 主链路证据矩阵，检查登录、定位展示、发布、图片上传、交易售卖、部署后 smoke 与 release gate 串联；新增 `smoke:location-permissions` 聚焦定位权限和质量矩阵；新增 `verify:release` 门禁和 GitHub Actions CI，覆盖三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告 | 真机/开发者工具自动化、渲染级页面 E2E |
+| 缺完整测试体系 | 保留 smoke，增加 service 单测、uni mock、页面 E2E、双端 CI | smoke 已覆盖本地、远端 service 路径、BFF 契约、Fetch 适配器、真实 HTTP 后端、文件 store 事务失败回滚和端侧遥测链路；新增 `smoke:pages` 静态页面契约检查，覆盖页面注册、tabBar、页面跳转、模板事件处理器和关键 service 接入；新增 `smoke:main-flow-contract` 主链路证据矩阵，检查登录、定位展示、发布、图片上传、交易售卖、部署后 smoke 与 release gate 串联；新增 `smoke:location-permissions` 聚焦定位权限和质量矩阵；新增标准 `npm test` / `test:contract`，覆盖 BFF 主链路和 PostgreSQL 规范化持久化主链路；新增 `verify:release` 门禁和 GitHub Actions CI，覆盖三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告 | 真机/开发者工具自动化、渲染级页面 E2E、真实 PostgreSQL 实例集成测试 |
 | AppID / 合规配置未生产化 | 配置真实 AppID、合法域名、隐私协议、用户协议、数据删除入口 | 端侧已有账号注销入口、用户协议 / 隐私政策页面、协议同意状态和登录 / 发布 / 交易 / 举报前拦截；pre/prod 登录会服务端校验并持久化协议确认事实；未在代码中写死真实 AppID，避免误提交；后端已支持 `GOODS_COMM_ALLOWED_ORIGINS` 约束 H5 / 浏览器合法 Origin，且 pre/prod 不允许空值或 `*` CORS | 真实平台账号、合法域名、正式协议法务审核和平台合规材料 |
 | H5 未适配 | H5 使用浏览器 geolocation 获取实时定位；dev/test 无小程序登录 API 时生成本地 H5 演示登录态；pre/prod 后端仍拒绝演示登录，不能把 H5 本地身份当作正式账号体系 | 已补基础浏览器定位、演示登录 smoke、协议确认和四环境 H5 构建 | 若要对公网开放 H5，需要接正式 OAuth/SSO、合法 H5 域名策略和浏览器 E2E |
 
