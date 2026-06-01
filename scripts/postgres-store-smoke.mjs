@@ -12,6 +12,7 @@ import {
   NORMALIZED_TABLE_COLUMN_REQUIREMENTS,
   normalizePostgresAdvisoryLockKey,
   normalizeSnapshotRowLimit,
+  PostgresStateStore,
   REQUIRED_SCHEMA_MIGRATIONS,
   serializeStateToRows
 } from '../backend/src/postgres-state-store.mjs'
@@ -347,6 +348,35 @@ await assert.rejects(
   new RegExp(`PostgreSQL schema is not at required baseline for pre: missing migrations ${REQUIRED_SCHEMA_MIGRATIONS[0].version}; run npm run db:migrate:pre`)
 )
 
+const readinessStore = createCheckOnlyPostgresStore({
+  maxSnapshotRows: 5,
+  tableCounts: {
+    users: 2,
+    auth_sessions: 1,
+    items: 2
+  }
+})
+const readiness = await readinessStore.check()
+assert.equal(readiness.ok, true)
+assert.equal(readiness.mode, 'normalized_snapshot_rewrite')
+assert.equal(readiness.currentRowCount, 5)
+assert.equal(readiness.snapshotRowLimit, 5)
+assert.equal(readiness.rowCounts.users, 2)
+assert.equal(readiness.rowCounts.sessions, 1)
+assert.equal(readiness.rowCounts.items, 2)
+
+await assert.rejects(
+  () => createCheckOnlyPostgresStore({
+    maxSnapshotRows: 4,
+    tableCounts: {
+      users: 2,
+      auth_sessions: 1,
+      items: 2
+    }
+  }).check(),
+  /PostgreSQL snapshot row count 5 exceeds GOODS_COMM_POSTGRES_MAX_SNAPSHOT_ROWS=4/
+)
+
 assert.equal(rows.users.length, 2)
 assert.equal(rows.sessions.length, 2)
 assert.equal(rows.idempotencyRecords.length, 1)
@@ -495,14 +525,40 @@ function createAgreement(source) {
   }
 }
 
+function createCheckOnlyPostgresStore(options = {}) {
+  const store = new PostgresStateStore('postgres://goods_comm_app:secret@localhost:5432/goods_comm', {
+    environment: 'pre',
+    maxSnapshotRows: options.maxSnapshotRows,
+    autoSchema: false
+  })
+
+  store.pool = {
+    connect: async () => schemaReadyClient({
+      tableCounts: options.tableCounts
+    })
+  }
+
+  return store
+}
+
 function schemaReadyClient(options = {}) {
   const missingTables = options.missingTables || new Set()
   const missingColumns = options.missingColumns || new Set()
   const missingMigrations = options.missingMigrations || new Set()
+  const tableCounts = options.tableCounts || {}
 
   return {
-    query: async (sql, args) => {
+    release: () => {},
+    query: async (sql, args = []) => {
       const table = args[0]
+
+      if (String(sql).trim() === 'SELECT 1') {
+        return {
+          rows: [{
+            '?column?': 1
+          }]
+        }
+      }
 
       if (String(sql).includes('to_regclass')) {
         return {
@@ -530,7 +586,17 @@ function schemaReadyClient(options = {}) {
             ? []
             : [{
                 version
-              }]
+            }]
+        }
+      }
+
+      const countMatch = String(sql).match(/^SELECT COUNT\(\*\)::int AS count FROM ([a-z_]+)$/)
+
+      if (countMatch) {
+        return {
+          rows: [{
+            count: tableCounts[countMatch[1]] || 0
+          }]
         }
       }
 

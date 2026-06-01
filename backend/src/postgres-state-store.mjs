@@ -91,6 +91,7 @@ export class PostgresStateStore {
       await prepareNormalizedSchema(client, this)
       await client.query('SELECT 1')
       const rowCounts = await countNormalizedRows(client)
+      assertSnapshotRowLimit(rowCounts, this.maxSnapshotRows)
 
       return {
         ok: true,
