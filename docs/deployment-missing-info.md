@@ -4,7 +4,7 @@
 
 本文件记录真实部署仍缺少的信息。缺失项不阻塞工程开发：当前 `.env.dev/test/pre/prod` 已使用占位值，后端、数据库 schema、环境校验、构建产物和 prod 到 pre 同步脚本都可以先行开发和验证。真实部署前可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；本地覆盖文件已被 `.gitignore` 排除，GitHub Actions 则使用 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入同名文件。部署后 smoke 的短期登录 code、坐标和已审核测试图等一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制出 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件。
 
-当前审计快照：普通生产审计仍为 `BLOCKED (48 blockers, 9 warnings)`，严格生产审计仍为 `BLOCKED (50 blockers, 8 warnings)`。当前 GitHub push automation 检查通过，GitHub CLI token 具备 `repo` / `workflow` scope；如果后续本机 `gh` auth 失效，普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback，但包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
+当前审计快照：普通生产审计仍为 `BLOCKED (48 blockers, 10 warnings)`，严格生产审计仍为 `BLOCKED (50 blockers, 8 warnings)`。当前本机生产审计未读取到 GitHub CLI auth；普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback，但包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
 
 ## 1. 平台账号与应用
 
@@ -56,6 +56,7 @@
 - `npm run audit:production-readiness -- --check-only`：只做检查并在存在上线 blocker 时返回非 0，可放入发布门禁或 CI。
 - `npm run audit:production-readiness:strict`：生成严格上线审计报告，额外把部署后主链路 smoke 输入缺失视为 blocker，默认写入 `docs/deployment-readiness-audit-strict.md` 和 `docs/deployment-readiness-audit-strict.json`。
 - `npm run audit:production-readiness:strict-check`：只做严格上线检查并在存在 blocker 时返回非 0；`verify:release:strict` 使用同一口径。
+- `npm run release:inputs`：只检查 pre/prod 真实发布输入的来源和质量，不打印密钥值；会汇总 `.env.pre.local` / `.env.prod.local`、`GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL`、`.env.smoke.pre.local` / `.env.smoke.prod.local`、`GOODS_COMM_PRE_SMOKE_ENV_LOCAL` / `GOODS_COMM_PROD_SMOKE_ENV_LOCAL`、一次性 deployed smoke code / 坐标 / 图片 fallback，以及 `TENCENTCLOUD_SECRET_ID` / `TENCENTCLOUD_SECRET_KEY` 等非交互部署输入。真实上线前可用 `npm run release:inputs -- --check-only` 把缺失项转为非 0 退出；quick/full/release gate 已接入 `smoke:release-inputs` 自测，确保检查器本身可执行。
 - `npm run verify:release:quick`：本地快速门禁，执行语法检查、核心 smoke、默认三端构建和生产审计报告；命令结束时会明确提示 quick/full 不是生产放行口径。只有 quick profile 允许通过 `-- --skip-http-backend` 跳过本地 HTTP 监听，用于受限沙箱或夜间推送自动化。
 - `npm run verify:release`：CI / 发布候选门禁，执行语法检查、完整 smoke、HTTP 后端 smoke、本地部署后 health / main-flow smoke、三端四环境构建、迁移 / 部署 / 同步 plan 和生产审计报告；full profile 不允许 `--skip-http-backend`，避免发布候选跳过后端主链路验证。命令结束时会明确提示 full 只生成生产审计，不会因为剩余生产 blocker 失败。
 - `npm run verify:release:strict`：真实上线门禁，在 full 门禁基础上先刷新 `docs/deployment-readiness-audit-strict.md` / `docs/deployment-readiness-audit-strict.json`，再把生产就绪审计改为强制 `--check-only --require-deployed-smoke-inputs`；release profile 不允许 `--skip-http-backend`，pre/prod 真实资源、密钥、工具链和部署后 smoke 输入未补齐时会失败。

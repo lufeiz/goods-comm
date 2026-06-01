@@ -12,7 +12,7 @@
 
 | 审计 | 当前结果 | 说明 |
 | --- | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
+| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
 | 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 真实上线前 gate；会把 deployed main-flow smoke 输入缺失升级为 blocker。 |
 
 ## 1. 整体判断
@@ -42,8 +42,8 @@
 | 微信订阅消息模板缺失 | 交易通知只能本地/mock，真实用户无法收到状态变化 | 配置模板 ID 和字段映射；失败进入 outbox，可重试和告警 | 适配器和 outbox 已有，模板未接 | `smoke:platform-notifier`、ops notification retry |
 | 告警 Webhook 缺真实值 | 生产通知失败、重试失败不能触达值班系统 | 配置 HTTPS webhook URL/token；pre/prod `/health/ready` 校验 | 适配器已有，真实值未接 | `smoke:ops-alerts`、deployed health smoke |
 | 云部署工具链缺失 | 后端无法实际部署到微信/腾讯云 | 优先 CloudBase/tcb；不可用时 docker + tccli Tencent fallback；CI 配置 `TENCENTCLOUD_SECRET_ID/KEY` | 当前本机和 CI Secret 未就绪 | `deploy:backend:pre` 成功 + deployed smoke 通过 |
-| deployed smoke 输入缺失 | 上线后主链路无法验收 | 配置 `.env.smoke.pre.local` / `.env.smoke.prod.local` 或 GitHub multi-line secrets，包含一次性 seller/buyer code、坐标、已审核测试图 | 模板和自动加载已完成，真实输入未接 | `audit:production-readiness:strict-check` 无 deployed smoke blocker |
-| GitHub workflow-aware preflight | workflow 文件变更时需要证明 token 具备 `workflow` scope；Actions 运行时弃用告警会影响后续 CI 稳定性 | 保持 `gh` auth 可用；失效时恢复 `gh auth` 或依赖 `git push --dry-run` fallback；workflow 文件变更时优先确保 `workflow` scope；CI、strict release 和 prod-to-pre sync workflow 使用 `actions/checkout@v5` / `actions/setup-node@v5` 的 Node 24 runtime，并保留 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` 兜底 | 普通审计已通过，workflow smoke 已固化 Node 24 Actions runtime tag 和 opt-in | `npm run smoke:workflows`、`npm run github:push:preflight` 通过 |
+| deployed smoke 输入缺失 | 上线后主链路无法验收 | 配置 `.env.smoke.pre.local` / `.env.smoke.prod.local` 或 GitHub multi-line secrets，包含一次性 seller/buyer code、坐标、已审核测试图；上线前先跑 `release:inputs -- --check-only` 汇总缺口 | 模板、自动加载和发布输入检查器已完成，真实输入未接 | `release:inputs -- --check-only`、`audit:production-readiness:strict-check` 无 deployed smoke blocker |
+| GitHub workflow-aware preflight | workflow 文件变更时需要证明 token 具备 `workflow` scope；Actions 运行时弃用告警会影响后续 CI 稳定性 | 保持 `gh` auth 可用；失效时恢复 `gh auth` 或依赖 `git push --dry-run` fallback；workflow 文件变更时优先确保 `workflow` scope；CI、strict release 和 prod-to-pre sync workflow 使用 `actions/checkout@v5` / `actions/setup-node@v5` 的 Node 24 runtime，并保留 `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` 兜底 | workflow smoke 已固化 Node 24 Actions runtime tag 和 opt-in；当前本机生产审计在 `gh` auth 不可用时记录 warning | `npm run smoke:workflows`、`npm run github:push:preflight` 通过 |
 | README workflow 工具链描述旧 | 部署人员可能误以为还要安装 PostgreSQL client | 文档统一为“数据库迁移/同步使用项目依赖 `pg`，strict workflow 只安装 CloudBase CLI 和 tccli” | 本轮修正 | `npm run smoke:workflows` 和文档检查 |
 | LBS 可信度天然风险 | 恶意用户可能伪造位置或频繁跨区 | 服务端重算区域；记录位置审计；新增位置风险事件；后续引入设备/账号/频率策略和人工复核 | 基础审计已有，真实风控策略待试点数据校准 | location risk ops 查询与复核记录 |
 | 线下撮合不等于完整电商 | 无支付、担保、退款、资金风控 | 产品定位限定为社区线下自提；如要做平台交易，再新增支付、担保、退款和财务对账域 | 当前不做资金闭环 | 产品说明和试点指标不以 GMV 误导 |

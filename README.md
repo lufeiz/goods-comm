@@ -49,11 +49,12 @@ npm run backend:start:pre
 上线前审计会汇总本机 CLI、pre/prod 真实配置、构建产物、部署 smoke 前置项和 prod 到 pre 同步条件：
 
 ```bash
+npm run release:inputs
 npm run audit:production-readiness
 npm run audit:production-readiness -- --check-only
 ```
 
-审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。部署后 health / main-flow smoke 的一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制到 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件；模板完整性由 `npm run smoke:deployed-input-templates` 校验。
+`release:inputs` 只输出真实发布输入的缺口状态，不打印密钥值；可用 `npm run release:inputs -- --check-only` 在真实上线前把缺失输入转成非 0 退出。审计报告输出到 `docs/deployment-readiness-audit.md`，同时输出机器可读的 `docs/deployment-readiness-audit.json`，供 CI、发布看板或部署脚本逐项消费 blocker。 如需在本机放真实密钥，可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；这些本地文件会被脚本读取，并已被 `.gitignore` 忽略。部署后 health / main-flow smoke 的一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制到 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件；模板完整性由 `npm run smoke:deployed-input-templates` 校验。
 
 prod 到 pre 数据同步同时支持手动和自动定时入口；真实执行前必须替换数据库连接串并准备 PostgreSQL 工具：
 
@@ -106,6 +107,7 @@ npm run verify:release:strict
 ```
 
 `verify:release:strict` 会执行 `audit:production-readiness -- --check-only`，只有 pre/prod 真实云资源和密钥补齐后才会通过。
+快速 / 完整 / 严格门禁都会执行 `smoke:release-inputs` 自测，确保发布输入检查器本身可用；真实输入是否补齐仍以 `release:inputs -- --check-only` 和 strict 审计为准。
 
 GitHub 推送前先跑 release gate，再确认本地 `main`、`origin` 和 GitHub token 权限：
 
