@@ -44,7 +44,7 @@ import {
   setApiTransportForTesting
 } from '../src/services/api.js'
 import { uploadItemImages } from '../src/services/media.js'
-import { deleteAuthAccount, loginWithPlatformProfile, logoutAuthSession, normalizeAuthSession } from '../src/services/auth.js'
+import { deleteAuthAccount, isProtectedH5AuthDisabled, loginWithPlatformProfile, logoutAuthSession, normalizeAuthSession } from '../src/services/auth.js'
 import {
   acceptUserAgreement,
   clearUserAgreementForTesting,
@@ -382,6 +382,12 @@ try {
   assert.equal(h5User.provider, 'h5')
   assert.equal(h5User.nickname, 'H5 用户')
   assert.equal(h5User.token.startsWith('local_token_'), true)
+  assert.equal(isProtectedH5AuthDisabled('dev', 'h5'), false)
+  assert.equal(isProtectedH5AuthDisabled('test', 'h5'), false)
+  assert.equal(isProtectedH5AuthDisabled('pre', 'h5'), true)
+  assert.equal(isProtectedH5AuthDisabled('prod', 'h5'), true)
+  assert.equal(isProtectedH5AuthDisabled('prod', 'weixin'), false)
+  assert.equal(isProtectedH5AuthDisabled('prod', 'alipay'), false)
 } finally {
   restoreH5Runtime()
   storage.delete('goods.authUser')

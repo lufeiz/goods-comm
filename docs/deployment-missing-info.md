@@ -107,6 +107,7 @@
 - `npm run env:check` 会阻断 dev/test/pre/prod 复用同一个 `GOODS_COMM_DATABASE_URL`、`GOODS_COMM_STATE_PATH`、`GOODS_COMM_OBJECT_DIR` 或 `GOODS_COMM_COS_BUCKET`；即使还在占位阶段，也必须保持四套环境的持久化边界互相独立。
 - pre/prod 后端通过 `GOODS_COMM_STATE_STORE=postgres` 连接 PostgreSQL；文件状态存储会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_PLATFORM_AUTH_MODE=platform` 调用真实微信 / 支付宝登录换身份接口；演示登录会被运行时拒绝。
+- pre/prod H5 前端登录入口默认 fail-closed；H5 只保留 dev/test 联调演示登录，正式公网 H5 需要先接 OAuth/SSO 后再开放。
 - pre/prod 后端通过 `GOODS_COMM_OBJECT_STORE=cos` 上传商品图片到 COS/CDN；本地对象存储会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_CONTENT_SECURITY_PROVIDER=wechat` 做文本和图片内容安全；mock 审核会被运行时拒绝。
 - pre/prod 后端通过 `GOODS_COMM_MAP_PROVIDER=tencent` 做服务端区域解析；样例区域解析会被运行时拒绝。

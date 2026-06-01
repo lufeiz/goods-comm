@@ -1,4 +1,4 @@
-import { AUTH_SESSION_TTL_MS } from '../config/app.js'
+import { APP_ENV, AUTH_SESSION_TTL_MS } from '../config/app.js'
 import { hasRemoteApi, requestApi } from './api.js'
 import { getUserAgreementAcceptance, requireUserAgreement } from './compliance.js'
 import { getRuntimePlatform, isBrowserRuntime } from './platform.js'
@@ -80,6 +80,7 @@ export function isAuthUserUsable(user, now = Date.now()) {
 
 export async function loginWithPlatformProfile() {
   requireUserAgreement('登录前请先阅读并同意用户协议和隐私政策')
+  assertProtectedH5AuthAllowed()
 
   // #ifdef MP-WEIXIN
   if (getRuntimePlatform() === 'weixin') {
@@ -99,6 +100,7 @@ export async function loginWithPlatformProfile() {
 
 export async function loginWithUserInfo(userInfo, rawProfile = {}) {
   requireUserAgreement('登录前请先阅读并同意用户协议和隐私政策')
+  assertProtectedH5AuthAllowed()
 
   const normalized = normalizeUserInfo({
     userInfo
@@ -181,6 +183,16 @@ export function buildLocalAuthSession(payload) {
     token: `local_token_${hashText(`${stableCode}_${Date.now()}`)}`,
     sessionExpiresAt: Date.now() + AUTH_SESSION_TTL_MS
   }, payload)
+}
+
+export function isProtectedH5AuthDisabled(appEnv = APP_ENV, runtimePlatform = getRuntimePlatform()) {
+  return runtimePlatform === 'h5' && ['pre', 'prod'].includes(appEnv)
+}
+
+function assertProtectedH5AuthAllowed() {
+  if (isProtectedH5AuthDisabled()) {
+    throw new Error('H5 预发和生产环境暂不支持演示登录，请接入 OAuth/SSO 后再开放公网登录')
+  }
 }
 
 function assertUsableProfile(userInfo) {
