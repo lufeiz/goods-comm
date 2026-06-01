@@ -9,6 +9,9 @@ const readme = await read('README.md')
 const environmentMatrix = await read('docs/environment-matrix.md')
 const missingInfo = await read('docs/deployment-missing-info.md')
 const remediationMatrix = await read('docs/production-remediation-matrix-20260601.md')
+const readinessAudit = await read('docs/deployment-readiness-audit.md')
+const strictReadinessAudit = await read('docs/deployment-readiness-audit-strict.md')
+const readinessAuditJson = JSON.parse(await read('docs/deployment-readiness-audit.json'))
 
 assertIncludesAll('docs/database-provisioning-runbook.md', runbook, [
   'GOODS_COMM_DATABASE_URL',
@@ -56,6 +59,38 @@ assertIncludesAll('docs/production-remediation-matrix-20260601.md', remediationM
   '/health/ready'
 ])
 
+for (const [name, content] of [
+  ['docs/deployment-readiness-audit.md', readinessAudit],
+  ['docs/deployment-readiness-audit-strict.md', strictReadinessAudit]
+]) {
+  assertIncludesAll(name, content, [
+    'npm run db:provision:pre:plan',
+    'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre',
+    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
+    'npm run db:provision:prod:plan',
+    'GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod GOODS_COMM_DB_PROVISION_ALLOW_PROD=true npm run db:provision:prod',
+    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true npm run db:migrate:prod'
+  ])
+
+  assertOrder(name, content, [
+    'npm run db:provision:pre:plan',
+    'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre',
+    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
+    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre'
+  ])
+}
+
+assert.deepEqual(
+  readinessAuditJson.releaseGateCommands?.filter((command) => command.includes('db:provision')),
+  [
+    'npm run db:provision:pre:plan',
+    'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre',
+    'npm run db:provision:prod:plan',
+    'GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod GOODS_COMM_DB_PROVISION_ALLOW_PROD=true npm run db:provision:prod'
+  ],
+  'docs/deployment-readiness-audit.json: releaseGateCommands must include protected pre/prod database provisioning'
+)
+
 console.log('Database runbook smoke checks passed')
 
 async function read(path) {
@@ -68,5 +103,18 @@ function assertIncludesAll(name, content, needles) {
       content.includes(needle),
       `${name}: expected to include ${needle}`
     )
+  }
+}
+
+function assertOrder(name, content, snippets) {
+  let previousIndex = -1
+
+  for (const snippet of snippets) {
+    const index = content.indexOf(snippet)
+
+    assert.ok(index >= 0, `${name}: expected ordered snippet is missing: ${snippet}`)
+    assert.ok(index > previousIndex, `${name}: expected ${snippet} to appear after the previous release command`)
+
+    previousIndex = index
   }
 }

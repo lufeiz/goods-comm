@@ -100,6 +100,33 @@ const NIGHTLY_GITHUB_PUSH_AUTOMATION_PATH = resolve(
   process.env.CODEX_HOME || resolve(process.env.HOME || '', '.codex'),
   'automations/goods-comm-nightly-github-push/automation.toml'
 )
+const RELEASE_GATE_COMMANDS = [
+  'npm run env:check',
+  'npm run audit:production-readiness -- --check-only',
+  'npm run audit:production-readiness:strict-check',
+  '# Pre database and backend release',
+  'npm run db:provision:pre:plan',
+  'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre',
+  'npm run db:migrate:plan -- --env pre',
+  'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
+  'npm run deploy:backend:pre:plan',
+  'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre',
+  'npm run smoke:deployed:pre',
+  'npm run smoke:deployed:pre:main',
+  'npm run deploy:frontend:pre:plan',
+  'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre',
+  '# Prod-to-pre regression before production release',
+  'npm run sync:prod-to-pre:plan',
+  'GOODS_COMM_SYNC_RUN_PRE_SMOKE=true GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto',
+  '# Production release after pre evidence',
+  'npm run db:provision:prod:plan',
+  'GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod GOODS_COMM_DB_PROVISION_ALLOW_PROD=true npm run db:provision:prod',
+  'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true npm run db:migrate:prod',
+  'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true GOODS_COMM_DEPLOY_CONFIRM=deploy-prod GOODS_COMM_DEPLOY_ALLOW_PROD=true npm run deploy:backend:prod',
+  'npm run smoke:deployed:prod',
+  'GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true npm run smoke:deployed:prod:main',
+  'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-prod GOODS_COMM_DEPLOY_ALLOW_PROD=true npm run deploy:frontend:prod'
+]
 
 const REAL_VALUE_KEYS = [
   'VITE_API_BASE_URL',
@@ -1090,19 +1117,7 @@ function renderAudit(report) {
     '## Release gate commands',
     '',
     '```bash',
-    'npm run env:check',
-    'npm run audit:production-readiness -- --check-only',
-    'npm run audit:production-readiness:strict-check',
-    'npm run db:migrate:plan -- --env pre',
-    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
-    'npm run deploy:backend:pre:plan',
-    'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre GOODS_COMM_DEPLOY_CONFIRM=deploy-pre npm run deploy:backend:pre',
-    'npm run smoke:deployed:pre',
-    'npm run smoke:deployed:pre:main',
-    'npm run deploy:frontend:pre:plan',
-    'GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre',
-    'npm run sync:prod-to-pre:plan',
-    'GOODS_COMM_SYNC_RUN_PRE_SMOKE=true GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto',
+    ...RELEASE_GATE_COMMANDS,
     '```',
     ''
   ].join('\n')
@@ -1147,6 +1162,7 @@ function createMachineReadableAudit(report) {
     status,
     blockerCount: report.blockerCount,
     warningCount: report.warningCount,
+    releaseGateCommands: RELEASE_GATE_COMMANDS,
     toolchain: renderToolchainStatus(),
     areas,
     blockers: flattenIssues(areas, 'blockers'),

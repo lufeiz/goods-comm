@@ -1,6 +1,6 @@
 # goods-comm production readiness audit
 
-Generated: 2026-06-01T03:27:10.055Z
+Generated: 2026-06-01T03:46:51.946Z
 Scope: pre, prod
 Result: BLOCKED (50 blockers, 8 warnings)
 
@@ -218,6 +218,9 @@ Local override: not present
 npm run env:check
 npm run audit:production-readiness -- --check-only
 npm run audit:production-readiness:strict-check
+# Pre database and backend release
+npm run db:provision:pre:plan
+GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre
 npm run db:migrate:plan -- --env pre
 GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre
 npm run deploy:backend:pre:plan
@@ -226,6 +229,15 @@ npm run smoke:deployed:pre
 npm run smoke:deployed:pre:main
 npm run deploy:frontend:pre:plan
 GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-pre npm run deploy:frontend:pre
+# Prod-to-pre regression before production release
 npm run sync:prod-to-pre:plan
 GOODS_COMM_SYNC_RUN_PRE_SMOKE=true GOODS_COMM_SYNC_RUN_PRE_MAIN_SMOKE=true GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto
+# Production release after pre evidence
+npm run db:provision:prod:plan
+GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod GOODS_COMM_DB_PROVISION_ALLOW_PROD=true npm run db:provision:prod
+GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true npm run db:migrate:prod
+GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-prod GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true GOODS_COMM_DEPLOY_CONFIRM=deploy-prod GOODS_COMM_DEPLOY_ALLOW_PROD=true npm run deploy:backend:prod
+npm run smoke:deployed:prod
+GOODS_COMM_SMOKE_ALLOW_PROD_MUTATION=true npm run smoke:deployed:prod:main
+GOODS_COMM_FRONTEND_DEPLOY_CONFIRM=deploy-frontend-prod GOODS_COMM_DEPLOY_ALLOW_PROD=true npm run deploy:frontend:prod
 ```
