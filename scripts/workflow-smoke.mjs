@@ -16,6 +16,7 @@ const migrateDatabaseScript = await readFile(resolve(root, 'scripts/migrate-data
 const releaseGateScript = await readFile(resolve(root, 'scripts/verify-release-gate.mjs'), 'utf8')
 
 assertNoPullRequestTarget()
+assertNode24ActionRuntimeOptIn()
 assertCiReleaseGate()
 assertReleaseGateProfileBoundary()
 assertStrictReleaseGate()
@@ -63,6 +64,15 @@ function assertNoPullRequestTarget() {
       /\bpull_request_target\b/,
       `${workflow.name}: pull_request_target is not allowed for this repository gate`
     )
+  }
+}
+
+function assertNode24ActionRuntimeOptIn() {
+  for (const workflow of Object.values(workflows)) {
+    assertIncludesAll(workflow.name, workflow.content, [
+      'env:',
+      "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'"
+    ])
   }
 }
 
