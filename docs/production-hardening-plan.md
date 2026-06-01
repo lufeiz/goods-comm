@@ -10,7 +10,7 @@
 
 | 审计 | 结果 | 说明 |
 | --- | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)` | 已刷新 `docs/deployment-readiness-audit.md` / JSON。 |
+| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 已刷新 `docs/deployment-readiness-audit.md` / JSON。 |
 | 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 已刷新 `docs/deployment-readiness-audit-strict.md` / JSON；真实上线前仍需补齐 deployed main-flow smoke 输入。 |
 
 当前主要 blocker 仍来自真实 pre/prod API、数据库、COS/CDN、腾讯地图、平台凭据、session/ops secret、告警 Webhook、部署工具链、云部署凭据和 deployed smoke 一次性输入。工程开发可以继续使用占位值推进，但生产放行必须以 strict gate 和真实 deployed smoke 为准。
