@@ -336,8 +336,20 @@ function evaluateProtectedEnvironment(source) {
     blockers.push(`[${source.environment}] GOODS_COMM_ALLOWED_ORIGINS must contain only HTTPS origins`)
   }
 
-  if (hasRealReleaseValue(values.GOODS_COMM_DATABASE_URL) && !/^postgres(?:ql)?:\/\//.test(values.GOODS_COMM_DATABASE_URL)) {
+  if (hasRealReleaseValue(values.GOODS_COMM_DATABASE_URL) && !isPostgresConnectionString(values.GOODS_COMM_DATABASE_URL)) {
     blockers.push(`[${source.environment}] GOODS_COMM_DATABASE_URL must be a PostgreSQL connection string`)
+  }
+
+  if (hasRealReleaseValue(values.GOODS_COMM_DATABASE_ADMIN_URL) && !isPostgresConnectionString(values.GOODS_COMM_DATABASE_ADMIN_URL)) {
+    blockers.push(`[${source.environment}] GOODS_COMM_DATABASE_ADMIN_URL must be a PostgreSQL connection string`)
+  }
+
+  if (
+    hasRealReleaseValue(values.GOODS_COMM_DATABASE_URL) &&
+    hasRealReleaseValue(values.GOODS_COMM_DATABASE_ADMIN_URL) &&
+    normalizeConnectionString(values.GOODS_COMM_DATABASE_URL) === normalizeConnectionString(values.GOODS_COMM_DATABASE_ADMIN_URL)
+  ) {
+    blockers.push(`[${source.environment}] GOODS_COMM_DATABASE_ADMIN_URL must not equal GOODS_COMM_DATABASE_URL`)
   }
 
   const regionDataset = parseRegionDataset(values.GOODS_COMM_MAP_REGION_DATASET)
@@ -618,6 +630,25 @@ function startsWithHttps(value = '') {
   return String(value || '').trim().startsWith('https://')
 }
 
+function isPostgresConnectionString(value = '') {
+  return /^postgres(?:ql)?:\/\//.test(String(value || '').trim())
+}
+
+function normalizeConnectionString(value = '') {
+  const raw = String(value || '').trim()
+
+  try {
+    const url = new URL(raw)
+
+    url.username = ''
+    url.password = ''
+
+    return url.toString()
+  } catch {
+    return raw
+  }
+}
+
 function allOriginsAreHttps(value = '') {
   return String(value || '')
     .split(',')
@@ -789,6 +820,28 @@ function runSelfTest() {
 
   assert.equal(blockedReport.status, 'BLOCKED')
   assert.ok(blockedReport.blockerCount > 0)
+
+  const unsafeAdminBundle = {
+    environments: ['pre'],
+    protectedSources: new Map([
+      ['pre', createSyntheticProtectedSource('pre')]
+    ]),
+    smokeSources: new Map([
+      ['pre', createSyntheticSmokeSource('pre')]
+    ])
+  }
+  const unsafeValues = unsafeAdminBundle.protectedSources.get('pre').values
+  unsafeValues.GOODS_COMM_DATABASE_ADMIN_URL = unsafeValues.GOODS_COMM_DATABASE_URL
+  const unsafeAdminReport = buildReleaseInputsReport(unsafeAdminBundle, runtimeEnv)
+
+  assert.equal(unsafeAdminReport.status, 'BLOCKED')
+  assert.match(renderReport(unsafeAdminReport), /GOODS_COMM_DATABASE_ADMIN_URL must not equal GOODS_COMM_DATABASE_URL/)
+
+  unsafeValues.GOODS_COMM_DATABASE_ADMIN_URL = 'mysql://root:secret@pre-db.internal:3306/mysql'
+  const nonPostgresAdminReport = buildReleaseInputsReport(unsafeAdminBundle, runtimeEnv)
+
+  assert.equal(nonPostgresAdminReport.status, 'BLOCKED')
+  assert.match(renderReport(nonPostgresAdminReport), /GOODS_COMM_DATABASE_ADMIN_URL must be a PostgreSQL connection string/)
 }
 
 function createSyntheticProtectedSource(environment) {

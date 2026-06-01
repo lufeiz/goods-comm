@@ -23,7 +23,9 @@ assertIncludesAll('docs/database-provisioning-runbook.md', runbook, [
   'GOODS_COMM_DB_PROVISION_ALLOW_PROD=true',
   'GOODS_COMM_DB_MIGRATE_ALLOW_PROD=true',
   'GOODS_COMM_DEPLOY_ALLOW_PROD=true',
-  'GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto'
+  'GOODS_COMM_SYNC_AUTO_ENABLED=true npm run sync:prod-to-pre:auto',
+  'Admin URL is not PostgreSQL',
+  'release:inputs'
 ])
 
 assertIncludesAll('README.md', readme, [

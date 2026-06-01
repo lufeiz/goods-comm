@@ -150,8 +150,9 @@ Database delivery is not complete until all of these are true:
 
 | Failure | Expected protection |
 | --- | --- |
-| Admin URL is missing | `db:provision:*` refuses to execute with `GOODS_COMM_DATABASE_ADMIN_URL is required`. |
-| Admin URL equals app URL | `db:provision:*` refuses to execute. |
+| Admin URL is missing | `release:inputs` and `db:provision:*` keep the release blocked; execution fails with `GOODS_COMM_DATABASE_ADMIN_URL is required`. |
+| Admin URL is not PostgreSQL | `release:inputs` blocks before strict release enters the long gate. |
+| Admin URL equals app URL | `release:inputs` and `db:provision:*` refuse the release because the elevated admin role must not be the app role. |
 | Target DB is `postgres`, `template0`, or `template1` | `db:provision:*` refuses to provision protected database names. |
 | `pre` or `prod` uses file store | Provision, migration, and backend runtime reject the configuration. |
 | App URL still contains placeholders | Provision, migration, deploy, release inputs, and readiness audit keep the release blocked. |
