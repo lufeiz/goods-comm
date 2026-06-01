@@ -99,6 +99,7 @@ function assertReleaseGateProfileBoundary() {
     "'smoke:frontend-deploy'",
     "'smoke:mini-program-deploy-config'",
     "'smoke:main-flow-contract'",
+    "steps.push(npmStep('test:unit'))",
     "steps.push(npmStep('build:h5'))",
     "name: 'smoke:h5:render'",
     "'scripts/h5-render-smoke.mjs'",

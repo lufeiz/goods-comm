@@ -15,6 +15,8 @@
 
 当前主要 blocker 仍来自真实 pre/prod API、数据库、COS/CDN、腾讯地图、平台凭据、session/ops secret、告警 Webhook、部署工具链、云部署凭据和 deployed smoke 一次性输入。工程开发可以继续使用占位值推进，但生产放行必须以 strict gate 和真实 deployed smoke 为准。
 
+测试体系补强：2026-06-01 已新增标准 `npm test` / `npm run test:unit`，用 Node 内置 test runner 覆盖距离计算、交易资格、定位缓存、精度和最终 GPS 交易校验，并接入 `verify:release` / `verify:release:quick` / `verify:release:strict`。
+
 ## 1. 本轮结论
 
 本项目已经从“端侧 Demo”推进到“端侧生产化边界 + 可运行 HTTP 后端 + 数据库 DDL + 可构建部署产物”：登录、定位、发布、交易售卖的关键动作已经不再只散落在页面里，而是收口到 `services` 层和 BFF / 后端层，并补了可执行 smoke 验证。

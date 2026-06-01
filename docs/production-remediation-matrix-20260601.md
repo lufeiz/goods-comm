@@ -49,7 +49,7 @@
 | 线下撮合不等于完整电商 | 无支付、担保、退款、资金风控 | 产品定位限定为社区线下自提；如要做平台交易，再新增支付、担保、退款和财务对账域 | 当前不做资金闭环 | 产品说明和试点指标不以 GMV 误导 |
 | 商业冷启动未验证 | 代码好不代表社区供需成立 | 单社区/园区/校园封闭试点，记录供给、转化、确认率、完成率、举报率、7 日留存 | 未开始 | 试点数据报表 |
 | 核心模块过大 | 后续功能和 bugfix 成本升高 | 拆 `src/bff/handler.js`、`src/services/goods.js`、`backend/src/server.mjs`、`postgres-state-store` | 未拆，已量化行数 | 拆分 PR 后 smoke/verify 全绿 |
-| 测试偏 smoke | 回归定位慢，覆盖率不可见 | 保留 smoke，补领域单测、BFF 契约测试、PostgreSQL 集成测试、页面 E2E、类型/schema 校验 | smoke 丰富，测试金字塔未完善 | 新增 `npm test` 或等价分层 gate |
+| 测试偏 smoke | 回归定位慢，覆盖率不可见 | 保留 smoke，补领域单测、BFF 契约测试、PostgreSQL 集成测试、页面 E2E、类型/schema 校验 | 已新增 `npm test` / `test:unit`，覆盖距离、交易资格、定位缓存/精度/最终 GPS 判断，并接入 release gate；后续继续补 BFF 契约和数据库集成测试 | `npm test`、`npm run verify:release:quick -- --skip-http-backend` 通过 |
 | PostgreSQL snapshot rewrite 债务 | 数据规模和并发增加后风险上升 | 短期用 row limit + advisory lock；中期按聚合根改增量 SQL repository | 桥接实现已有保护，未增量化 | 数据库集成测试 + 压测 + row count 监控 |
 | 云侧日志/WAF/分布式限流缺失 | 单进程限流和 stdout 日志不足以抗公网风险 | 云网关/WAF 配置限流、日志采集、保留策略、告警值班 | 应用层已有基础能力，云侧未接 | 真实云控制台配置和 deployed health 证据 |
 | H5 公开访问身份体系 | H5 dev/test 演示登录不能用于正式公网 | 若 H5 对公网开放，必须接 OAuth/SSO，并加入合法 Origin；小程序端继续使用平台 code | 当前 H5 适合联调，不适合正式身份 | H5 E2E + OAuth/SSO 验收 |
@@ -61,7 +61,7 @@
 | 主链路 | 最低验收命令 | 生产验收命令 |
 | --- | --- | --- |
 | 登录和协议 | `npm run smoke:platform-auth`、`npm run smoke:main-flow-contract` | `npm run smoke:deployed:pre:main` |
-| 定位和显示 | `npm run smoke:location-permissions`、`npm run smoke:h5:render` | `npm run smoke:deployed:pre` + 真机小程序定位验证 |
+| 定位和显示 | `npm test`、`npm run smoke:location-permissions`、`npm run smoke:h5:render` | `npm run smoke:deployed:pre` + 真机小程序定位验证 |
 | 发布和图片 | `npm run smoke:storage-content`、`npm run smoke:bff`、`npm run smoke:backend` | `npm run smoke:deployed:pre:main` |
 | 售卖和交易 | `npm run smoke:main-flow-contract`、`npm run smoke:backend`、`npm run smoke:deployed:local-main` | `npm run smoke:deployed:pre:main` |
 | 部署和回滚准备 | `npm run verify:release` | `npm run verify:release:strict` 或 `release-strict.yml` |

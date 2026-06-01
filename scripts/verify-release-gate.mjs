@@ -20,6 +20,7 @@ if (skipHttpBackend && profile !== 'quick') {
 }
 
 await addSyntaxChecks()
+steps.push(npmStep('test:unit'))
 addCoreSmokes()
 addPlanChecks()
 addBuildChecks()
