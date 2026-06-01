@@ -1,8 +1,8 @@
 # goods-comm production readiness audit
 
-Generated: 2026-06-01T04:20:50.114Z
+Generated: 2026-06-01T04:39:51.601Z
 Scope: pre, prod
-Result: BLOCKED (48 blockers, 9 warnings)
+Result: BLOCKED (50 blockers, 9 warnings)
 
 This report is generated from `.env.*` plus optional `.env.*.local` overrides. It does not execute deployment, database migration, or production data sync.
 
@@ -69,6 +69,7 @@ Local override: not present
 - GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value
 - GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value
 - GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value
+- GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning
 - No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli
 ### Warnings
 
@@ -119,6 +120,7 @@ Local override: not present
 - GOODS_COMM_WECHAT_APP_SECRET must be replaced with a real production value
 - GOODS_COMM_ALIPAY_APP_ID must be replaced with a real production value
 - GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value
+- GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning
 - No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli
 ### Warnings
 

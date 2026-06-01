@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-06-01T04:20:50.114Z",
+  "generatedAt": "2026-06-01T04:39:51.601Z",
   "scope": [
     "pre",
     "prod"
   ],
   "status": "BLOCKED",
-  "blockerCount": 48,
+  "blockerCount": 50,
   "warningCount": 9,
   "releaseGateCommands": [
     "npm run env:check",
@@ -233,7 +233,13 @@
             "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
           },
           {
-            "id": "environment.pre.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+            "id": "environment.pre.blocker.22.goods-comm-database-admin-url-must-be-configured-with-a-real-postgresql-admin-co",
+            "area": "environment.pre",
+            "severity": "blocker",
+            "message": "GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning"
+          },
+          {
+            "id": "environment.pre.blocker.23.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
             "area": "environment.pre",
             "severity": "blocker",
             "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -477,7 +483,13 @@
             "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
           },
           {
-            "id": "environment.prod.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+            "id": "environment.prod.blocker.22.goods-comm-database-admin-url-must-be-configured-with-a-real-postgresql-admin-co",
+            "area": "environment.prod",
+            "severity": "blocker",
+            "message": "GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning"
+          },
+          {
+            "id": "environment.prod.blocker.23.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
             "area": "environment.prod",
             "severity": "blocker",
             "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -936,7 +948,13 @@
       "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
     },
     {
-      "id": "environment.pre.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+      "id": "environment.pre.blocker.22.goods-comm-database-admin-url-must-be-configured-with-a-real-postgresql-admin-co",
+      "area": "environment.pre",
+      "severity": "blocker",
+      "message": "GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning"
+    },
+    {
+      "id": "environment.pre.blocker.23.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
       "area": "environment.pre",
       "severity": "blocker",
       "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"
@@ -1068,7 +1086,13 @@
       "message": "GOODS_COMM_ALIPAY_PRIVATE_KEY must be replaced with a real production value"
     },
     {
-      "id": "environment.prod.blocker.22.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
+      "id": "environment.prod.blocker.22.goods-comm-database-admin-url-must-be-configured-with-a-real-postgresql-admin-co",
+      "area": "environment.prod",
+      "severity": "blocker",
+      "message": "GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning"
+    },
+    {
+      "id": "environment.prod.blocker.23.no-deploy-path-is-ready-missing-real-goods-comm-cloudbase-env-id-cloudbase-tcb-c",
       "area": "environment.prod",
       "severity": "blocker",
       "message": "No deploy path is ready; missing real GOODS_COMM_CLOUDBASE_ENV_ID, cloudbase/tcb CLI, real Tencent fallback service/image config, docker+tccli"

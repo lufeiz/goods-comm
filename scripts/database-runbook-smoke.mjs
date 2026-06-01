@@ -68,6 +68,7 @@ for (const [name, content] of [
   assertIncludesAll(name, content, [
     'npm run db:provision:pre:plan',
     'GOODS_COMM_DB_PROVISION_CONFIRM=provision-pre npm run db:provision:pre',
+    'GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning',
     'GOODS_COMM_DB_MIGRATE_CONFIRM=migrate-pre npm run db:migrate:pre',
     'npm run db:provision:prod:plan',
     'GOODS_COMM_DB_PROVISION_CONFIRM=provision-prod GOODS_COMM_DB_PROVISION_ALLOW_PROD=true npm run db:provision:prod',

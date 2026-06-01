@@ -12,8 +12,8 @@
 
 | 审计 | 当前结果 | 说明 |
 | --- | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
-| 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 真实上线前 gate；会把 deployed main-flow smoke 输入缺失升级为 blocker。 |
+| 普通生产审计 | `BLOCKED (50 blockers, 9 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
+| 严格生产审计 | `BLOCKED (52 blockers, 8 warnings)` | 真实上线前 gate；会把 deployed main-flow smoke 输入缺失升级为 blocker。 |
 
 ## 1. 整体判断
 

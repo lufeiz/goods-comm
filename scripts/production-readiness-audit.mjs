@@ -387,6 +387,19 @@ async function auditEnvironment(environment, values) {
       blockers.push('GOODS_COMM_ALERT_WEBHOOK_URL must be HTTPS for pre/prod alerting')
     }
 
+    if (!hasRealValue(values.GOODS_COMM_DATABASE_ADMIN_URL)) {
+      blockers.push('GOODS_COMM_DATABASE_ADMIN_URL must be configured with a real PostgreSQL admin connection for database provisioning')
+    } else if (!isPostgresConnectionString(values.GOODS_COMM_DATABASE_ADMIN_URL)) {
+      blockers.push('GOODS_COMM_DATABASE_ADMIN_URL must be a PostgreSQL connection string')
+    } else if (
+      hasRealValue(values.GOODS_COMM_DATABASE_URL) &&
+      normalizeConnectionString(values.GOODS_COMM_DATABASE_ADMIN_URL) === normalizeConnectionString(values.GOODS_COMM_DATABASE_URL)
+    ) {
+      blockers.push('GOODS_COMM_DATABASE_ADMIN_URL must not equal GOODS_COMM_DATABASE_URL')
+    } else {
+      passes.push('GOODS_COMM_DATABASE_ADMIN_URL is present for database provisioning and separate from the app connection')
+    }
+
     if (!allOriginsAreHttps(values.GOODS_COMM_ALLOWED_ORIGINS)) {
       blockers.push('GOODS_COMM_ALLOWED_ORIGINS must use HTTPS origins')
     }
@@ -1367,6 +1380,25 @@ function slugify(value) {
 
 function hasRealValue(value) {
   return Boolean(value) && !containsPlaceholder(value)
+}
+
+function isPostgresConnectionString(value = '') {
+  return /^postgres(?:ql)?:\/\//.test(String(value || '').trim())
+}
+
+function normalizeConnectionString(value = '') {
+  const raw = String(value || '').trim()
+
+  try {
+    const url = new URL(raw)
+
+    url.username = ''
+    url.password = ''
+
+    return url.toString()
+  } catch {
+    return raw
+  }
 }
 
 function startsWithHttps(value = '') {

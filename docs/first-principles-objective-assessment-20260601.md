@@ -11,8 +11,8 @@
 但它也不是可直接生产上线的真实交易系统。当前生产就绪审计仍是：
 
 ```text
-Production readiness audit: BLOCKED (48 blockers, 10 warnings)
-Strict production readiness audit: BLOCKED (50 blockers, 8 warnings)
+Production readiness audit: BLOCKED (50 blockers, 9 warnings)
+Strict production readiness audit: BLOCKED (52 blockers, 8 warnings)
 ```
 
 最客观的判断是：
@@ -41,16 +41,16 @@ Strict production readiness audit: BLOCKED (50 blockers, 8 warnings)
 业务和工程骨架已经成型；真实环境和真实市场数据尚未证明。
 ```
 
-## 3. 多视角评分
+## 3. 多 agent 多视角评分
 
-本次并行启动 3 个只读分析 agent，分别从产品/用户体验、工程/安全可信、交付/运维/测试三个角度评审。三位 agent 均未修改代码，只读分析当前仓库。问题逐项整改方案已整理到 `docs/production-remediation-matrix-20260601.md`。
+本次并行启动 3 个只读分析 agent，分别从产品价值、工程架构、生产风控三个角度评审。三位 agent 均未修改代码，只读分析当前仓库。问题逐项整改方案已整理到 `docs/production-remediation-matrix-20260601.md`。
 
 | 视角 | 评分 | 判断 |
 | --- | ---: | --- |
-| 产品 / 用户体验 | 7.0/10 | 社区 / 街道交易边界清楚，定位、发布、交易意向、卖家确认、一次性联系码、争议和评价形成 MVP 闭环；但冷启动、求购/议价/召回、真实供需密度和履约体验没有数据证明。 |
-| 工程 / 安全可信 | 5.5/10 | BFF、后端、PostgreSQL schema、token hash、运营权限、幂等、限流和生产 fail-closed 护栏已经超过纯前端 Demo；但真实 API、DB、COS、地图、平台身份、内容安全和通知没有生产闭环。 |
-| 交付 / 运维 / 测试 | 6.0/10 | 构建、测试、release gate、strict workflow、审计报告、部署 plan 和 deployed smoke 入口完整；但云部署工具链、云凭据、pre/prod smoke 输入和已部署验收仍缺失。 |
-| 综合当前态 | 6.0/10 | 按“展示和继续试点”是中上，按“真实线上交易”仍偏低；适合继续投入，不适合直接生产上线。 |
+| 产品 / 用户价值 / 交易闭环 | 6.3/10 | 社区 / 街道交易边界清楚，定位、发布、交易意向、卖家确认、一次性联系码、争议和评价形成轻交易闭环；但冷启动、真实供需密度、履约成本和商业转化没有数据证明。 |
+| 工程架构 / 代码质量 / 可维护性 | 6.8/10 | 端、BFF、Node 后端、PostgreSQL、部署脚本、审计和测试骨架完整；但核心模块过大，真实 PostgreSQL / 平台 / 对象存储 / 地图集成仍未落地。 |
+| 生产发布 / 安全合规 / 运营风控 | 4.5/10 | 生产审计、strict gate、fail-closed 护栏、运营审计和风控入口方向正确；但真实 API、DB、COS/CDN、腾讯地图、平台凭据、部署通道和 deployed smoke 都未闭环。 |
+| 综合当前态 | 5.9/10 | 按“技术作品 / MVP 底座”是中上，按“真实线上交易系统”仍偏低；适合继续投入做 pre 闭环和封闭试点，不适合直接生产上线。 |
 
 按使用场景拆分更准确：
 
@@ -114,7 +114,7 @@ Strict production readiness audit: BLOCKED (50 blockers, 8 warnings)
 | 文件 | 行数 |
 | --- | ---: |
 | `src/bff/handler.js` | 3406 |
-| `backend/src/postgres-state-store.mjs` | 2531 |
+| `backend/src/postgres-state-store.mjs` | 2119 |
 | `src/services/goods.js` | 1807 |
 | `backend/src/server.mjs` | 1630 |
 | `src/pages/ops/ops.vue` | 1169 |
@@ -146,8 +146,12 @@ scripts/verify-release-gate.mjs
 
 | 证据 | 当前结果 |
 | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)`；build artifacts 为 PASS，但 pre/prod API、云资源、真实密钥、GitHub CLI auth 和 deployed smoke 仍阻塞。 |
-| 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)`；真实上线前仍会因 deployed smoke 输入和真实环境缺口失败。 |
+| 功能范围 | README 已列出附近列表、发布、LBS 校验、详情交易前校验、交易意向、运营控制台、遥测、协议和 BFF 契约。 |
+| 页面闭环 | `src/pages.json` 注册集市、发布、交易、我的、详情、运营控制台、协议隐私页，并配置四个 tab。 |
+| 领域规则 | `src/domain/eligibility.js` 以纯函数判断物品、用户位置、距离、社区 / 街道匹配，并返回明确原因码。 |
+| 工程门禁 | `package.json` 已覆盖多端构建、后端构建、环境检查、生产审计、release gate、数据库开通/迁移、部署 plan 和 deployed smoke。 |
+| 普通生产审计 | `BLOCKED (50 blockers, 9 warnings)`；build artifacts 为 PASS，但 pre/prod API、云资源、真实密钥和 deployed smoke 仍阻塞。 |
+| 严格生产审计 | `BLOCKED (52 blockers, 8 warnings)`；真实上线前仍会因 deployed smoke 输入和真实环境缺口失败。 |
 | CI / release gate | `ci.yml` 执行 `npm run verify:release`；`release-strict.yml` 先跑 release input 检查，再跑 `verify:release:strict`。 |
 | 测试入口 | `package.json` 已有 unit/contract test、BFF smoke、HTTP 后端 smoke、H5 render smoke、artifact smoke、workflow smoke、deployed health/main-flow smoke。 |
 
@@ -166,7 +170,7 @@ scripts/verify-release-gate.mjs
 3. 执行 pre 数据库迁移。
 4. 部署 pre 后端。
 5. 跑通 `npm run smoke:deployed:pre` 和 `npm run smoke:deployed:pre:main`。
-6. 让 `audit:production-readiness -- --check-only` 的 blocker 从 48 开始实际下降。
+6. 让 `audit:production-readiness -- --check-only` 的 blocker 从 50 开始实际下降。
 
 ### P1：做一个封闭试点
 

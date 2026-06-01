@@ -4,7 +4,7 @@
 
 本文件记录真实部署仍缺少的信息。缺失项不阻塞工程开发：当前 `.env.dev/test/pre/prod` 已使用占位值，后端、数据库 schema、环境校验、构建产物和 prod 到 pre 同步脚本都可以先行开发和验证。真实部署前可从 `.env.pre.local.example` / `.env.prod.local.example` 复制出 `.env.pre.local` / `.env.prod.local` 并填入真实值；本地覆盖文件已被 `.gitignore` 排除，GitHub Actions 则使用 `GOODS_COMM_PRE_ENV_LOCAL` / `GOODS_COMM_PROD_ENV_LOCAL` 多行 Secret 写入同名文件。部署后 smoke 的短期登录 code、坐标和已审核测试图等一次性输入可从 `.env.smoke.pre.example` / `.env.smoke.prod.example` 复制出 `.env.smoke.pre.local` / `.env.smoke.prod.local`，部署 smoke、部署脚本和生产审计会自动读取这些文件。
 
-当前审计快照：普通生产审计仍为 `BLOCKED (48 blockers, 9 warnings)`，严格生产审计仍为 `BLOCKED (50 blockers, 8 warnings)`。如果本机生产审计提示 GitHub CLI auth 不可用，普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback；包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
+当前审计快照：普通生产审计仍为 `BLOCKED (50 blockers, 9 warnings)`，严格生产审计仍为 `BLOCKED (52 blockers, 8 warnings)`。如果本机生产审计提示 GitHub CLI auth 不可用，普通代码/文档推送仍可依赖 Git 凭据和 `git push --dry-run` fallback；包含 workflow 文件的推送应先执行 `gh auth login` 或 `gh auth refresh -h github.com -s workflow` 恢复 workflow-aware preflight 证据。
 
 ## 1. 平台账号与应用
 
