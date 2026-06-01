@@ -12,7 +12,7 @@
 
 | 审计 | 当前结果 | 说明 |
 | --- | --- | --- |
-| 普通生产审计 | `BLOCKED (48 blockers, 9 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
+| 普通生产审计 | `BLOCKED (48 blockers, 10 warnings)` | 仍可用于开发和发布候选证据，不是生产放行口径。 |
 | 严格生产审计 | `BLOCKED (50 blockers, 8 warnings)` | 真实上线前 gate；会把 deployed main-flow smoke 输入缺失升级为 blocker。 |
 
 ## 1. 整体判断
@@ -48,7 +48,7 @@
 | LBS 可信度天然风险 | 恶意用户可能伪造位置或频繁跨区 | 服务端重算区域；记录位置审计；新增位置风险事件；后续引入设备/账号/频率策略和人工复核 | 基础审计已有，真实风控策略待试点数据校准 | location risk ops 查询与复核记录 |
 | 线下撮合不等于完整电商 | 无支付、担保、退款、资金风控 | 产品定位限定为社区线下自提；如要做平台交易，再新增支付、担保、退款和财务对账域 | 当前不做资金闭环 | 产品说明和试点指标不以 GMV 误导 |
 | 商业冷启动未验证 | 代码好不代表社区供需成立 | 单社区/园区/校园封闭试点，记录供给、转化、确认率、完成率、举报率、7 日留存 | 未开始 | 试点数据报表 |
-| 核心模块过大 | 后续功能和 bugfix 成本升高 | 拆 `src/bff/handler.js`、`src/services/goods.js`、`backend/src/server.mjs`、`postgres-state-store` | 未拆，已量化行数 | 拆分 PR 后 smoke/verify 全绿 |
+| 核心模块过大 | 后续功能和 bugfix 成本升高 | 拆 `src/bff/handler.js`、`src/services/goods.js`、`backend/src/server.mjs`、`postgres-state-store` | 已先把 PostgreSQL store 的 schema baseline、表/列要求、row limit、advisory lock 和 auto schema 保护拆到 `backend/src/postgres-state-store-config.mjs`；BFF、goods service、HTTP server 仍待拆 | 拆分 PR 后 smoke/verify 全绿 |
 | 测试偏 smoke | 回归定位慢，覆盖率不可见 | 保留 smoke，补领域单测、BFF 契约测试、PostgreSQL 集成测试、页面 E2E、类型/schema 校验 | 已新增 `npm test`，覆盖距离、交易资格、定位缓存/精度/最终 GPS 判断、BFF 登录/发布/交易/评价/幂等契约，以及 PostgreSQL 规范化行往返后的登录、定位展示、发布、售卖、评价和幂等持久化契约；后续继续补真实 PostgreSQL 实例集成测试 | `npm test`、`npm run verify:release:quick -- --skip-http-backend` 通过 |
 | PostgreSQL snapshot rewrite 债务 | 数据规模和并发增加后风险上升 | 短期用 row limit + advisory lock；中期按聚合根改增量 SQL repository | 桥接实现已有保护，未增量化 | 数据库集成测试 + 压测 + row count 监控 |
 | 云侧日志/WAF/分布式限流缺失 | 单进程限流和 stdout 日志不足以抗公网风险 | 云网关/WAF 配置限流、日志采集、保留策略、告警值班 | 应用层已有基础能力，云侧未接 | 真实云控制台配置和 deployed health 证据 |

@@ -12,6 +12,7 @@ const requiredFiles = [
   'backend/src/server.mjs',
   'backend/src/state-store.mjs',
   'backend/src/postgres-state-store.mjs',
+  'backend/src/postgres-state-store-config.mjs',
   'backend/src/platform-auth.mjs',
   'backend/src/platform-notifier.mjs',
   'backend/src/ops-alerts.mjs',
@@ -102,6 +103,7 @@ for (const file of [
   'backend/src/request-logger.mjs',
   'backend/src/rate-limiter.mjs',
   'backend/src/postgres-state-store.mjs',
+  'backend/src/postgres-state-store-config.mjs',
   'src/bff/handler.js'
 ]) {
   runNodeCheck(join(artifactRoot, file))
